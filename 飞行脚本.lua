@@ -137,8 +137,7 @@ nowe = false
 
 game:GetService("StarterGui"):SetCore("SendNotification", { 
 	Title = "飞行面板 V3";
-	Text = "制作者：cc
-";
+	Text = "制作者：XNEO";
 	Icon = "rbxthumb://type=Asset&id=5107182114&w=150&h=150"})
 Duration = 5;
 
