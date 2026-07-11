@@ -370,7 +370,123 @@ local function createButtonCard(parent, name, desc, icon, url)
     Btn.MouseLeave:Connect(function() Btn.BackgroundColor3 = Color3.fromRGB(255, 140, 0) end)
     Btn.MouseButton1Click:Connect(function()
         Btn.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
-        pcall(function() loadstring(game:HttpGet(url))() end)
+        if url == "teleport" then
+            local tpGui = Instance.new("ScreenGui")
+            tpGui.Parent = PlayerGui
+            local tpFrame = Instance.new("Frame")
+            tpFrame.Size = UDim2.new(0, 200, 0, 300)
+            tpFrame.Position = UDim2.new(0.5, -100, 0.5, -150)
+            tpFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+            tpFrame.BorderSizePixel = 0
+            tpFrame.ZIndex = 50
+            tpFrame.Parent = tpGui
+            local tpCorner = Instance.new("UICorner")
+            tpCorner.CornerRadius = UDim.new(0, 10)
+            tpCorner.Parent = tpFrame
+            local tb = Instance.new("Frame")
+            tb.Size = UDim2.new(1, 0, 0, 32)
+            tb.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            tb.BorderSizePixel = 0
+            tb.ZIndex = 51
+            tb.Parent = tpFrame
+            local tbCorner = Instance.new("UICorner")
+            tbCorner.CornerRadius = UDim.new(0, 10)
+            tbCorner.Parent = tb
+            local tbFix = Instance.new("Frame")
+            tbFix.Size = UDim2.new(1, 0, 0.5, 0)
+            tbFix.Position = UDim2.new(0, 0, 1, 0)
+            tbFix.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            tbFix.BorderSizePixel = 0
+            tbFix.ZIndex = 51
+            tbFix.Parent = tb
+            local ttl = Instance.new("TextLabel")
+            ttl.Size = UDim2.new(1, -30, 1, 0)
+            ttl.Position = UDim2.new(0, 10, 0, 0)
+            ttl.Text = "选择玩家"
+            ttl.TextColor3 = Color3.fromRGB(255, 255, 255)
+            ttl.Font = Enum.Font.GothamBold
+            ttl.TextSize = 14
+            ttl.BackgroundTransparency = 1
+            ttl.TextXAlignment = Enum.TextXAlignment.Left
+            ttl.ZIndex = 52
+            ttl.Parent = tb
+            local cls = Instance.new("TextButton")
+            cls.Size = UDim2.new(0, 22, 0, 22)
+            cls.Position = UDim2.new(1, -26, 0, 5)
+            cls.Text = "×"
+            cls.TextColor3 = Color3.fromRGB(255, 255, 255)
+            cls.Font = Enum.Font.GothamBold
+            cls.TextSize = 13
+            cls.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+            cls.BorderSizePixel = 0
+            cls.ZIndex = 52
+            cls.AutoButtonColor = false
+            cls.Parent = tb
+            local clsCorner = Instance.new("UICorner")
+            clsCorner.CornerRadius = UDim.new(1, 0)
+            clsCorner.Parent = cls
+            cls.MouseButton1Click:Connect(function() tpGui:Destroy() end)
+            local sf = Instance.new("ScrollingFrame")
+            sf.Size = UDim2.new(1, 0, 1, -72)
+            sf.Position = UDim2.new(0, 0, 0, 32)
+            sf.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+            sf.BorderSizePixel = 0
+            sf.ScrollBarThickness = 3
+            sf.CanvasSize = UDim2.new(0, 0, 0, 0)
+            sf.ZIndex = 51
+            sf.Parent = tpFrame
+            local sfl = Instance.new("UIListLayout")
+            sfl.Padding = UDim.new(0, 3)
+            sfl.Parent = sf
+            local clBtn = Instance.new("TextButton")
+            clBtn.Size = UDim2.new(1, -20, 0, 30)
+            clBtn.Position = UDim2.new(0, 10, 1, -38)
+            clBtn.Text = "关闭"
+            clBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            clBtn.Font = Enum.Font.GothamBold
+            clBtn.TextSize = 13
+            clBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+            clBtn.BorderSizePixel = 0
+            clBtn.ZIndex = 51
+            clBtn.AutoButtonColor = false
+            clBtn.Parent = tpFrame
+            local clCorner = Instance.new("UICorner")
+            clCorner.CornerRadius = UDim.new(0, 6)
+            clCorner.Parent = clBtn
+            clBtn.MouseButton1Click:Connect(function() tpGui:Destroy() end)
+            local cnt = 0
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if plr ~= Players.LocalPlayer then
+                    local pbtn = Instance.new("TextButton")
+                    pbtn.Size = UDim2.new(1, -16, 0, 32)
+                    pbtn.Position = UDim2.new(0, 8, 0, 0)
+                    pbtn.Text = plr.Name
+                    pbtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+                    pbtn.Font = Enum.Font.Gotham
+                    pbtn.TextSize = 13
+                    pbtn.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+                    pbtn.BorderSizePixel = 0
+                    pbtn.ZIndex = 52
+                    pbtn.AutoButtonColor = false
+                    pbtn.Parent = sf
+                    local pCorner = Instance.new("UICorner")
+                    pCorner.CornerRadius = UDim.new(0, 6)
+                    pCorner.Parent = pbtn
+                    pbtn.MouseButton1Click:Connect(function()
+                        local c = Players.LocalPlayer.Character
+                        local tc = plr.Character
+                        if c and c:FindFirstChild("HumanoidRootPart") and tc and tc:FindFirstChild("HumanoidRootPart") then
+                            c.HumanoidRootPart.CFrame = tc.HumanoidRootPart.CFrame + Vector3.new(3, 0, 0)
+                        end
+                        tpGui:Destroy()
+                    end)
+                    cnt = cnt + 1
+                end
+            end
+            sf.CanvasSize = UDim2.new(0, 0, 0, cnt * 35 + 10)
+        else
+            pcall(function() loadstring(game:HttpGet(url))() end)
+        end
         wait(0.3)
         Btn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
     end)
@@ -497,6 +613,8 @@ local pageContents = {
         type = "toggles",
         items = {
             {type = "button", name = "飞行模式", desc = "远程加载飞行脚本", icon = "🕊️", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/refs/heads/main/%E9%A3%9E%E9%A5%BC"},
+            {type = "button", name = "自瞄", desc = "自动瞄准脚本", icon = "🎯", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/%E8%87%AA%E7%9E%84"},
+            {type = "button", name = "传送玩家", desc = "选择玩家传送到旁边", icon = "📬", url = "teleport"},
             {type = "input", name = "广角", desc = "摄像机视野", icon = "🔭", default = "70", execute = function(v) if v > 0 and v <= 120 then local cam = workspace.CurrentCamera; if cam then cam.FieldOfView = v; return true end end; return false end},
             {type = "input", name = "调速度", desc = "移动速度", icon = "⚡", default = "16", execute = function(v) if v > 0 then local c = Players.LocalPlayer.Character; if c and c:FindFirstChild("Humanoid") then c.Humanoid.WalkSpeed = v; return true end end; return false end},
             {type = "input", name = "跳跃高度", desc = "跳跃高度", icon = "🦘", default = "50", execute = function(v) if v > 0 then local c = Players.LocalPlayer.Character; if c and c:FindFirstChild("Humanoid") then c.Humanoid.JumpHeight = v; return true end end; return false end},
@@ -511,6 +629,8 @@ local pageContents = {
         type = "buttons",
         items = {
             {name = "磁铁轨服务器", desc = "点击执行", icon = "🔧", url = "https://raw.githubusercontent.com/erewe23/deadrailsring.github.io/refs/heads/main/ringta.lua"},
+            {name = "柠檬大亨", desc = "点击执行", icon = "🍋", url = "https://rawscripts.net/raw/Sell-Lemons-Fluid-Orchard-Update-Read-Description-241132"},
+            {name = "键盘逃脱", desc = "点击执行", icon = "⌨️", url = "https://raw.githubusercontent.com/ccdushii/zzzzzzzzz/refs/heads/main/ssssssssss"},
         }
     },
     ["国内脚本"] = {
@@ -576,3 +696,4 @@ OpenBtn.MouseButton1Click:Connect(function()
 end)
 CloseButton.MouseButton1Click:Connect(function() closePanel() end)
 selectNav(navButtons[1].button, "公告")
+
