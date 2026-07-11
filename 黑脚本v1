@@ -6,6 +6,7 @@ local Lighting = game:GetService("Lighting")
 local UserInputService = game:GetService("UserInputService")
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ModernUI"
+ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
 local Bar = Instance.new("Frame")
@@ -175,8 +176,8 @@ local function disableESP() espEnabled = false; clearESP() end
 local infJumpEnabled = false
 local infJumpConnection
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 680, 0, 520)
-MainFrame.Position = UDim2.new(0.5, -340, 0.5, -260)
+MainFrame.Size = UDim2.new(0, 580, 0, 440)
+MainFrame.Position = UDim2.new(0.5, -290, 0.5, -220)
 MainFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 MainFrame.BackgroundTransparency = 0.08
 MainFrame.Visible = false
@@ -209,7 +210,7 @@ local InnerCorner = Instance.new("UICorner")
 InnerCorner.CornerRadius = UDim.new(0, 12)
 InnerCorner.Parent = InnerPanel
 local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1, 0, 0, 44)
+TopBar.Size = UDim2.new(1, 0, 0, 38)
 TopBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 TopBar.BorderSizePixel = 0
 TopBar.ZIndex = 10
@@ -217,13 +218,6 @@ TopBar.Parent = InnerPanel
 local TopBarCorner = Instance.new("UICorner")
 TopBarCorner.CornerRadius = UDim.new(0, 12)
 TopBarCorner.Parent = TopBar
-local TopBarFix = Instance.new("Frame")
-TopBarFix.Size = UDim2.new(1, 0, 0.5, 0)
-TopBarFix.Position = UDim2.new(0, 0, 1, 0)
-TopBarFix.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-TopBarFix.BorderSizePixel = 0
-TopBarFix.ZIndex = 10
-TopBarFix.Parent = TopBar
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(0, 80, 1, 0)
 TitleLabel.Position = UDim2.new(0, 14, 0, 0)
@@ -237,7 +231,7 @@ TitleLabel.ZIndex = 11
 TitleLabel.Parent = TopBar
 local InfoBox = Instance.new("Frame")
 InfoBox.Size = UDim2.new(0, 210, 0, 28)
-InfoBox.Position = UDim2.new(0, 88, 0, 8)
+InfoBox.Position = UDim2.new(0, 88, 0, 5)
 InfoBox.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
 InfoBox.BorderSizePixel = 0
 InfoBox.ZIndex = 12
@@ -277,7 +271,7 @@ spawn(function()
 end)
 local CloseButton = Instance.new("TextButton")
 CloseButton.Size = UDim2.new(0, 32, 0, 32)
-CloseButton.Position = UDim2.new(1, -40, 0, 6)
+CloseButton.Position = UDim2.new(1, -40, 0, 3)
 CloseButton.Text = "−"
 CloseButton.TextColor3 = Color3.fromRGB(120, 120, 120)
 CloseButton.Font = Enum.Font.GothamBold
@@ -299,14 +293,14 @@ CloseButton.MouseLeave:Connect(function()
 end)
 local TopDivider = Instance.new("Frame")
 TopDivider.Size = UDim2.new(1, -32, 0, 1)
-TopDivider.Position = UDim2.new(0, 16, 0, 44)
+TopDivider.Position = UDim2.new(0, 16, 0, 38)
 TopDivider.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
 TopDivider.BorderSizePixel = 0
 TopDivider.ZIndex = 10
 TopDivider.Parent = InnerPanel
 local MainContentContainer = Instance.new("Frame")
-MainContentContainer.Size = UDim2.new(1, 0, 1, -45)
-MainContentContainer.Position = UDim2.new(0, 0, 0, 45)
+MainContentContainer.Size = UDim2.new(1, 0, 1, -38)
+MainContentContainer.Position = UDim2.new(0, 0, 0, 38)
 MainContentContainer.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 MainContentContainer.BorderSizePixel = 0
 MainContentContainer.ZIndex = 5
@@ -366,13 +360,13 @@ for _, item in ipairs(navItems) do
     NavButton.BorderSizePixel = 0; NavButton.ZIndex = 7; NavButton.AutoButtonColor = false; NavButton.Parent = NavScroll
     local NavCorner = Instance.new("UICorner"); NavCorner.CornerRadius = UDim.new(0, 8); NavCorner.Parent = NavButton
     local NavIcon = Instance.new("TextLabel")
-    NavIcon.Size = UDim2.new(0, 18, 1, 0); NavIcon.Position = UDim2.new(0, 8, 0, 0)
-    NavIcon.Text = item.icon; NavIcon.TextSize = 12; NavIcon.BackgroundTransparency = 1
+    NavIcon.Size = UDim2.new(0, 14, 1, 0); NavIcon.Position = UDim2.new(0, 2, 0, 0)
+    NavIcon.Text = item.icon; NavIcon.TextSize = 10; NavIcon.BackgroundTransparency = 1
     NavIcon.TextXAlignment = Enum.TextXAlignment.Left; NavIcon.ZIndex = 8; NavIcon.Parent = NavButton
     local NavLabel = Instance.new("TextLabel")
-    NavLabel.Size = UDim2.new(1, -30, 1, 0); NavLabel.Position = UDim2.new(0, 26, 0, 0)
-    NavLabel.Text = item.name; NavLabel.TextColor3 = Color3.fromRGB(70, 70, 70)
-    NavLabel.Font = Enum.Font.GothamSemibold; NavLabel.TextSize = 13; NavLabel.BackgroundTransparency = 1
+    NavLabel.Size = UDim2.new(1, -24, 1, 0); NavLabel.Position = UDim2.new(0, 28, 0, 0)
+    NavLabel.Text = "   " .. item.name; NavLabel.TextColor3 = Color3.fromRGB(70, 70, 70)
+    NavLabel.Font = Enum.Font.GothamSemibold; NavLabel.TextSize = 11; NavLabel.BackgroundTransparency = 1
     NavLabel.TextXAlignment = Enum.TextXAlignment.Left; NavLabel.ZIndex = 8; NavLabel.Parent = NavButton
     NavButton.MouseButton1Click:Connect(function() selectNav(NavButton, item.name) end)
     NavButton.MouseEnter:Connect(function() if NavButton ~= selectedNav then NavButton.BackgroundColor3 = Color3.fromRGB(243, 243, 243) end end)
@@ -731,13 +725,13 @@ for pageName, contentData in pairs(pageContents) do
     TopSpacer.Size = UDim2.new(1, 0, 0, 8); TopSpacer.BackgroundTransparency = 1; TopSpacer.Parent = Page
     if contentData.type == "text" then
         announcementTextBox = Instance.new("TextLabel")
-        announcementTextBox.Size = UDim2.new(1, -24, 0, 200); announcementTextBox.Position = UDim2.new(0, 12, 0, 8)
+        announcementTextBox.Size = UDim2.new(1, -24, 0, 400); announcementTextBox.Position = UDim2.new(0, 12, 0, 8)
         announcementTextBox.TextColor3 = Color3.fromRGB(80, 80, 80); announcementTextBox.Font = Enum.Font.Gotham
         announcementTextBox.TextSize = 12; announcementTextBox.BackgroundTransparency = 1
         announcementTextBox.TextXAlignment = Enum.TextXAlignment.Left; announcementTextBox.TextYAlignment = Enum.TextYAlignment.Top
         announcementTextBox.TextWrapped = true; announcementTextBox.LineHeight = 1.5; announcementTextBox.ZIndex = 8
         announcementTextBox.Parent = Page
-        Page.CanvasSize = UDim2.new(0, 0, 0, 220); updateTime()
+        Page.CanvasSize = UDim2.new(0, 0, 0, 420); updateTime()
     elseif contentData.type == "toggles" then
         local n = 0
         for _, item in ipairs(contentData.items) do
@@ -763,7 +757,7 @@ local function openPanel()
     isOpen = true
     MainFrame.Size = UDim2.new(0, 0, 0, 0); MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
     MainFrame.Visible = true
-    TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 680, 0, 520), Position = UDim2.new(0.5, -340, 0.5, -260)}):Play()
+    TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 580, 0, 440), Position = UDim2.new(0.5, -290, 0.5, -220)}):Play()
 end
 local function closePanel()
     isOpen = false
@@ -775,4 +769,3 @@ OpenBtn.MouseButton1Click:Connect(function()
 end)
 CloseButton.MouseButton1Click:Connect(function() closePanel() end)
 selectNav(navButtons[1].button, "公告")
-
