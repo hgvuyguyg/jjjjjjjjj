@@ -334,7 +334,7 @@ local NavTopPad = Instance.new("Frame")
 NavTopPad.Size = UDim2.new(1, 0, 0, 6)
 NavTopPad.BackgroundTransparency = 1
 NavTopPad.Parent = NavScroll
-local navItems = {{name = "公告", icon = "📢"},{name = "通用", icon = "⚙️"},{name = "服务器", icon = "📡"},{name = "国内脚本", icon = "🇨🇳"}}
+local navItems = {{name = "公告", icon = "📢"},{name = "通用", icon = "⚙️"},{name = "甩飞", icon = "💨"},{name = "服务器", icon = "📡"},{name = "国内脚本", icon = "🇨🇳"}}
 local navButtons = {}
 local selectedNav = nil
 local ContentArea = Instance.new("Frame")
@@ -460,6 +460,7 @@ local function createButtonCard(parent, name, desc, icon, url)
             end
             sf.CanvasSize = UDim2.new(0, 0, 0, cnt * 35 + 10)
         else
+            if name == "驾驶帝国" then pcall(function() getgenv().XiaoPi = "皮脚本-驾驶帝国" end) end
             pcall(function() loadstring(game:HttpGet(url))() end)
         end
         wait(0.3)
@@ -522,80 +523,33 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
             elseif runCode == "antiafk" then local vu = game:GetService("VirtualUser"); Players.LocalPlayer.Idled:Connect(function() vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame); wait(1); vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame) end)
             elseif runCode == "deletepart" then
                 local mouse = Players.LocalPlayer:GetMouse()
-                local curGui = nil
-                local curHl = nil
+                local curGui = nil; local curHl = nil
                 infJumpConnection = mouse.Button1Down:Connect(function()
                     local t = mouse.Target
                     if t then
                         if curGui then curGui:Destroy() end
                         if curHl then curHl:Destroy() end
-                        curHl = Instance.new("Highlight")
-                        curHl.FillColor = Color3.fromRGB(255, 0, 0)
-                        curHl.FillTransparency = 0.5
-                        curHl.OutlineColor = Color3.fromRGB(255, 0, 0)
-                        curHl.Adornee = t
-                        curHl.Parent = t
-                        local cg = Instance.new("ScreenGui")
-                        cg.Parent = PlayerGui
-                        curGui = cg
-                        local frame = Instance.new("Frame")
-                        frame.Size = UDim2.new(0, 300, 0, 140)
-                        frame.Position = UDim2.new(0.5, -150, 0.5, -70)
-                        frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-                        frame.BorderSizePixel = 0
-                        frame.ZIndex = 99
-                        frame.Parent = cg
-                        local frameCorner = Instance.new("UICorner")
-                        frameCorner.CornerRadius = UDim.new(0, 10)
-                        frameCorner.Parent = frame
-                        local text = Instance.new("TextLabel")
-                        text.Size = UDim2.new(1, 0, 0, 50)
-                        text.Text = "确定删除此建模吗？"
-                        text.TextColor3 = Color3.fromRGB(255, 255, 255)
-                        text.Font = Enum.Font.GothamBold
-                        text.TextSize = 16
-                        text.BackgroundTransparency = 1
-                        text.ZIndex = 100
-                        text.Parent = frame
-                        local confirmBtn = Instance.new("TextButton")
-                        confirmBtn.Size = UDim2.new(0, 120, 0, 36)
-                        confirmBtn.Position = UDim2.new(0, 20, 0, 80)
-                        confirmBtn.Text = "确定删除"
-                        confirmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-                        confirmBtn.Font = Enum.Font.GothamBold
-                        confirmBtn.TextSize = 14
-                        confirmBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-                        confirmBtn.BorderSizePixel = 0
-                        confirmBtn.ZIndex = 100
-                        confirmBtn.AutoButtonColor = false
-                        confirmBtn.Parent = frame
-                        local confirmCorner = Instance.new("UICorner")
-                        confirmCorner.CornerRadius = UDim.new(0, 6)
-                        confirmCorner.Parent = confirmBtn
-                        confirmBtn.MouseButton1Click:Connect(function()
-                            if curHl then curHl:Destroy() end
-                            t:Destroy()
-                            cg:Destroy()
-                        end)
-                        local cancelBtn = Instance.new("TextButton")
-                        cancelBtn.Size = UDim2.new(0, 120, 0, 36)
-                        cancelBtn.Position = UDim2.new(0, 160, 0, 80)
-                        cancelBtn.Text = "取消"
-                        cancelBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-                        cancelBtn.Font = Enum.Font.GothamBold
-                        cancelBtn.TextSize = 14
-                        cancelBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-                        cancelBtn.BorderSizePixel = 0
-                        cancelBtn.ZIndex = 100
-                        cancelBtn.AutoButtonColor = false
-                        cancelBtn.Parent = frame
-                        local cancelCorner = Instance.new("UICorner")
-                        cancelCorner.CornerRadius = UDim.new(0, 6)
-                        cancelCorner.Parent = cancelBtn
-                        cancelBtn.MouseButton1Click:Connect(function()
-                            if curHl then curHl:Destroy() end
-                            cg:Destroy()
-                        end)
+                        curHl = Instance.new("Highlight"); curHl.FillColor = Color3.fromRGB(255, 0, 0); curHl.FillTransparency = 0.5
+                        curHl.OutlineColor = Color3.fromRGB(255, 0, 0); curHl.Adornee = t; curHl.Parent = t
+                        local cg = Instance.new("ScreenGui"); cg.Parent = PlayerGui; curGui = cg
+                        local frame = Instance.new("Frame"); frame.Size = UDim2.new(0, 300, 0, 140); frame.Position = UDim2.new(0.5, -150, 0.5, -70)
+                        frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40); frame.BorderSizePixel = 0; frame.ZIndex = 99; frame.Parent = cg
+                        local frameCorner = Instance.new("UICorner"); frameCorner.CornerRadius = UDim.new(0, 10); frameCorner.Parent = frame
+                        local text = Instance.new("TextLabel"); text.Size = UDim2.new(1, 0, 0, 50); text.Text = "确定删除此建模吗？"
+                        text.TextColor3 = Color3.fromRGB(255, 255, 255); text.Font = Enum.Font.GothamBold; text.TextSize = 16
+                        text.BackgroundTransparency = 1; text.ZIndex = 100; text.Parent = frame
+                        local confirmBtn = Instance.new("TextButton"); confirmBtn.Size = UDim2.new(0, 120, 0, 36); confirmBtn.Position = UDim2.new(0, 20, 0, 80)
+                        confirmBtn.Text = "确定删除"; confirmBtn.TextColor3 = Color3.fromRGB(255, 255, 255); confirmBtn.Font = Enum.Font.GothamBold
+                        confirmBtn.TextSize = 14; confirmBtn.BackgroundColor3 = Color3.fromRGB(255, 60, 60); confirmBtn.BorderSizePixel = 0
+                        confirmBtn.ZIndex = 100; confirmBtn.AutoButtonColor = false; confirmBtn.Parent = frame
+                        local confirmCorner = Instance.new("UICorner"); confirmCorner.CornerRadius = UDim.new(0, 6); confirmCorner.Parent = confirmBtn
+                        confirmBtn.MouseButton1Click:Connect(function() if curHl then curHl:Destroy() end; t:Destroy(); cg:Destroy() end)
+                        local cancelBtn = Instance.new("TextButton"); cancelBtn.Size = UDim2.new(0, 120, 0, 36); cancelBtn.Position = UDim2.new(0, 160, 0, 80)
+                        cancelBtn.Text = "取消"; cancelBtn.TextColor3 = Color3.fromRGB(255, 255, 255); cancelBtn.Font = Enum.Font.GothamBold
+                        cancelBtn.TextSize = 14; cancelBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100); cancelBtn.BorderSizePixel = 0
+                        cancelBtn.ZIndex = 100; cancelBtn.AutoButtonColor = false; cancelBtn.Parent = frame
+                        local cancelCorner = Instance.new("UICorner"); cancelCorner.CornerRadius = UDim.new(0, 6); cancelCorner.Parent = cancelBtn
+                        cancelBtn.MouseButton1Click:Connect(function() if curHl then curHl:Destroy() end; cg:Destroy() end)
                     end
                 end)
             elseif runCode == "infjump" then infJumpEnabled = true; infJumpConnection = UserInputService.JumpRequest:Connect(function() if infJumpEnabled then local c = Players.LocalPlayer.Character; if c and c:FindFirstChild("Humanoid") then c.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end end end) end
@@ -605,10 +559,8 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
             if runCode == "esp" then disableESP()
             elseif runCode == "night" then Lighting.Brightness = 1; Lighting.GlobalShadows = true
             elseif runCode == "fps" then fpsEnabled = false; FPSLabel.Visible = false
-            elseif runCode == "float" then
-                if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
-            elseif runCode == "deletepart" then
-                if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
+            elseif runCode == "float" then if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
+            elseif runCode == "deletepart" then if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
             elseif runCode == "infjump" then infJumpEnabled = false; if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end end
         end
     end)
@@ -698,12 +650,19 @@ local pageContents = {
             {type = "toggle", name = "ESP透视", desc = "红色描边+名字可穿墙", icon = "👁️", code = "esp"},
         }
     },
+    ["甩飞"] = {
+        type = "buttons",
+        items = {
+            {name = "多人甩飞", desc = "选择玩家然后甩飞", icon = "💨", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/%E7%94%A9%E9%A3%9E"},
+        }
+    },
     ["服务器"] = {
         type = "buttons",
         items = {
             {name = "磁铁轨服务器", desc = "点击执行", icon = "🔧", url = "https://raw.githubusercontent.com/erewe23/deadrailsring.github.io/refs/heads/main/ringta.lua"},
             {name = "柠檬大亨", desc = "点击执行", icon = "🍋", url = "https://rawscripts.net/raw/Sell-Lemons-Fluid-Orchard-Update-Read-Description-241132"},
             {name = "键盘逃脱", desc = "点击执行", icon = "⌨️", url = "https://raw.githubusercontent.com/ccdushii/zzzzzzzzz/refs/heads/main/ssssssssss"},
+            {name = "驾驶帝国", desc = "皮脚本版", icon = "🚗", url = "https://raw.githubusercontent.com/xiaopi77/xiaopi77/refs/heads/main/Roblox-Pi-Drivingempire-Script.lua"},
         }
     },
     ["国内脚本"] = {
