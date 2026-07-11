@@ -1,0 +1,849 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+local player = Players.LocalPlayer
+local mouse = player:GetMouse()
+
+if player:FindFirstChild("AIMBOT_TAG") then return end
+local tag = Instance.new("BoolValue")
+tag.Name = "AIMBOT_TAG"
+tag.Parent = player
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "AimbotGUI"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local floatingWindow = Instance.new("Frame")
+floatingWindow.Size = UDim2.new(0, 80, 0, 40)
+floatingWindow.Position = UDim2.new(0, 20, 0.5, -20)
+floatingWindow.AnchorPoint = Vector2.new(0, 0.5)
+floatingWindow.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+floatingWindow.BackgroundTransparency = 0.2
+floatingWindow.BorderSizePixel = 0
+floatingWindow.Active = true
+floatingWindow.Selectable = true
+Instance.new("UICorner", floatingWindow).CornerRadius = UDim.new(0, 8)
+
+local windowLabel = Instance.new("TextLabel")
+windowLabel.Size = UDim2.new(1, 0, 1, 0)
+windowLabel.BackgroundTransparency = 1
+windowLabel.Text = "辅助"
+windowLabel.TextColor3 = Color3.new(1, 1, 1)
+windowLabel.Font = Enum.Font.GothamBold
+windowLabel.TextScaled = true
+windowLabel.Parent = floatingWindow
+
+floatingWindow.Parent = gui
+
+local mainPanel = Instance.new("Frame")
+mainPanel.Size = UDim2.new(0, 300, 0, 500)
+mainPanel.Position = UDim2.new(0, 20, 0.5, 30)
+mainPanel.AnchorPoint = Vector2.new(0, 0.5)
+mainPanel.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+mainPanel.BackgroundTransparency = 0.1
+mainPanel.BorderSizePixel = 0
+mainPanel.Visible = false
+mainPanel.Active = true
+mainPanel.Selectable = true
+Instance.new("UICorner", mainPanel).CornerRadius = UDim.new(0, 12)
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundTransparency = 1
+title.Text = "辅助控制面板"
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.Parent = mainPanel
+
+local categoryFrame = Instance.new("Frame")
+categoryFrame.Size = UDim2.new(0, 100, 1, -40)
+categoryFrame.Position = UDim2.new(0, 0, 0, 40)
+categoryFrame.BackgroundTransparency = 1
+categoryFrame.Parent = mainPanel
+
+local contentFrame = Instance.new("Frame")
+contentFrame.Size = UDim2.new(1, -100, 1, -40)
+contentFrame.Position = UDim2.new(0, 100, 0, 40)
+contentFrame.BackgroundTransparency = 1
+contentFrame.Parent = mainPanel
+
+mainPanel.Parent = gui
+
+local categories = {
+    {"自瞄", "Aimbot"},
+    {"ESP透视", "ESP"},
+    {"自动开火", "TriggerBot"},
+    {"设置", "Settings"}
+}
+
+local currentCategory = "Aimbot"
+
+local aimbotEnabled = false
+local aimbotConnection
+local currentTarget = nil
+local fovCircle = 100
+local smoothness = 0.2
+local aimPart = "Head"
+
+local espEnabled = false
+local nameEspEnabled = false
+local boxEspEnabled = false
+local skeletonEspEnabled = false
+local espConnections = {}
+local espObjects = {}
+
+local triggerBotEnabled = false
+local triggerBotConnection
+local triggerDelay = 0.1
+local lastTriggerTime = 0
+
+for i, category in ipairs(categories) do
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -10, 0, 35)
+    btn.Position = UDim2.new(0, 5, 0, (i-1) * 40 + 5)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    btn.Text = category[1]
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 14
+    btn.AutoButtonColor = true
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    
+    btn.MouseButton1Click:Connect(function()
+        currentCategory = category[2]
+        updateContent()
+    end)
+    
+    btn.Parent = categoryFrame
+end
+
+function updateContent()
+    for _, child in ipairs(contentFrame:GetChildren()) do
+        child:Destroy()
+    end
+    
+    if currentCategory == "Aimbot" then
+        createAimbotContent()
+    elseif currentCategory == "ESP" then
+        createESPContent()
+    elseif currentCategory == "TriggerBot" then
+        createTriggerBotContent()
+    elseif currentCategory == "Settings" then
+        createSettingsContent()
+    end
+end
+
+function createAimbotContent()
+    local layoutY = 10
+    
+    local aimbotToggle = Instance.new("TextButton")
+    aimbotToggle.Size = UDim2.new(1, -20, 0, 40)
+    aimbotToggle.Position = UDim2.new(0, 10, 0, layoutY)
+    aimbotToggle.BackgroundColor3 = aimbotEnabled and Color3.fromRGB(76, 175, 80) or Color3.fromRGB(200, 60, 60)
+    aimbotToggle.Text = aimbotEnabled and "自瞄: 开启" or "自瞄: 关闭"
+    aimbotToggle.TextColor3 = Color3.new(1, 1, 1)
+    aimbotToggle.Font = Enum.Font.GothamBold
+    aimbotToggle.TextSize = 16
+    aimbotToggle.AutoButtonColor = true
+    aimbotToggle.ZIndex = 10
+    Instance.new("UICorner", aimbotToggle).CornerRadius = UDim.new(0, 8)
+    
+    aimbotToggle.MouseButton1Click:Connect(function()
+        aimbotEnabled = not aimbotEnabled
+        aimbotToggle.BackgroundColor3 = aimbotEnabled and Color3.fromRGB(76, 175, 80) or Color3.fromRGB(200, 60, 60)
+        aimbotToggle.Text = aimbotEnabled and "自瞄: 开启" or "自瞄: 关闭"
+        
+        if aimbotEnabled then
+            startAimbot()
+        else
+            stopAimbot()
+            currentTarget = nil
+        end
+    end)
+    
+    aimbotToggle.Parent = contentFrame
+    layoutY = layoutY + 50
+    
+    local partLabel = Instance.new("TextLabel")
+    partLabel.Size = UDim2.new(1, -20, 0, 25)
+    partLabel.Position = UDim2.new(0, 10, 0, layoutY)
+    partLabel.BackgroundTransparency = 1
+    partLabel.Text = "瞄准部位: 头部"
+    partLabel.TextColor3 = Color3.new(1, 1, 1)
+    partLabel.Font = Enum.Font.Gotham
+    partLabel.TextSize = 14
+    partLabel.TextXAlignment = Enum.TextXAlignment.Left
+    partLabel.Parent = contentFrame
+    
+    layoutY = layoutY + 30
+    
+    local partToggle = Instance.new("TextButton")
+    partToggle.Size = UDim2.new(1, -20, 0, 35)
+    partToggle.Position = UDim2.new(0, 10, 0, layoutY)
+    partToggle.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
+    partToggle.Text = "切换部位 (头/躯干)"
+    partToggle.TextColor3 = Color3.new(1, 1, 1)
+    partToggle.Font = Enum.Font.Gotham
+    partToggle.TextSize = 14
+    partToggle.AutoButtonColor = true
+    Instance.new("UICorner", partToggle).CornerRadius = UDim.new(0, 6)
+    
+    partToggle.MouseButton1Click:Connect(function()
+        if aimPart == "Head" then
+            aimPart = "HumanoidRootPart"
+            partLabel.Text = "瞄准部位: 躯干"
+        else
+            aimPart = "Head"
+            partLabel.Text = "瞄准部位: 头部"
+        end
+    end)
+    
+    partToggle.Parent = contentFrame
+    layoutY = layoutY + 45
+    
+    local targetInfo = Instance.new("TextLabel")
+    targetInfo.Size = UDim2.new(1, -20, 0, 40)
+    targetInfo.Position = UDim2.new(0, 10, 0, layoutY)
+    targetInfo.BackgroundTransparency = 1
+    targetInfo.Text = "当前目标: 无"
+    targetInfo.TextColor3 = Color3.new(1, 1, 1)
+    targetInfo.Font = Enum.Font.Gotham
+    targetInfo.TextSize = 12
+    targetInfo.TextWrapped = true
+    targetInfo.TextXAlignment = Enum.TextXAlignment.Left
+    targetInfo.Parent = contentFrame
+    
+    local infoUpdateConnection
+    infoUpdateConnection = RunService.Heartbeat:Connect(function()
+        if aimbotEnabled and currentTarget then
+            local targetPlayer = getPlayerFromCharacter(currentTarget)
+            if targetPlayer then
+                targetInfo.Text = "当前目标: " .. targetPlayer.Name
+            else
+                targetInfo.Text = "当前目标: 未知"
+            end
+        else
+            targetInfo.Text = "当前目标: 无"
+        end
+    end)
+end
+
+function createESPContent()
+    local layoutY = 10
+    
+    local nameEspBtn = Instance.new("TextButton")
+    nameEspBtn.Size = UDim2.new(1, -20, 0, 35)
+    nameEspBtn.Position = UDim2.new(0, 10, 0, layoutY)
+    nameEspBtn.BackgroundColor3 = nameEspEnabled and Color3.fromRGB(76, 175, 80) or Color3.fromRGB(70, 70, 80)
+    nameEspBtn.Text = "显示玩家名称"
+    nameEspBtn.TextColor3 = Color3.new(1, 1, 1)
+    nameEspBtn.Font = Enum.Font.Gotham
+    nameEspBtn.TextSize = 14
+    nameEspBtn.AutoButtonColor = true
+    Instance.new("UICorner", nameEspBtn).CornerRadius = UDim.new(0, 6)
+    
+    nameEspBtn.MouseButton1Click:Connect(function()
+        nameEspEnabled = not nameEspEnabled
+        nameEspBtn.BackgroundColor3 = nameEspEnabled and Color3.fromRGB(76, 175, 80) or Color3.fromRGB(70, 70, 80)
+        updateESP()
+    end)
+    
+    nameEspBtn.Parent = contentFrame
+    layoutY = layoutY + 45
+    
+    local boxEspBtn = Instance.new("TextButton")
+    boxEspBtn.Size = UDim2.new(1, -20, 0, 35)
+    boxEspBtn.Position = UDim2.new(0, 10, 0, layoutY)
+    boxEspBtn.BackgroundColor3 = boxEspEnabled and Color3.fromRGB(148, 0, 211) or Color3.fromRGB(70, 70, 80)
+    boxEspBtn.Text = "显示方框"
+    boxEspBtn.TextColor3 = Color3.new(1, 1, 1)
+    boxEspBtn.Font = Enum.Font.Gotham
+    boxEspBtn.TextSize = 14
+    boxEspBtn.AutoButtonColor = true
+    Instance.new("UICorner", boxEspBtn).CornerRadius = UDim.new(0, 6)
+    
+    boxEspBtn.MouseButton1Click:Connect(function()
+        boxEspEnabled = not boxEspEnabled
+        boxEspBtn.BackgroundColor3 = boxEspEnabled and Color3.fromRGB(148, 0, 211) or Color3.fromRGB(70, 70, 80)
+        updateESP()
+    end)
+    
+    boxEspBtn.Parent = contentFrame
+    layoutY = layoutY + 45
+    
+    local skeletonEspBtn = Instance.new("TextButton")
+    skeletonEspBtn.Size = UDim2.new(1, -20, 0, 35)
+    skeletonEspBtn.Position = UDim2.new(0, 10, 0, layoutY)
+    skeletonEspBtn.BackgroundColor3 = skeletonEspEnabled and Color3.fromRGB(255, 165, 0) or Color3.fromRGB(70, 70, 80)
+    skeletonEspBtn.Text = "显示骨骼"
+    skeletonEspBtn.TextColor3 = Color3.new(1, 1, 1)
+    skeletonEspBtn.Font = Enum.Font.Gotham
+    skeletonEspBtn.TextSize = 14
+    skeletonEspBtn.AutoButtonColor = true
+    Instance.new("UICorner", skeletonEspBtn).CornerRadius = UDim.new(0, 6)
+    
+    skeletonEspBtn.MouseButton1Click:Connect(function()
+        skeletonEspEnabled = not skeletonEspEnabled
+        skeletonEspBtn.BackgroundColor3 = skeletonEspEnabled and Color3.fromRGB(255, 165, 0) or Color3.fromRGB(70, 70, 80)
+        updateESP()
+    end)
+    
+    skeletonEspBtn.Parent = contentFrame
+    layoutY = layoutY + 45
+    
+    local disableAllBtn = Instance.new("TextButton")
+    disableAllBtn.Size = UDim2.new(1, -20, 0, 35)
+    disableAllBtn.Position = UDim2.new(0, 10, 0, layoutY)
+    disableAllBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+    disableAllBtn.Text = "关闭所有"
+    disableAllBtn.TextColor3 = Color3.new(1, 1, 1)
+    disableAllBtn.Font = Enum.Font.Gotham
+    disableAllBtn.TextSize = 14
+    disableAllBtn.AutoButtonColor = true
+    Instance.new("UICorner", disableAllBtn).CornerRadius = UDim.new(0, 6)
+    
+    disableAllBtn.MouseButton1Click:Connect(function()
+        nameEspEnabled = false
+        boxEspEnabled = false
+        skeletonEspEnabled = false
+        nameEspBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
+        boxEspBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
+        skeletonEspBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
+        clearESP()
+    end)
+    
+    disableAllBtn.Parent = contentFrame
+    layoutY = layoutY + 45
+    
+    local espInfo = Instance.new("TextLabel")
+    espInfo.Size = UDim2.new(1, -20, 0, 60)
+    espInfo.Position = UDim2.new(0, 10, 0, layoutY)
+    espInfo.BackgroundTransparency = 1
+    espInfo.Text = "ESP状态: 关闭\n可透过墙壁看到玩家位置"
+    espInfo.TextColor3 = Color3.new(1, 1, 1)
+    espInfo.Font = Enum.Font.Gotham
+    espInfo.TextSize = 12
+    espInfo.TextWrapped = true
+    espInfo.TextXAlignment = Enum.TextXAlignment.Left
+    espInfo.Parent = contentFrame
+    
+    local espInfoConnection
+    espInfoConnection = RunService.Heartbeat:Connect(function()
+        local activeCount = 0
+        if nameEspEnabled then activeCount = activeCount + 1 end
+        if boxEspEnabled then activeCount = activeCount + 1 end
+        if skeletonEspEnabled then activeCount = activeCount + 1 end
+        
+        if activeCount > 0 then
+            espInfo.Text = "ESP状态: 开启 (" .. activeCount .. "个功能)\n可透过墙壁看到玩家位置"
+        else
+            espInfo.Text = "ESP状态: 关闭\n可透过墙壁看到玩家位置"
+        end
+    end)
+end
+
+function createTriggerBotContent()
+    local layoutY = 10
+    
+    local triggerBotToggle = Instance.new("TextButton")
+    triggerBotToggle.Size = UDim2.new(1, -20, 0, 40)
+    triggerBotToggle.Position = UDim2.new(0, 10, 0, layoutY)
+    triggerBotToggle.BackgroundColor3 = triggerBotEnabled and Color3.fromRGB(76, 175, 80) or Color3.fromRGB(200, 60, 60)
+    triggerBotToggle.Text = triggerBotEnabled and "自动开火: 开启" or "自动开火: 关闭"
+    triggerBotToggle.TextColor3 = Color3.new(1, 1, 1)
+    triggerBotToggle.Font = Enum.Font.GothamBold
+    triggerBotToggle.TextSize = 16
+    triggerBotToggle.AutoButtonColor = true
+    triggerBotToggle.ZIndex = 10
+    Instance.new("UICorner", triggerBotToggle).CornerRadius = UDim.new(0, 8)
+    
+    triggerBotToggle.MouseButton1Click:Connect(function()
+        triggerBotEnabled = not triggerBotEnabled
+        triggerBotToggle.BackgroundColor3 = triggerBotEnabled and Color3.fromRGB(76, 175, 80) or Color3.fromRGB(200, 60, 60)
+        triggerBotToggle.Text = triggerBotEnabled and "自动开火: 开启" or "自动开火: 关闭"
+        
+        if triggerBotEnabled then
+            startTriggerBot()
+        else
+            stopTriggerBot()
+        end
+    end)
+    
+    triggerBotToggle.Parent = contentFrame
+    layoutY = layoutY + 50
+    
+    local triggerInfo = Instance.new("TextLabel")
+    triggerInfo.Size = UDim2.new(1, -20, 0, 80)
+    triggerInfo.Position = UDim2.new(0, 10, 0, layoutY)
+    triggerInfo.BackgroundTransparency = 1
+    triggerInfo.Text = "状态: 关闭\n效果: 看到敌人自动开火\n延迟: " .. triggerDelay .. "秒"
+    triggerInfo.TextColor3 = Color3.new(1, 1, 1)
+    triggerInfo.Font = Enum.Font.Gotham
+    triggerInfo.TextSize = 12
+    triggerInfo.TextWrapped = true
+    triggerInfo.TextXAlignment = Enum.TextXAlignment.Left
+    triggerInfo.Parent = contentFrame
+    
+    local triggerInfoConnection
+    triggerInfoConnection = RunService.Heartbeat:Connect(function()
+        if triggerBotEnabled then
+            triggerInfo.Text = "状态: 开启\n效果: 看到敌人自动开火\n延迟: " .. triggerDelay .. "秒\n正在搜索目标..."
+        else
+            triggerInfo.Text = "状态: 关闭\n效果: 看到敌人自动开火\n延迟: " .. triggerDelay .. "秒"
+        end
+    end)
+end
+function createSettingsContent()
+    local layoutY = 10
+    
+    local fovLabel = Instance.new("TextLabel")
+    fovLabel.Size = UDim2.new(1, -20, 0, 25)
+    fovLabel.Position = UDim2.new(0, 10, 0, layoutY)
+    fovLabel.BackgroundTransparency = 1
+    fovLabel.Text = "瞄准范围: " .. fovCircle
+    fovLabel.TextColor3 = Color3.new(1, 1, 1)
+    fovLabel.Font = Enum.Font.Gotham
+    fovLabel.TextSize = 14
+    fovLabel.TextXAlignment = Enum.TextXAlignment.Left
+    fovLabel.Parent = contentFrame
+    
+    layoutY = layoutY + 30
+    
+    local sliderFov = Instance.new("Frame")
+    sliderFov.Size = UDim2.new(1, -20, 0, 12)
+    sliderFov.Position = UDim2.new(0, 10, 0, layoutY)
+    sliderFov.BackgroundColor3 = Color3.new(1, 1, 1)
+    sliderFov.BackgroundTransparency = 0.7
+    sliderFov.Active = true
+    sliderFov.Selectable = true
+    Instance.new("UICorner", sliderFov).CornerRadius = UDim.new(1, 0)
+    sliderFov.Parent = contentFrame
+
+    local fillFov = Instance.new("Frame")
+    fillFov.Size = UDim2.new((fovCircle - 10) / 190, 0, 1, 0)
+    fillFov.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
+    fillFov.BorderSizePixel = 0
+    Instance.new("UICorner", fillFov).CornerRadius = UDim.new(1, 0)
+    fillFov.Parent = sliderFov
+
+    local draggingFov = false
+    local function updateFov(x)
+        local sliderAbsolutePos = sliderFov.AbsolutePosition
+        local sliderAbsoluteSize = sliderFov.AbsoluteSize
+        local rel = math.clamp((x - sliderAbsolutePos.X) / sliderAbsoluteSize.X, 0, 1)
+        fillFov.Size = UDim2.new(rel, 0, 1, 0)
+        local newFov = math.floor(rel * 190 + 10)
+        fovCircle = newFov
+        fovLabel.Text = "瞄准范围: " .. tostring(newFov)
+    end
+
+    sliderFov.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            draggingFov = true
+            updateFov(inp.Position.X)
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            draggingFov = false
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(inp)
+        if draggingFov and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+            updateFov(inp.Position.X)
+        end
+    end)
+    
+    layoutY = layoutY + 30
+    
+    local smoothLabel = Instance.new("TextLabel")
+    smoothLabel.Size = UDim2.new(1, -20, 0, 25)
+    smoothLabel.Position = UDim2.new(0, 10, 0, layoutY)
+    smoothLabel.BackgroundTransparency = 1
+    smoothLabel.Text = "平滑度: " .. string.format("%.2f", smoothness)
+    smoothLabel.TextColor3 = Color3.new(1, 1, 1)
+    smoothLabel.Font = Enum.Font.Gotham
+    smoothLabel.TextSize = 14
+    smoothLabel.TextXAlignment = Enum.TextXAlignment.Left
+    smoothLabel.Parent = contentFrame
+    
+    layoutY = layoutY + 30
+    
+    local sliderSmooth = Instance.new("Frame")
+    sliderSmooth.Size = UDim2.new(1, -20, 0, 12)
+    sliderSmooth.Position = UDim2.new(0, 10, 0, layoutY)
+    sliderSmooth.BackgroundColor3 = Color3.new(1, 1, 1)
+    sliderSmooth.BackgroundTransparency = 0.7
+    sliderSmooth.Active = true
+    sliderSmooth.Selectable = true
+    Instance.new("UICorner", sliderSmooth).CornerRadius = UDim.new(1, 0)
+    sliderSmooth.Parent = contentFrame
+
+    local fillSmooth = Instance.new("Frame")
+    fillSmooth.Size = UDim2.new(smoothness, 0, 1, 0)
+    fillSmooth.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
+    fillSmooth.BorderSizePixel = 0
+    Instance.new("UICorner", fillSmooth).CornerRadius = UDim.new(1, 0)
+    fillSmooth.Parent = sliderSmooth
+
+    local draggingSmooth = false
+    local function updateSmooth(x)
+        local sliderAbsolutePos = sliderSmooth.AbsolutePosition
+        local sliderAbsoluteSize = sliderSmooth.AbsoluteSize
+        local rel = math.clamp((x - sliderAbsolutePos.X) / sliderAbsoluteSize.X, 0, 1)
+        fillSmooth.Size = UDim2.new(rel, 0, 1, 0)
+        local newSmooth = math.floor(rel * 100) / 100
+        smoothness = newSmooth
+        smoothLabel.Text = "平滑度: " .. string.format("%.2f", newSmooth)
+    end
+
+    sliderSmooth.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            draggingSmooth = true
+            updateSmooth(inp.Position.X)
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            draggingSmooth = false
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(inp)
+        if draggingSmooth and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+            updateSmooth(inp.Position.X)
+        end
+    end)
+end
+
+function getPlayerFromCharacter(character)
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr.Character == character then
+            return plr
+        end
+    end
+    return nil
+end
+
+function createESPForPlayer(targetPlayer)
+    local character = targetPlayer.Character
+    if not character then return end
+    
+    local humanoid = character:FindFirstChild("Humanoid")
+    local head = character:FindFirstChild("Head")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    
+    if not humanoid or not head or not rootPart then return end
+    
+    local espData = {
+        player = targetPlayer,
+        character = character,
+        labels = {},
+        boxes = {},
+        lines = {}
+    }
+    
+    espObjects[targetPlayer] = espData
+    
+    if nameEspEnabled then
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Name = "ESP_Name_" .. targetPlayer.Name
+        nameLabel.Text = targetPlayer.Name
+        nameLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+        nameLabel.TextSize = 14
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.TextStrokeTransparency = 0
+        nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+        nameLabel.ZIndex = 10
+        nameLabel.Parent = gui
+        table.insert(espData.labels, nameLabel)
+    end
+    
+    if boxEspEnabled then
+        local boxFrame = Instance.new("Frame")
+        boxFrame.Name = "ESP_Box_" .. targetPlayer.Name
+        boxFrame.BackgroundTransparency = 0.8
+        boxFrame.BackgroundColor3 = Color3.fromRGB(148, 0, 211)
+        boxFrame.BorderSizePixel = 2
+        boxFrame.BorderColor3 = Color3.fromRGB(148, 0, 211)
+        boxFrame.ZIndex = 5
+        boxFrame.Parent = gui
+        table.insert(espData.boxes, boxFrame)
+    end
+    
+    if skeletonEspEnabled then
+        local bodyParts = {
+            "Head", "UpperTorso", "LowerTorso", "LeftUpperArm", "RightUpperArm",
+            "LeftLowerArm", "RightLowerArm", "LeftUpperLeg", "RightUpperLeg",
+            "LeftLowerLeg", "RightLowerLeg", "LeftFoot", "RightFoot"
+        }
+        
+        for _, partName in ipairs(bodyParts) do
+            local part = character:FindFirstChild(partName)
+            if part then
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "ESP_Skeleton_" .. partName .. "_" .. targetPlayer.Name
+                highlight.FillColor = Color3.fromRGB(255, 165, 0)
+                highlight.FillTransparency = 0.7
+                highlight.OutlineColor = Color3.fromRGB(255, 165, 0)
+                highlight.OutlineTransparency = 0
+                highlight.Adornee = part
+                highlight.Parent = character
+                table.insert(espData.lines, highlight)
+            end
+        end
+    end
+end
+
+function updateESP()
+    clearESP()
+    
+    if not (nameEspEnabled or boxEspEnabled or skeletonEspEnabled) then
+        return
+    end
+    
+    for _, otherPlayer in ipairs(Players:GetPlayers()) do
+        if otherPlayer ~= player then
+            createESPForPlayer(otherPlayer)
+        end
+    end
+    
+    espConnections.update = RunService.RenderStepped:Connect(function()
+        for targetPlayer, espData in pairs(espObjects) do
+            local character = espData.character
+            if character and character:IsDescendantOf(workspace) then
+                local head = character:FindFirstChild("Head")
+                local humanoid = character:FindFirstChild("Humanoid")
+                
+                if head and humanoid and humanoid.Health > 0 then
+                    local camera = workspace.CurrentCamera
+                    local headScreenPos, headVisible = camera:WorldToViewportPoint(head.Position)
+                    
+                    if nameEspEnabled then
+                        for _, label in ipairs(espData.labels) do
+                            if label:IsA("TextLabel") then
+                                label.Visible = true
+                                label.Position = UDim2.new(0, headScreenPos.X, 0, headScreenPos.Y - 50)
+                            end
+                        end
+                    end
+                    
+                    if boxEspEnabled then
+                        for _, box in ipairs(espData.boxes) do
+                            if box:IsA("Frame") then
+                                box.Visible = true
+                                box.Size = UDim2.new(0, 100, 0, 200)
+                                box.Position = UDim2.new(0, headScreenPos.X - 50, 0, headScreenPos.Y - 100)
+                            end
+                        end
+                    end
+                else
+                    for _, obj in ipairs(espData.labels) do
+                        obj.Visible = false
+                    end
+                    for _, obj in ipairs(espData.boxes) do
+                        obj.Visible = false
+                    end
+                end
+            else
+                for _, obj in ipairs(espData.labels) do
+                    obj.Visible = false
+                end
+                for _, obj in ipairs(espData.boxes) do
+                    obj.Visible = false
+                end
+            end
+        end
+    end)
+    
+    for _, otherPlayer in ipairs(Players:GetPlayers()) do
+        if otherPlayer ~= player then
+            espConnections[otherPlayer] = otherPlayer.CharacterAdded:Connect(function(character)
+                task.wait(1)
+                if nameEspEnabled or boxEspEnabled or skeletonEspEnabled then
+                    createESPForPlayer(otherPlayer)
+                end
+            end)
+        end
+    end
+end
+
+function clearESP()
+    if espConnections.update then
+        espConnections.update:Disconnect()
+        espConnections.update = nil
+    end
+    
+    for player, connection in pairs(espConnections) do
+        if player ~= "update" then
+            connection:Disconnect()
+        end
+    end
+    espConnections = {}
+    
+    for _, espData in pairs(espObjects) do
+        for _, label in ipairs(espData.labels) do
+            label:Destroy()
+        end
+        for _, box in ipairs(espData.boxes) do
+            box:Destroy()
+        end
+        for _, line in ipairs(espData.lines) do
+            line:Destroy()
+        end
+    end
+    espObjects = {}
+end
+
+function startTriggerBot()
+    if triggerBotConnection then
+        triggerBotConnection:Disconnect()
+    end
+    
+    triggerBotConnection = RunService.RenderStepped:Connect(function()
+        if not triggerBotEnabled then
+            return
+        end
+        
+        local currentTime = tick()
+        if currentTime - lastTriggerTime < triggerDelay then
+            return
+        end
+        
+        local target = getTarget()
+        if target then
+            VirtualInputManager:SendMouseButtonEvent(mouse.X, mouse.Y, 0, true, game, 1)
+            task.wait(0.05)
+            VirtualInputManager:SendMouseButtonEvent(mouse.X, mouse.Y, 0, false, game, 1)
+            lastTriggerTime = currentTime
+        end
+    end)
+end
+
+function stopTriggerBot()
+    if triggerBotConnection then
+        triggerBotConnection:Disconnect()
+        triggerBotConnection = nil
+    end
+end
+
+function getTarget()
+    local character = player.Character
+    if not character then 
+        return nil 
+    end
+    
+    local camera = workspace.CurrentCamera
+    local nearestTarget = nil
+    local nearestDistance = math.huge
+    local characterPosition = character:GetPivot().Position
+    
+    for _, otherPlayer in ipairs(Players:GetPlayers()) do
+        if otherPlayer ~= player and otherPlayer.Character then
+            local targetChar = otherPlayer.Character
+            local humanoid = targetChar:FindFirstChild("Humanoid")
+            local head = targetChar:FindFirstChild("Head")
+            local rootPart = targetChar:FindFirstChild("HumanoidRootPart")
+            
+            if humanoid and humanoid.Health > 0 and head and rootPart then
+                local targetPosition = rootPart.Position
+                local distance = (targetPosition - characterPosition).Magnitude
+                
+                local headScreenPos, headVisible = camera:WorldToScreenPoint(head.Position)
+                
+                if headVisible then
+                    local heightDifference = math.abs(targetPosition.Y - characterPosition.Y)
+                    
+                    if heightDifference < 10 then
+                        if distance < nearestDistance then
+                            local ray = Ray.new(camera.CFrame.Position, (head.Position - camera.CFrame.Position).Unit * 1000)
+                            local hit, position = workspace:FindPartOnRay(ray, character)
+                            
+                            if hit and hit:IsDescendantOf(targetChar) then
+                                nearestTarget = targetChar
+                                nearestDistance = distance
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    return nearestTarget
+end
+
+function startAimbot()
+    if aimbotConnection then
+        aimbotConnection:Disconnect()
+    end
+    
+    aimbotConnection = RunService.RenderStepped:Connect(function()
+        if not aimbotEnabled then
+            return
+        end
+        
+        local newTarget = getTarget()
+        
+        if newTarget then
+            currentTarget = newTarget
+            local camera = workspace.CurrentCamera
+            local targetAimPart = currentTarget:FindFirstChild(aimPart)
+            
+            if targetAimPart then
+                local currentCFrame = camera.CFrame
+                local targetPosition = targetAimPart.Position
+                local newCFrame = currentCFrame:Lerp(CFrame.lookAt(currentCFrame.Position, targetPosition), smoothness)
+                camera.CFrame = newCFrame
+            end
+        else
+            currentTarget = nil
+        end
+    end)
+end
+
+function stopAimbot()
+    if aimbotConnection then
+        aimbotConnection:Disconnect()
+        aimbotConnection = nil
+    end
+    currentTarget = nil
+end
+
+local clickDetector = Instance.new("TextButton")
+clickDetector.Size = UDim2.new(1, 0, 1, 0)
+clickDetector.BackgroundTransparency = 1
+clickDetector.Text = ""
+clickDetector.ZIndex = 10
+clickDetector.Parent = floatingWindow
+
+clickDetector.MouseButton1Click:Connect(function()
+    mainPanel.Visible = not mainPanel.Visible
+    if mainPanel.Visible then
+        updateContent()
+    end
+end)
+
+updateContent()
+
+player.CharacterAdded:Connect(function(newChar)
+    if aimbotEnabled then
+        task.wait(2)
+        startAimbot()
+    end
+    if triggerBotEnabled then
+        task.wait(2)
+        startTriggerBot()
+    end
+end)
+
