@@ -769,8 +769,36 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
             elseif runCode == "dance" then
                 local c = Players.LocalPlayer.Character
                 if c and c:FindFirstChild("Humanoid") then
-                    local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://5918726674"
-                    local track = c.Humanoid:LoadAnimation(anim); track:Play()
+                    local danceAnims = {
+                        "rbxassetid://5918726674",
+                        "rbxassetid://5917769989",
+                        "rbxassetid://4552521195",
+                        "rbxassetid://3376836291",
+                        "rbxassetid://3332597652",
+                        "rbxassetid://2778935586",
+                        "rbxassetid://2483492072",
+                        "rbxassetid://507770038",
+                        "rbxassetid://507766388",
+                        "rbxassetid://507766666",
+                    }
+                    local currentDance = 1
+                    local danceActive = true
+                    local function playNextDance()
+                        if not danceActive then return end
+                        local anim = Instance.new("Animation")
+                        anim.AnimationId = danceAnims[currentDance]
+                        local track = c.Humanoid:LoadAnimation(anim)
+                        track:Play()
+                        currentDance = currentDance + 1
+                        if currentDance > #danceAnims then currentDance = 1 end
+                        track.Stopped:Connect(function()
+                            if danceActive then
+                                playNextDance()
+                            end
+                        end)
+                    end
+                    infJumpConnection = {Disconnect = function() danceActive = false end}
+                    playNextDance()
                 end
             elseif runCode == "fire" then
                 local c = Players.LocalPlayer.Character
@@ -892,6 +920,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
             elseif runCode == "autoattack" then if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
             elseif runCode == "fulllight" then Lighting.Brightness = 1; Lighting.GlobalShadows = true
             elseif runCode == "dance" then
+                if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
                 local c = Players.LocalPlayer.Character
                 if c and c:FindFirstChild("Humanoid") then
                     for _, t in ipairs(c.Humanoid:GetPlayingAnimationTracks()) do t:Stop() end
