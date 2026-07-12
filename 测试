@@ -498,7 +498,7 @@ for _, item in ipairs(navItems) do
     NavButton.MouseLeave:Connect(function() if NavButton ~= selectedNav then NavButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end end)
     table.insert(navButtons, {button = NavButton, name = item.name})
 end
--- 第2段：createButtonCard + createFeatureToggle 前半
+-- 第2段：createButtonCard + createFeatureToggle 前半（到 god 结束并接上 teamglow）
 
 local function createButtonCard(parent, name, desc, icon, url)
     local Card = Instance.new("Frame")
@@ -713,6 +713,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                         if c and c:FindFirstChild("Humanoid") then c.Humanoid.Health = 99999 end
                     end)
                 end
+            elseif runCode == "teamglow" then
 -- 第3段：createFeatureToggle 后半（teamglow 到结束）
 
             elseif runCode == "teamglow" then
