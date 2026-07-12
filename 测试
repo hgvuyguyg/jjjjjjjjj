@@ -974,7 +974,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
         end
     end)
 end
--- 第4段：createInputCard + 公告 + homePosition + pageContents
+-- 第4段：createInputCard + 公告 + homePosition + pageContents（只改整活功能部分）
 
 local function createInputCard(parent, name, description, icon, defaultValue, onExecute)
     local Card = Instance.new("Frame")
@@ -1036,7 +1036,7 @@ local function getTime()
 end
 local function updateTime()
     if announcementTextBox then
-        announcementTextBox.Text = "⏰ " .. getTime() .. "\n\n👤 制作者：CS Studio\n📅 创建日期：2026年7月10日\n🔄 此脚本一直更新\n\n🎮 玩法：开启功能后在游戏中体验效果"
+        announcementTextBox.Text = "⏰ " .. getTime() .. "\n\n👤 制作者：C Studio\n📅 创建日期：2026年7月10日\n🔄 此脚本一直更新\n\n🎮 玩法：开启功能后在游戏中体验效果"
     end
 end
 spawn(function() while true do updateTime(); wait(1) end end)
@@ -1105,7 +1105,17 @@ local pageContents = {
     ["整活功能"] = {
         type = "toggles",
         items = {
-            {type = "toggle", name = "跳舞模式", desc = "角色自动跳舞", icon = "💃", code = "dance"},
+            {type = "toggle", name = "跳舞1-机械舞", desc = "机器人风格舞蹈", icon = "🤖", code = "dance1"},
+            {type = "toggle", name = "跳舞2-街舞", desc = "嘻哈街舞风格", icon = "🕺", code = "dance2"},
+            {type = "toggle", name = "跳舞3-波浪舞", desc = "波浪动作舞蹈", icon = "🌊", code = "dance3"},
+            {type = "toggle", name = "跳舞4-旋转舞", desc = "旋转风格舞蹈", icon = "💫", code = "dance4"},
+            {type = "toggle", name = "跳舞5-摇摆舞", desc = "摇摆风格舞蹈", icon = "🎵", code = "dance5"},
+            {type = "toggle", name = "跳舞6-跳跃舞", desc = "跳跃风格舞蹈", icon = "🦘", code = "dance6"},
+            {type = "toggle", name = "跳舞7-老年舞", desc = "老年人风格舞蹈", icon = "👴", code = "dance7"},
+            {type = "toggle", name = "跳舞8-可爱舞", desc = "可爱风格舞蹈", icon = "🥰", code = "dance8"},
+            {type = "toggle", name = "跳舞9-疯狂舞", desc = "疯狂风格舞蹈", icon = "🤪", code = "dance9"},
+            {type = "toggle", name = "跳舞10-慢舞", desc = "慢速优雅舞蹈", icon = "🦢", code = "dance10"},
+            {type = "toggle", name = "跳舞-全部循环", desc = "循环播放所有舞蹈", icon = "🔄", code = "dance"},
             {type = "toggle", name = "喷火模式", desc = "从角色身上喷火", icon = "🔥", code = "fire"},
             {type = "toggle", name = "光环模式", desc = "角色发光环", icon = "✨", code = "glow"},
             {type = "toggle", name = "倒立行走", desc = "角色倒过来", icon = "🙃", code = "upsidedown"},
@@ -1193,7 +1203,3 @@ OpenBtn.MouseButton1Click:Connect(function()
 end)
 CloseButton.MouseButton1Click:Connect(function() closePanel() end)
 selectNav(navButtons[1].button, "公告")
-
-
-
-
