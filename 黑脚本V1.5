@@ -634,168 +634,6 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                         if c and c:FindFirstChild("Humanoid") then c.Humanoid.Health = 99999 end
                     end)
                 end
-                local function createInputCard(parent, name, description, icon, defaultValue, onExecute)
-    local Card = Instance.new("Frame")
-    Card.Size = UDim2.new(1, -16, 0, 46); Card.Position = UDim2.new(0, 8, 0, 0)
-    Card.BackgroundColor3 = Color3.fromRGB(252, 252, 252); Card.BorderSizePixel = 0; Card.ZIndex = 7; Card.Parent = parent
-    local CardCorner = Instance.new("UICorner"); CardCorner.CornerRadius = UDim.new(0, 10); CardCorner.Parent = Card
-    local CardStroke = Instance.new("UIStroke"); CardStroke.Color = Color3.fromRGB(230, 230, 230); CardStroke.Thickness = 1; CardStroke.Parent = Card
-    local IconFrame = Instance.new("Frame")
-    IconFrame.Size = UDim2.new(0, 26, 0, 26); IconFrame.Position = UDim2.new(0, 10, 0, 10)
-    IconFrame.BackgroundColor3 = Color3.fromRGB(240, 240, 240); IconFrame.BorderSizePixel = 0; IconFrame.ZIndex = 8; IconFrame.Parent = Card
-    local IconCorner = Instance.new("UICorner"); IconCorner.CornerRadius = UDim.new(0, 6); IconCorner.Parent = IconFrame
-    local IconText = Instance.new("TextLabel")
-    IconText.Size = UDim2.new(1, 0, 1, 0); IconText.Text = icon; IconText.TextSize = 11
-    IconText.BackgroundTransparency = 1; IconText.ZIndex = 9; IconText.Parent = IconFrame
-    local TitleText = Instance.new("TextLabel")
-    TitleText.Size = UDim2.new(0, 160, 0, 15); TitleText.Position = UDim2.new(0, 44, 0, 5)
-    TitleText.Text = name; TitleText.TextColor3 = Color3.fromRGB(50, 50, 50)
-    TitleText.Font = Enum.Font.GothamSemibold; TitleText.TextSize = 11
-    TitleText.BackgroundTransparency = 1; TitleText.TextXAlignment = Enum.TextXAlignment.Left; TitleText.ZIndex = 8; TitleText.Parent = Card
-    local DescText = Instance.new("TextLabel")
-    DescText.Size = UDim2.new(1, -140, 0, 13); DescText.Position = UDim2.new(0, 44, 0, 22)
-    DescText.Text = description .. " (默认" .. defaultValue .. ")"; DescText.TextColor3 = Color3.fromRGB(130, 130, 130)
-    DescText.Font = Enum.Font.Gotham; DescText.TextSize = 9; DescText.BackgroundTransparency = 1
-    DescText.TextXAlignment = Enum.TextXAlignment.Left; DescText.ZIndex = 8; DescText.Parent = Card
-    local InputBox = Instance.new("Frame")
-    InputBox.Size = UDim2.new(0, 55, 0, 20); InputBox.Position = UDim2.new(1, -128, 0, 13)
-    InputBox.BackgroundColor3 = Color3.fromRGB(235, 235, 235); InputBox.BorderSizePixel = 0; InputBox.ZIndex = 8; InputBox.Parent = Card
-    local InputCorner = Instance.new("UICorner"); InputCorner.CornerRadius = UDim.new(0, 5); InputCorner.Parent = InputBox
-    local InputField = Instance.new("TextBox")
-    InputField.Size = UDim2.new(1, -6, 1, 0); InputField.Position = UDim2.new(0, 3, 0, 0)
-    InputField.Text = defaultValue; InputField.TextColor3 = Color3.fromRGB(50, 50, 50)
-    InputField.Font = Enum.Font.Gotham; InputField.TextSize = 11; InputField.BackgroundTransparency = 1
-    InputField.PlaceholderText = defaultValue; InputField.PlaceholderColor3 = Color3.fromRGB(150, 150, 150); InputField.ZIndex = 9; InputField.Parent = InputBox
-    local ExecButton = Instance.new("TextButton")
-    ExecButton.Size = UDim2.new(0, 40, 0, 20); ExecButton.Position = UDim2.new(1, -46, 0, 13)
-    ExecButton.Text = "设置"; ExecButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ExecButton.Font = Enum.Font.GothamBold; ExecButton.TextSize = 10; ExecButton.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-    ExecButton.BorderSizePixel = 0; ExecButton.ZIndex = 9; ExecButton.AutoButtonColor = false; ExecButton.Parent = Card
-    local ExecCorner = Instance.new("UICorner"); ExecCorner.CornerRadius = UDim.new(0, 5); ExecCorner.Parent = ExecButton
-    ExecButton.MouseEnter:Connect(function() ExecButton.BackgroundColor3 = Color3.fromRGB(255, 160, 20) end)
-    ExecButton.MouseLeave:Connect(function() ExecButton.BackgroundColor3 = Color3.fromRGB(255, 140, 0) end)
-    ExecButton.MouseButton1Click:Connect(function()
-        local value = tonumber(InputField.Text)
-        if value and onExecute then
-            local success = onExecute(value)
-            ExecButton.BackgroundColor3 = success and Color3.fromRGB(76, 175, 80) or Color3.fromRGB(244, 67, 54)
-        else
-            ExecButton.BackgroundColor3 = Color3.fromRGB(244, 67, 54)
-        end
-        wait(0.3)
-        ExecButton.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-    end)
-    return Card
-end
-local announcementTextBox
-local function getTime()
-    local now = os.date("*t")
-    return now.year .. "年" .. now.month .. "月" .. now.day .. "日 " .. string.format("%02d", now.hour) .. ":" .. string.format("%02d", now.min) .. ":" .. string.format("%02d", now.sec)
-end
-local function updateTime()
-    if announcementTextBox then
-        announcementTextBox.Text = "⏰ " .. getTime() .. "\n\n👤 制作者：CC\n📅 创建日期：2026年7月10日\n\n🎮 玩法：开启功能后在游戏中体验效果"
-    end
-end
-spawn(function() while true do updateTime(); wait(1) end end)
-local homePosition = nil
-spawn(function()
-    wait(3)
-    local c = Players.LocalPlayer.Character
-    if c and c:FindFirstChild("HumanoidRootPart") then
-        homePosition = c.HumanoidRootPart.CFrame
-    end
-end)
-local pageContents = {
-    ["公告"] = {type = "text"},
-    ["通用"] = {
-        type = "toggles",
-        items = {
-            {type = "button", name = "飞行模式", desc = "远程加载飞行脚本", icon = "🕊️", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/refs/heads/main/%E9%A3%9E%E9%A5%BC"},
-            {type = "button", name = "自瞄", desc = "自动瞄准脚本", icon = "🎯", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/%E8%87%AA%E7%9E%84"},
-            {type = "button", name = "传送玩家", desc = "选择玩家传送到旁边", icon = "📬", url = "teleport"},
-            {type = "button", name = "跟随玩家", desc = "选择玩家自动跟随", icon = "🚶", url = "follow"},
-            {type = "button", name = "快速回家", desc = "传送到执行脚本时的位置", icon = "🏠", url = "home"},
-            {type = "toggle", name = "无敌模式", desc = "免疫伤害（客户端）", icon = "🛡️", code = "god"},
-            {type = "toggle", name = "自动收集", desc = "自动吸附近物品（可能卡顿）", icon = "📦", code = "collect"},
-            {type = "toggle", name = "点击传送", desc = "鼠标点哪里传哪里", icon = "📍", code = "clicktp"},
-            {type = "toggle", name = "自动连点", desc = "自动点击屏幕准心", icon = "🖱️", code = "autoclick"},
-            {type = "toggle", name = "踏空", desc = "走到哪定到哪不往下掉", icon = "🦶", code = "float"},
-            {type = "toggle", name = "防挂机", desc = "自动防止被踢出游戏", icon = "⏰", code = "antiafk"},
-            {type = "toggle", name = "加速模式", desc = "游戏全局加速（客户端）", icon = "⏩", code = "speedhack"},
-            {type = "toggle", name = "穿墙模式", desc = "可以穿过墙壁（客户端）", icon = "👻", code = "noclip"},
-            {type = "toggle", name = "透视物品", desc = "高亮可拾取物品（客户端）", icon = "✨", code = "itemesp"},
-            {type = "toggle", name = "隐身模式", desc = "别人看不到你（客户端）", icon = "👻", code = "invisible"},
-            {type = "toggle", name = "删除建模", desc = "点击方块确认后删除", icon = "🗑️", code = "deletepart"},
-            {type = "input", name = "旋转速度", desc = "角色自动旋转", icon = "🔄", default = "0", execute = function(v)
-                if spinConnection then spinConnection:Disconnect(); spinConnection = nil end
-                if v > 0 then
-                    local c = Players.LocalPlayer.Character
-                    if c and c:FindFirstChild("HumanoidRootPart") then
-                        local hrp = c.HumanoidRootPart
-                        spinConnection = RunService.RenderStepped:Connect(function()
-                            if hrp and hrp.Parent then hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(v) / 60, 0) end
-                        end)
-                    end
-                end
-                return true
-            end},
-            {type = "input", name = "广角", desc = "摄像机视野", icon = "🔭", default = "70", execute = function(v) if v > 0 and v <= 120 then local cam = workspace.CurrentCamera; if cam then cam.FieldOfView = v; return true end end; return false end},
-            {type = "input", name = "调速度", desc = "移动速度", icon = "⚡", default = "16", execute = function(v) if v > 0 then local c = Players.LocalPlayer.Character; if c and c:FindFirstChild("Humanoid") then c.Humanoid.WalkSpeed = v; return true end end; return false end},
-            {type = "input", name = "跳跃高度", desc = "跳跃高度", icon = "🦘", default = "50", execute = function(v) if v > 0 then local c = Players.LocalPlayer.Character; if c and c:FindFirstChild("Humanoid") then c.Humanoid.JumpHeight = v; return true end end; return false end},
-            {type = "input", name = "重力", desc = "世界重力", icon = "🌙", default = "196", execute = function(v) if v > 0 then workspace.Gravity = v; return true end; return false end},
-            {type = "toggle", name = "无限跳跃", desc = "无限连续跳跃", icon = "⬆️", code = "infjump"},
-            {type = "toggle", name = "夜视功能", desc = "提高黑暗视野亮度", icon = "🔦", code = "night"},
-            {type = "toggle", name = "显示FPS", desc = "左上角帧率显示", icon = "📊", code = "fps"},
-            {type = "toggle", name = "ESP透视", desc = "红色描边+名字可穿墙", icon = "👁️", code = "esp"},
-        }
-    },
-    ["战斗功能"] = {
-        type = "toggles",
-        items = {
-            {type = "toggle", name = "团队高亮", desc = "队友蓝色高亮（客户端）", icon = "🔵", code = "teamglow"},
-            {type = "toggle", name = "敌对高亮", desc = "敌人红色高亮（客户端）", icon = "🔴", code = "enemyglow"},
-            {type = "toggle", name = "自动攻击", desc = "自动追踪攻击敌人", icon = "⚔️", code = "autoattack"},
-            {type = "toggle", name = "全图点亮", desc = "消除所有阴影", icon = "💡", code = "fulllight"},
-            {type = "toggle", name = "一键自杀", desc = "立即重置角色", icon = "💀", code = "suicide"},
-        }
-    },
-    ["整活功能"] = {
-        type = "toggles",
-        items = {
-            {type = "toggle", name = "跳舞模式", desc = "角色自动跳舞", icon = "💃", code = "dance"},
-            {type = "toggle", name = "喷火模式", desc = "从角色身上喷火", icon = "🔥", code = "fire"},
-            {type = "toggle", name = "光环模式", desc = "角色发光环", icon = "✨", code = "glow"},
-            {type = "toggle", name = "倒立行走", desc = "角色倒过来", icon = "🙃", code = "upsidedown"},
-            {type = "toggle", name = "大头模式", desc = "头变得超大", icon = "🗿", code = "bighead"},
-            {type = "toggle", name = "全屏特效", desc = "屏幕加滤镜", icon = "🎨", code = "screenfx"},
-            {type = "toggle", name = "飞行拖尾", desc = "移动时拖彩虹尾迹", icon = "🌈", code = "trail"},
-            {type = "toggle", name = "彩虹名字", desc = "头顶名字变彩虹色", icon = "🏷️", code = "rainbowname"},
-            {type = "toggle", name = "巨大化", desc = "把自己变大3倍", icon = "🦖", code = "giant"},
-        }
-    },
-    ["甩飞"] = {
-        type = "buttons",
-        items = {{name = "多人甩飞", desc = "选择玩家然后甩飞", icon = "💨", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/%E7%94%A9%E9%A3%9E"}}
-    },
-    ["服务器"] = {
-        type = "buttons",
-        items = {
-            {name = "磁铁轨服务器", desc = "点击执行", icon = "🔧", url = "https://raw.githubusercontent.com/erewe23/deadrailsring.github.io/refs/heads/main/ringta.lua"},
-            {name = "柠檬大亨", desc = "点击执行", icon = "🍋", url = "https://rawscripts.net/raw/Sell-Lemons-Fluid-Orchard-Update-Read-Description-241132"},
-            {name = "键盘逃脱", desc = "点击执行", icon = "⌨️", url = "https://raw.githubusercontent.com/ccdushii/zzzzzzzzz/refs/heads/main/ssssssssss"},
-            {name = "驾驶帝国", desc = "皮脚本版", icon = "🚗", url = "https://raw.githubusercontent.com/xiaopi77/xiaopi77/refs/heads/main/Roblox-Pi-Drivingempire-Script.lua"},
-        }
-    },
-    ["国内脚本"] = {
-        type = "buttons",
-        items = {
-            {name = "小皮脚本", desc = "QQ群1002100032", icon = "🇨🇳", url = "https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/QQ1002100032-Roblox-Pi-script.lua"},
-            {name = "黑洞脚本", desc = "BS脚本", icon = "🕳️", url = "https://gitee.com/BS_script/script/raw/master/BS_Script.Luau"},
-            {name = "ROB脚本", desc = "ROB.V2", icon = "🤖", url = "https://raw.githubusercontent.com/Zyb150933/ROB/refs/heads/main/ROB.V2"},
-        }
-    },
-}
 elseif runCode == "teamglow" then
                 local myTeam = Players.LocalPlayer.Team
                 infJumpConnection = RunService.RenderStepped:Connect(function()
@@ -1011,6 +849,168 @@ elseif runCode == "teamglow" then
         end
     end)
 end
+local function createInputCard(parent, name, description, icon, defaultValue, onExecute)
+    local Card = Instance.new("Frame")
+    Card.Size = UDim2.new(1, -16, 0, 46); Card.Position = UDim2.new(0, 8, 0, 0)
+    Card.BackgroundColor3 = Color3.fromRGB(252, 252, 252); Card.BorderSizePixel = 0; Card.ZIndex = 7; Card.Parent = parent
+    local CardCorner = Instance.new("UICorner"); CardCorner.CornerRadius = UDim.new(0, 10); CardCorner.Parent = Card
+    local CardStroke = Instance.new("UIStroke"); CardStroke.Color = Color3.fromRGB(230, 230, 230); CardStroke.Thickness = 1; CardStroke.Parent = Card
+    local IconFrame = Instance.new("Frame")
+    IconFrame.Size = UDim2.new(0, 26, 0, 26); IconFrame.Position = UDim2.new(0, 10, 0, 10)
+    IconFrame.BackgroundColor3 = Color3.fromRGB(240, 240, 240); IconFrame.BorderSizePixel = 0; IconFrame.ZIndex = 8; IconFrame.Parent = Card
+    local IconCorner = Instance.new("UICorner"); IconCorner.CornerRadius = UDim.new(0, 6); IconCorner.Parent = IconFrame
+    local IconText = Instance.new("TextLabel")
+    IconText.Size = UDim2.new(1, 0, 1, 0); IconText.Text = icon; IconText.TextSize = 11
+    IconText.BackgroundTransparency = 1; IconText.ZIndex = 9; IconText.Parent = IconFrame
+    local TitleText = Instance.new("TextLabel")
+    TitleText.Size = UDim2.new(0, 160, 0, 15); TitleText.Position = UDim2.new(0, 44, 0, 5)
+    TitleText.Text = name; TitleText.TextColor3 = Color3.fromRGB(50, 50, 50)
+    TitleText.Font = Enum.Font.GothamSemibold; TitleText.TextSize = 11
+    TitleText.BackgroundTransparency = 1; TitleText.TextXAlignment = Enum.TextXAlignment.Left; TitleText.ZIndex = 8; TitleText.Parent = Card
+    local DescText = Instance.new("TextLabel")
+    DescText.Size = UDim2.new(1, -140, 0, 13); DescText.Position = UDim2.new(0, 44, 0, 22)
+    DescText.Text = description .. " (默认" .. defaultValue .. ")"; DescText.TextColor3 = Color3.fromRGB(130, 130, 130)
+    DescText.Font = Enum.Font.Gotham; DescText.TextSize = 9; DescText.BackgroundTransparency = 1
+    DescText.TextXAlignment = Enum.TextXAlignment.Left; DescText.ZIndex = 8; DescText.Parent = Card
+    local InputBox = Instance.new("Frame")
+    InputBox.Size = UDim2.new(0, 55, 0, 20); InputBox.Position = UDim2.new(1, -128, 0, 13)
+    InputBox.BackgroundColor3 = Color3.fromRGB(235, 235, 235); InputBox.BorderSizePixel = 0; InputBox.ZIndex = 8; InputBox.Parent = Card
+    local InputCorner = Instance.new("UICorner"); InputCorner.CornerRadius = UDim.new(0, 5); InputCorner.Parent = InputBox
+    local InputField = Instance.new("TextBox")
+    InputField.Size = UDim2.new(1, -6, 1, 0); InputField.Position = UDim2.new(0, 3, 0, 0)
+    InputField.Text = defaultValue; InputField.TextColor3 = Color3.fromRGB(50, 50, 50)
+    InputField.Font = Enum.Font.Gotham; InputField.TextSize = 11; InputField.BackgroundTransparency = 1
+    InputField.PlaceholderText = defaultValue; InputField.PlaceholderColor3 = Color3.fromRGB(150, 150, 150); InputField.ZIndex = 9; InputField.Parent = InputBox
+    local ExecButton = Instance.new("TextButton")
+    ExecButton.Size = UDim2.new(0, 40, 0, 20); ExecButton.Position = UDim2.new(1, -46, 0, 13)
+    ExecButton.Text = "设置"; ExecButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ExecButton.Font = Enum.Font.GothamBold; ExecButton.TextSize = 10; ExecButton.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+    ExecButton.BorderSizePixel = 0; ExecButton.ZIndex = 9; ExecButton.AutoButtonColor = false; ExecButton.Parent = Card
+    local ExecCorner = Instance.new("UICorner"); ExecCorner.CornerRadius = UDim.new(0, 5); ExecCorner.Parent = ExecButton
+    ExecButton.MouseEnter:Connect(function() ExecButton.BackgroundColor3 = Color3.fromRGB(255, 160, 20) end)
+    ExecButton.MouseLeave:Connect(function() ExecButton.BackgroundColor3 = Color3.fromRGB(255, 140, 0) end)
+    ExecButton.MouseButton1Click:Connect(function()
+        local value = tonumber(InputField.Text)
+        if value and onExecute then
+            local success = onExecute(value)
+            ExecButton.BackgroundColor3 = success and Color3.fromRGB(76, 175, 80) or Color3.fromRGB(244, 67, 54)
+        else
+            ExecButton.BackgroundColor3 = Color3.fromRGB(244, 67, 54)
+        end
+        wait(0.3)
+        ExecButton.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+    end)
+    return Card
+end
+local announcementTextBox
+local function getTime()
+    local now = os.date("*t")
+    return now.year .. "年" .. now.month .. "月" .. now.day .. "日 " .. string.format("%02d", now.hour) .. ":" .. string.format("%02d", now.min) .. ":" .. string.format("%02d", now.sec)
+end
+local function updateTime()
+    if announcementTextBox then
+        announcementTextBox.Text = "⏰ " .. getTime() .. "\n\n👤 制作者：CC\n📅 创建日期：2026年7月10日\n\n🎮 玩法：开启功能后在游戏中体验效果"
+    end
+end
+spawn(function() while true do updateTime(); wait(1) end end)
+local homePosition = nil
+spawn(function()
+    wait(3)
+    local c = Players.LocalPlayer.Character
+    if c and c:FindFirstChild("HumanoidRootPart") then
+        homePosition = c.HumanoidRootPart.CFrame
+    end
+end)
+local pageContents = {
+    ["公告"] = {type = "text"},
+    ["通用"] = {
+        type = "toggles",
+        items = {
+            {type = "button", name = "飞行模式", desc = "远程加载飞行脚本", icon = "🕊️", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/refs/heads/main/%E9%A3%9E%E9%A5%BC"},
+            {type = "button", name = "自瞄", desc = "自动瞄准脚本", icon = "🎯", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/%E8%87%AA%E7%9E%84"},
+            {type = "button", name = "传送玩家", desc = "选择玩家传送到旁边", icon = "📬", url = "teleport"},
+            {type = "button", name = "跟随玩家", desc = "选择玩家自动跟随", icon = "🚶", url = "follow"},
+            {type = "button", name = "快速回家", desc = "传送到执行脚本时的位置", icon = "🏠", url = "home"},
+            {type = "toggle", name = "无敌模式", desc = "免疫伤害（客户端）", icon = "🛡️", code = "god"},
+            {type = "toggle", name = "自动收集", desc = "自动吸附近物品（可能卡顿）", icon = "📦", code = "collect"},
+            {type = "toggle", name = "点击传送", desc = "鼠标点哪里传哪里", icon = "📍", code = "clicktp"},
+            {type = "toggle", name = "自动连点", desc = "自动点击屏幕准心", icon = "🖱️", code = "autoclick"},
+            {type = "toggle", name = "踏空", desc = "走到哪定到哪不往下掉", icon = "🦶", code = "float"},
+            {type = "toggle", name = "防挂机", desc = "自动防止被踢出游戏", icon = "⏰", code = "antiafk"},
+            {type = "toggle", name = "加速模式", desc = "游戏全局加速（客户端）", icon = "⏩", code = "speedhack"},
+            {type = "toggle", name = "穿墙模式", desc = "可以穿过墙壁（客户端）", icon = "👻", code = "noclip"},
+            {type = "toggle", name = "透视物品", desc = "高亮可拾取物品（客户端）", icon = "✨", code = "itemesp"},
+            {type = "toggle", name = "隐身模式", desc = "别人看不到你（客户端）", icon = "👻", code = "invisible"},
+            {type = "toggle", name = "删除建模", desc = "点击方块确认后删除", icon = "🗑️", code = "deletepart"},
+            {type = "input", name = "旋转速度", desc = "角色自动旋转", icon = "🔄", default = "0", execute = function(v)
+                if spinConnection then spinConnection:Disconnect(); spinConnection = nil end
+                if v > 0 then
+                    local c = Players.LocalPlayer.Character
+                    if c and c:FindFirstChild("HumanoidRootPart") then
+                        local hrp = c.HumanoidRootPart
+                        spinConnection = RunService.RenderStepped:Connect(function()
+                            if hrp and hrp.Parent then hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(v) / 60, 0) end
+                        end)
+                    end
+                end
+                return true
+            end},
+            {type = "input", name = "广角", desc = "摄像机视野", icon = "🔭", default = "70", execute = function(v) if v > 0 and v <= 120 then local cam = workspace.CurrentCamera; if cam then cam.FieldOfView = v; return true end end; return false end},
+            {type = "input", name = "调速度", desc = "移动速度", icon = "⚡", default = "16", execute = function(v) if v > 0 then local c = Players.LocalPlayer.Character; if c and c:FindFirstChild("Humanoid") then c.Humanoid.WalkSpeed = v; return true end end; return false end},
+            {type = "input", name = "跳跃高度", desc = "跳跃高度", icon = "🦘", default = "50", execute = function(v) if v > 0 then local c = Players.LocalPlayer.Character; if c and c:FindFirstChild("Humanoid") then c.Humanoid.JumpHeight = v; return true end end; return false end},
+            {type = "input", name = "重力", desc = "世界重力", icon = "🌙", default = "196", execute = function(v) if v > 0 then workspace.Gravity = v; return true end; return false end},
+            {type = "toggle", name = "无限跳跃", desc = "无限连续跳跃", icon = "⬆️", code = "infjump"},
+            {type = "toggle", name = "夜视功能", desc = "提高黑暗视野亮度", icon = "🔦", code = "night"},
+            {type = "toggle", name = "显示FPS", desc = "左上角帧率显示", icon = "📊", code = "fps"},
+            {type = "toggle", name = "ESP透视", desc = "红色描边+名字可穿墙", icon = "👁️", code = "esp"},
+        }
+    },
+    ["战斗功能"] = {
+        type = "toggles",
+        items = {
+            {type = "toggle", name = "团队高亮", desc = "队友蓝色高亮（客户端）", icon = "🔵", code = "teamglow"},
+            {type = "toggle", name = "敌对高亮", desc = "敌人红色高亮（客户端）", icon = "🔴", code = "enemyglow"},
+            {type = "toggle", name = "自动攻击", desc = "自动追踪攻击敌人", icon = "⚔️", code = "autoattack"},
+            {type = "toggle", name = "全图点亮", desc = "消除所有阴影", icon = "💡", code = "fulllight"},
+            {type = "toggle", name = "一键自杀", desc = "立即重置角色", icon = "💀", code = "suicide"},
+        }
+    },
+    ["整活功能"] = {
+        type = "toggles",
+        items = {
+            {type = "toggle", name = "跳舞模式", desc = "角色自动跳舞", icon = "💃", code = "dance"},
+            {type = "toggle", name = "喷火模式", desc = "从角色身上喷火", icon = "🔥", code = "fire"},
+            {type = "toggle", name = "光环模式", desc = "角色发光环", icon = "✨", code = "glow"},
+            {type = "toggle", name = "倒立行走", desc = "角色倒过来", icon = "🙃", code = "upsidedown"},
+            {type = "toggle", name = "大头模式", desc = "头变得超大", icon = "🗿", code = "bighead"},
+            {type = "toggle", name = "全屏特效", desc = "屏幕加滤镜", icon = "🎨", code = "screenfx"},
+            {type = "toggle", name = "飞行拖尾", desc = "移动时拖彩虹尾迹", icon = "🌈", code = "trail"},
+            {type = "toggle", name = "彩虹名字", desc = "头顶名字变彩虹色", icon = "🏷️", code = "rainbowname"},
+            {type = "toggle", name = "巨大化", desc = "把自己变大3倍", icon = "🦖", code = "giant"},
+        }
+    },
+    ["甩飞"] = {
+        type = "buttons",
+        items = {{name = "多人甩飞", desc = "选择玩家然后甩飞", icon = "💨", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/%E7%94%A9%E9%A3%9E"}}
+    },
+    ["服务器"] = {
+        type = "buttons",
+        items = {
+            {name = "磁铁轨服务器", desc = "点击执行", icon = "🔧", url = "https://raw.githubusercontent.com/erewe23/deadrailsring.github.io/refs/heads/main/ringta.lua"},
+            {name = "柠檬大亨", desc = "点击执行", icon = "🍋", url = "https://rawscripts.net/raw/Sell-Lemons-Fluid-Orchard-Update-Read-Description-241132"},
+            {name = "键盘逃脱", desc = "点击执行", icon = "⌨️", url = "https://raw.githubusercontent.com/ccdushii/zzzzzzzzz/refs/heads/main/ssssssssss"},
+            {name = "驾驶帝国", desc = "皮脚本版", icon = "🚗", url = "https://raw.githubusercontent.com/xiaopi77/xiaopi77/refs/heads/main/Roblox-Pi-Drivingempire-Script.lua"},
+        }
+    },
+    ["国内脚本"] = {
+        type = "buttons",
+        items = {
+            {name = "小皮脚本", desc = "QQ群1002100032", icon = "🇨🇳", url = "https://raw.githubusercontent.com/xiaopi77/xiaopi77/main/QQ1002100032-Roblox-Pi-script.lua"},
+            {name = "黑洞脚本", desc = "BS脚本", icon = "🕳️", url = "https://gitee.com/BS_script/script/raw/master/BS_Script.Luau"},
+            {name = "ROB脚本", desc = "ROB.V2", icon = "🤖", url = "https://raw.githubusercontent.com/Zyb150933/ROB/refs/heads/main/ROB.V2"},
+        }
+    },
+}
 for pageName, contentData in pairs(pageContents) do
     local Page = Instance.new("ScrollingFrame")
     Page.Size = UDim2.new(1, 0, 1, 0); Page.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
