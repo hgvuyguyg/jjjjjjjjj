@@ -766,6 +766,66 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
             elseif runCode == "suicide" then
                 local c = Players.LocalPlayer.Character
                 if c and c:FindFirstChild("Humanoid") then c.Humanoid.Health = 0 end
+            elseif runCode == "dance1" then
+                local c = Players.LocalPlayer.Character
+                if c and c:FindFirstChild("Humanoid") then
+                    local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://5918726674"
+                    local track = c.Humanoid:LoadAnimation(anim); track:Play()
+                end
+            elseif runCode == "dance2" then
+                local c = Players.LocalPlayer.Character
+                if c and c:FindFirstChild("Humanoid") then
+                    local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://5917769989"
+                    local track = c.Humanoid:LoadAnimation(anim); track:Play()
+                end
+            elseif runCode == "dance3" then
+                local c = Players.LocalPlayer.Character
+                if c and c:FindFirstChild("Humanoid") then
+                    local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://4552521195"
+                    local track = c.Humanoid:LoadAnimation(anim); track:Play()
+                end
+            elseif runCode == "dance4" then
+                local c = Players.LocalPlayer.Character
+                if c and c:FindFirstChild("Humanoid") then
+                    local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://3376836291"
+                    local track = c.Humanoid:LoadAnimation(anim); track:Play()
+                end
+            elseif runCode == "dance5" then
+                local c = Players.LocalPlayer.Character
+                if c and c:FindFirstChild("Humanoid") then
+                    local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://3332597652"
+                    local track = c.Humanoid:LoadAnimation(anim); track:Play()
+                end
+            elseif runCode == "dance6" then
+                local c = Players.LocalPlayer.Character
+                if c and c:FindFirstChild("Humanoid") then
+                    local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://2778935586"
+                    local track = c.Humanoid:LoadAnimation(anim); track:Play()
+                end
+            elseif runCode == "dance7" then
+                local c = Players.LocalPlayer.Character
+                if c and c:FindFirstChild("Humanoid") then
+                    local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://2483492072"
+                    local track = c.Humanoid:LoadAnimation(anim); track:Play()
+                end
+            elseif runCode == "dance8" then
+                local c = Players.LocalPlayer.Character
+                if c and c:FindFirstChild("Humanoid") then
+                    local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://507770038"
+                    local track = c.Humanoid:LoadAnimation(anim); track:Play()
+                end
+            elseif runCode == "dance9" then
+                local c = Players.LocalPlayer.Character
+                if c and c:FindFirstChild("Humanoid") then
+                    local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://507766388"
+                    local track = c.Humanoid:LoadAnimation(anim); track:Play()
+                end
+            elseif runCode == "dance10" then
+                local c = Players.LocalPlayer.Character
+                if c and c:FindFirstChild("Humanoid") then
+                    local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://507766666"
+                    local track = c.Humanoid:LoadAnimation(anim); track:Play()
+                end
             elseif runCode == "dance" then
                 local c = Players.LocalPlayer.Character
                 if c and c:FindFirstChild("Humanoid") then
@@ -919,7 +979,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
             elseif runCode == "enemyglow" then if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end; clearEnemyGlow()
             elseif runCode == "autoattack" then if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
             elseif runCode == "fulllight" then Lighting.Brightness = 1; Lighting.GlobalShadows = true
-            elseif runCode == "dance" then
+            elseif runCode == "dance1" or runCode == "dance2" or runCode == "dance3" or runCode == "dance4" or runCode == "dance5" or runCode == "dance6" or runCode == "dance7" or runCode == "dance8" or runCode == "dance9" or runCode == "dance10" or runCode == "dance" then
                 if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
                 local c = Players.LocalPlayer.Character
                 if c and c:FindFirstChild("Humanoid") then
