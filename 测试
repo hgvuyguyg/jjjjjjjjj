@@ -770,96 +770,10 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
             elseif runCode == "dance1" then
                 local c = Players.LocalPlayer.Character
                 if c and c:FindFirstChild("Humanoid") then
+                    local danceActive = true
                     local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://5918726674"
                     local track = c.Humanoid:LoadAnimation(anim); track:Play()
-                end
-            elseif runCode == "dance2" then
-                local c = Players.LocalPlayer.Character
-                if c and c:FindFirstChild("Humanoid") then
-                    local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://5917769989"
-                    local track = c.Humanoid:LoadAnimation(anim); track:Play()
-                end
-            elseif runCode == "dance3" then
-                local c = Players.LocalPlayer.Character
-                if c and c:FindFirstChild("Humanoid") then
-                    local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://4552521195"
-                    local track = c.Humanoid:LoadAnimation(anim); track:Play()
-                end
-            elseif runCode == "dance4" then
-                local c = Players.LocalPlayer.Character
-                if c and c:FindFirstChild("Humanoid") then
-                    local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://3376836291"
-                    local track = c.Humanoid:LoadAnimation(anim); track:Play()
-                end
-            elseif runCode == "dance5" then
-                local c = Players.LocalPlayer.Character
-                if c and c:FindFirstChild("Humanoid") then
-                    local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://3332597652"
-                    local track = c.Humanoid:LoadAnimation(anim); track:Play()
-                end
-            elseif runCode == "dance6" then
-                local c = Players.LocalPlayer.Character
-                if c and c:FindFirstChild("Humanoid") then
-                    local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://2778935586"
-                    local track = c.Humanoid:LoadAnimation(anim); track:Play()
-                end
-            elseif runCode == "dance7" then
-                local c = Players.LocalPlayer.Character
-                if c and c:FindFirstChild("Humanoid") then
-                    local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://2483492072"
-                    local track = c.Humanoid:LoadAnimation(anim); track:Play()
-                end
-            elseif runCode == "dance8" then
-                local c = Players.LocalPlayer.Character
-                if c and c:FindFirstChild("Humanoid") then
-                    local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://507770038"
-                    local track = c.Humanoid:LoadAnimation(anim); track:Play()
-                end
-            elseif runCode == "dance9" then
-                local c = Players.LocalPlayer.Character
-                if c and c:FindFirstChild("Humanoid") then
-                    local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://507766388"
-                    local track = c.Humanoid:LoadAnimation(anim); track:Play()
-                end
-            elseif runCode == "dance10" then
-                local c = Players.LocalPlayer.Character
-                if c and c:FindFirstChild("Humanoid") then
-                    local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://507766666"
-                    local track = c.Humanoid:LoadAnimation(anim); track:Play()
-                end
-            elseif runCode == "dance" then
-                local c = Players.LocalPlayer.Character
-                if c and c:FindFirstChild("Humanoid") then
-                    local danceAnims = {
-                        "rbxassetid://5918726674",
-                        "rbxassetid://5917769989",
-                        "rbxassetid://4552521195",
-                        "rbxassetid://3376836291",
-                        "rbxassetid://3332597652",
-                        "rbxassetid://2778935586",
-                        "rbxassetid://2483492072",
-                        "rbxassetid://507770038",
-                        "rbxassetid://507766388",
-                        "rbxassetid://507766666",
-                    }
-                    local currentDance = 1
-                    local danceActive = true
-                    local function playNextDance()
-                        if not danceActive then return end
-                        local anim = Instance.new("Animation")
-                        anim.AnimationId = danceAnims[currentDance]
-                        local track = c.Humanoid:LoadAnimation(anim)
-                        track:Play()
-                        currentDance = currentDance + 1
-                        if currentDance > #danceAnims then currentDance = 1 end
-                        track.Stopped:Connect(function()
-                            if danceActive then
-                                playNextDance()
-                            end
-                        end)
-                    end
-                    infJumpConnection = {Disconnect = function() danceActive = false end}
-                    playNextDance()
+                    infJumpConnection = {Disconnect = function() danceActive = false; track:Stop() end}
                 end
             elseif runCode == "fire" then
                 local c = Players.LocalPlayer.Character
@@ -898,6 +812,81 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                     trail.Color = ColorSequence.new(Color3.fromRGB(255,0,0), Color3.fromRGB(0,255,0), Color3.fromRGB(0,0,255))
                     trail.Lifetime = 0.5; trail.MinLength = 0.1; trail.Parent = hrp
                 end
+            elseif runCode == "firetrail" then
+                local c = Players.LocalPlayer.Character
+                if c and c:FindFirstChild("HumanoidRootPart") then
+                    local hrp = c.HumanoidRootPart
+                    local trail = Instance.new("Trail"); trail.Name = "FireTrail"
+                    local a0 = Instance.new("Attachment"); a0.Name = "FireTrailA0"; a0.Parent = hrp
+                    local a1 = Instance.new("Attachment"); a1.Name = "FireTrailA1"; a1.Parent = hrp
+                    a1.Position = Vector3.new(0, -2, 0)
+                    trail.Attachment0 = a0; trail.Attachment1 = a1
+                    trail.Color = ColorSequence.new(Color3.fromRGB(255, 50, 0), Color3.fromRGB(255, 150, 0), Color3.fromRGB(255, 255, 0))
+                    trail.Lifetime = 0.3; trail.MinLength = 0.05; trail.Parent = hrp
+                end
+            elseif runCode == "iceTrail" then
+                local c = Players.LocalPlayer.Character
+                if c and c:FindFirstChild("HumanoidRootPart") then
+                    local hrp = c.HumanoidRootPart
+                    local trail = Instance.new("Trail"); trail.Name = "IceTrail"
+                    local a0 = Instance.new("Attachment"); a0.Name = "IceTrailA0"; a0.Parent = hrp
+                    local a1 = Instance.new("Attachment"); a1.Name = "IceTrailA1"; a1.Parent = hrp
+                    a1.Position = Vector3.new(0, -2, 0)
+                    trail.Attachment0 = a0; trail.Attachment1 = a1
+                    trail.Color = ColorSequence.new(Color3.fromRGB(100, 200, 255), Color3.fromRGB(150, 220, 255), Color3.fromRGB(200, 240, 255))
+                    trail.Lifetime = 0.4; trail.MinLength = 0.08; trail.Parent = hrp
+                end
+            elseif runCode == "clearfog" then
+                Lighting.FogEnd = 100000; Lighting.FogStart = 50000
+            elseif runCode == "subtitle" then
+                local subGui = Instance.new("ScreenGui")
+                subGui.Name = "SubtitleGui"
+                subGui.ResetOnSpawn = false
+                subGui.Parent = PlayerGui
+                local subLabel = Instance.new("TextLabel")
+                subLabel.Size = UDim2.new(0, 500, 0, 80)
+                subLabel.Position = UDim2.new(0.5, -250, 0, 10)
+                subLabel.Text = Players.LocalPlayer.Name .. " 已入侵服务器"
+                subLabel.Font = Enum.Font.GothamBold
+                subLabel.TextSize = 24
+                subLabel.BackgroundTransparency = 1
+                subLabel.TextStrokeTransparency = 0
+                subLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                subLabel.ZIndex = 500
+                subLabel.Parent = subGui
+                local serverLabel = Instance.new("TextLabel")
+                serverLabel.Size = UDim2.new(0, 500, 0, 40)
+                serverLabel.Position = UDim2.new(0.5, -250, 0, 80)
+                serverLabel.Text = "服务器ID: " .. game.JobId
+                serverLabel.Font = Enum.Font.Gotham
+                serverLabel.TextSize = 16
+                serverLabel.BackgroundTransparency = 1
+                serverLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+                serverLabel.TextStrokeTransparency = 0
+                serverLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                serverLabel.ZIndex = 500
+                serverLabel.Parent = subGui
+                local timeLabel = Instance.new("TextLabel")
+                timeLabel.Size = UDim2.new(0, 500, 0, 30)
+                timeLabel.Position = UDim2.new(0.5, -250, 0, 115)
+                timeLabel.Font = Enum.Font.Gotham
+                timeLabel.TextSize = 14
+                timeLabel.BackgroundTransparency = 1
+                timeLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+                timeLabel.TextStrokeTransparency = 0
+                timeLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                timeLabel.ZIndex = 500
+                timeLabel.Parent = subGui
+                local subHue = 0
+                local subActive = true
+                infJumpConnection = RunService.RenderStepped:Connect(function(delta)
+                    if not subActive then return end
+                    subHue = (subHue + delta * 0.3) % 1
+                    subLabel.TextColor3 = Color3.fromHSV(subHue, 1, 1)
+                    local now = os.date("*t")
+                    timeLabel.Text = now.year .. "年" .. now.month .. "月" .. now.day .. "日 " .. string.format("%02d:%02d:%02d", now.hour, now.min, now.sec)
+                end)
+                infJumpConnection = {Disconnect = function() subActive = false; subGui:Destroy() end}
             elseif runCode == "rainbowname" then
                 local c = Players.LocalPlayer.Character
                 if c and c:FindFirstChild("Head") then
@@ -980,7 +969,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
             elseif runCode == "enemyglow" then if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end; clearEnemyGlow()
             elseif runCode == "autoattack" then if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
             elseif runCode == "fulllight" then Lighting.Brightness = 1; Lighting.GlobalShadows = true
-            elseif runCode == "dance1" or runCode == "dance2" or runCode == "dance3" or runCode == "dance4" or runCode == "dance5" or runCode == "dance6" or runCode == "dance7" or runCode == "dance8" or runCode == "dance9" or runCode == "dance10" or runCode == "dance" then
+            elseif runCode == "dance1" then
                 if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
                 local c = Players.LocalPlayer.Character
                 if c and c:FindFirstChild("Humanoid") then
@@ -1016,6 +1005,32 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                     local a1 = c.HumanoidRootPart:FindFirstChild("TrailAttachment1")
                     if a1 then a1:Destroy() end
                 end
+            elseif runCode == "firetrail" then
+                local c = Players.LocalPlayer.Character
+                if c and c:FindFirstChild("HumanoidRootPart") then
+                    local trail = c.HumanoidRootPart:FindFirstChild("FireTrail")
+                    if trail then trail:Destroy() end
+                    local a0 = c.HumanoidRootPart:FindFirstChild("FireTrailA0")
+                    if a0 then a0:Destroy() end
+                    local a1 = c.HumanoidRootPart:FindFirstChild("FireTrailA1")
+                    if a1 then a1:Destroy() end
+                end
+            elseif runCode == "iceTrail" then
+                local c = Players.LocalPlayer.Character
+                if c and c:FindFirstChild("HumanoidRootPart") then
+                    local trail = c.HumanoidRootPart:FindFirstChild("IceTrail")
+                    if trail then trail:Destroy() end
+                    local a0 = c.HumanoidRootPart:FindFirstChild("IceTrailA0")
+                    if a0 then a0:Destroy() end
+                    local a1 = c.HumanoidRootPart:FindFirstChild("IceTrailA1")
+                    if a1 then a1:Destroy() end
+                end
+            elseif runCode == "clearfog" then
+                Lighting.FogEnd = 1000; Lighting.FogStart = 0
+            elseif runCode == "subtitle" then
+                if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
+                local subGui = PlayerGui:FindFirstChild("SubtitleGui")
+                if subGui then subGui:Destroy() end
             elseif runCode == "rainbowname" then
                 if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
                 local c = Players.LocalPlayer.Character
@@ -1035,7 +1050,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
         end
     end)
 end
--- 第4段：createInputCard + 公告 + homePosition + pageContents（只改整活功能部分）
+-- 第4段：createInputCard + 公告 + homePosition + pageContents
 
 local function createInputCard(parent, name, description, icon, defaultValue, onExecute)
     local Card = Instance.new("Frame")
@@ -1130,6 +1145,7 @@ local pageContents = {
             {type = "toggle", name = "透视物品", desc = "高亮可拾取物品（客户端）", icon = "✨", code = "itemesp"},
             {type = "toggle", name = "隐身模式", desc = "别人看不到你（客户端）", icon = "👻", code = "invisible"},
             {type = "toggle", name = "删除建模", desc = "点击方块确认后删除", icon = "🗑️", code = "deletepart"},
+            {type = "toggle", name = "去雾功能", desc = "消除游戏中的雾气", icon = "🌫️", code = "clearfog"},
             {type = "input", name = "旋转速度", desc = "角色自动旋转", icon = "🔄", default = "0", execute = function(v)
                 if spinConnection then spinConnection:Disconnect(); spinConnection = nil end
                 if v > 0 then
@@ -1166,25 +1182,18 @@ local pageContents = {
     ["整活功能"] = {
         type = "toggles",
         items = {
-            {type = "toggle", name = "跳舞1-机械舞", desc = "机器人风格舞蹈", icon = "🤖", code = "dance1"},
-            {type = "toggle", name = "跳舞2-街舞", desc = "嘻哈街舞风格", icon = "🕺", code = "dance2"},
-            {type = "toggle", name = "跳舞3-波浪舞", desc = "波浪动作舞蹈", icon = "🌊", code = "dance3"},
-            {type = "toggle", name = "跳舞4-旋转舞", desc = "旋转风格舞蹈", icon = "💫", code = "dance4"},
-            {type = "toggle", name = "跳舞5-摇摆舞", desc = "摇摆风格舞蹈", icon = "🎵", code = "dance5"},
-            {type = "toggle", name = "跳舞6-跳跃舞", desc = "跳跃风格舞蹈", icon = "🦘", code = "dance6"},
-            {type = "toggle", name = "跳舞7-老年舞", desc = "老年人风格舞蹈", icon = "👴", code = "dance7"},
-            {type = "toggle", name = "跳舞8-可爱舞", desc = "可爱风格舞蹈", icon = "🥰", code = "dance8"},
-            {type = "toggle", name = "跳舞9-疯狂舞", desc = "疯狂风格舞蹈", icon = "🤪", code = "dance9"},
-            {type = "toggle", name = "跳舞10-慢舞", desc = "慢速优雅舞蹈", icon = "🦢", code = "dance10"},
-            {type = "toggle", name = "跳舞-全部循环", desc = "循环播放所有舞蹈", icon = "🔄", code = "dance"},
+            {type = "toggle", name = "跳舞-机械舞", desc = "机器人风格舞蹈", icon = "🤖", code = "dance1"},
             {type = "toggle", name = "喷火模式", desc = "从角色身上喷火", icon = "🔥", code = "fire"},
             {type = "toggle", name = "光环模式", desc = "角色发光环", icon = "✨", code = "glow"},
             {type = "toggle", name = "倒立行走", desc = "角色倒过来", icon = "🙃", code = "upsidedown"},
             {type = "toggle", name = "大头模式", desc = "头变得超大", icon = "🗿", code = "bighead"},
             {type = "toggle", name = "全屏特效", desc = "屏幕加滤镜", icon = "🎨", code = "screenfx"},
-            {type = "toggle", name = "飞行拖尾", desc = "移动时拖彩虹尾迹", icon = "🌈", code = "trail"},
+            {type = "toggle", name = "彩虹拖尾", desc = "移动时拖彩虹尾迹", icon = "🌈", code = "trail"},
+            {type = "toggle", name = "火焰拖尾", desc = "移动时拖火焰尾迹", icon = "🔥", code = "firetrail"},
+            {type = "toggle", name = "冰霜拖尾", desc = "移动时拖冰霜尾迹", icon = "❄️", code = "iceTrail"},
             {type = "toggle", name = "彩虹名字", desc = "头顶名字变彩虹色", icon = "🏷️", code = "rainbowname"},
             {type = "toggle", name = "巨大化", desc = "把自己变大3倍", icon = "🦖", code = "giant"},
+            {type = "toggle", name = "客户端字幕", desc = "屏幕上方显示入侵信息", icon = "📺", code = "subtitle"},
         }
     },
     ["甩飞"] = {
@@ -1263,4 +1272,4 @@ OpenBtn.MouseButton1Click:Connect(function()
     if isOpen then closePanel() else openPanel() end
 end)
 CloseButton.MouseButton1Click:Connect(function() closePanel() end)
-selectNav(navButtons[1].button, "公告")
+selectNav(navButtons[1].button, "公告")p
