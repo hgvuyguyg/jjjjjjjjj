@@ -55,7 +55,7 @@ spawn(function()
     local infoLabel = Instance.new("TextLabel")
     infoLabel.Size = UDim2.new(0, 400, 0, 60)
     infoLabel.Position = UDim2.new(0.5, -200, 0.5, -30)
-    infoLabel.Text = "此脚本会一直更新\n此脚本作者为CS Studio"
+    infoLabel.Text = "此脚本会一直更新\n此脚本作者为C Studio"
     infoLabel.Font = Enum.Font.GothamBold
     infoLabel.TextSize = 22
     infoLabel.BackgroundTransparency = 1
@@ -1194,6 +1194,7 @@ local pageContents = {
             {type = "toggle", name = "彩虹名字", desc = "头顶名字变彩虹色", icon = "🏷️", code = "rainbowname"},
             {type = "toggle", name = "巨大化", desc = "把自己变大3倍", icon = "🦖", code = "giant"},
             {type = "toggle", name = "客户端字幕", desc = "屏幕上方显示入侵信息", icon = "📺", code = "subtitle"},
+            {type = "button", name = "祖国人", desc = "祖国人脚本", icon = "🦸", url = "https://raw.githubusercontent.com/giobolqv1/homelander-by-GioBolqv1-/refs/heads/main/homelander.lua"},
         }
     },
     ["甩飞"] = {
@@ -1272,4 +1273,4 @@ OpenBtn.MouseButton1Click:Connect(function()
     if isOpen then closePanel() else openPanel() end
 end)
 CloseButton.MouseButton1Click:Connect(function() closePanel() end)
-selectNav(navButtons[1].button, "公告")p
+selectNav(navButtons[1].button, "公告")
