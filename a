@@ -767,6 +767,97 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
             elseif runCode == "suicide" then
                 local c = Players.LocalPlayer.Character
                 if c and c:FindFirstChild("Humanoid") then c.Humanoid.Health = 0 end
+            elseif runCode == "superspeed" then
+                local c = Players.LocalPlayer.Character
+                if c and c:FindFirstChild("Humanoid") then
+                    c.Humanoid.WalkSpeed = 1000
+                end
+            elseif runCode == "infstamina" then
+                infJumpConnection = RunService.RenderStepped:Connect(function()
+                    local c = Players.LocalPlayer.Character
+                    if c and c:FindFirstChild("Humanoid") then
+                        c.Humanoid.MaxHealth = c.Humanoid.MaxHealth
+                    end
+                end)
+            elseif runCode == "infammo" then
+                infJumpConnection = RunService.RenderStepped:Connect(function()
+                    local c = Players.LocalPlayer.Character
+                    if c then
+                        for _, tool in ipairs(c:GetChildren()) do
+                            if tool:IsA("Tool") and tool:FindFirstChild("Ammo") then
+                                tool.Ammo.Value = 999
+                            end
+                        end
+                    end
+                end)
+            elseif runCode == "serverinfo" then
+                local infoGui = Instance.new("ScreenGui")
+                infoGui.Name = "ServerInfoGui"
+                infoGui.ResetOnSpawn = false
+                infoGui.Parent = PlayerGui
+                local infoFrame = Instance.new("Frame")
+                infoFrame.Size = UDim2.new(0, 280, 0, 180)
+                infoFrame.Position = UDim2.new(1, -290, 0, 10)
+                infoFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+                infoFrame.BackgroundTransparency = 0.2
+                infoFrame.BorderSizePixel = 0
+                infoFrame.ZIndex = 500
+                infoFrame.Parent = infoGui
+                local infoCorner = Instance.new("UICorner")
+                infoCorner.CornerRadius = UDim.new(0, 8)
+                infoCorner.Parent = infoFrame
+                local playerCountLabel = Instance.new("TextLabel")
+                playerCountLabel.Size = UDim2.new(1, -16, 0, 30)
+                playerCountLabel.Position = UDim2.new(0, 8, 0, 8)
+                playerCountLabel.Text = "服务器人数: " .. #Players:GetPlayers()
+                playerCountLabel.Font = Enum.Font.GothamBold
+                playerCountLabel.TextSize = 14
+                playerCountLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                playerCountLabel.BackgroundTransparency = 1
+                playerCountLabel.TextXAlignment = Enum.TextXAlignment.Left
+                playerCountLabel.ZIndex = 501
+                playerCountLabel.Parent = infoFrame
+                local coordLabel = Instance.new("TextLabel")
+                coordLabel.Size = UDim2.new(1, -16, 0, 30)
+                coordLabel.Position = UDim2.new(0, 8, 0, 40)
+                coordLabel.Font = Enum.Font.Gotham
+                coordLabel.TextSize = 12
+                coordLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+                coordLabel.BackgroundTransparency = 1
+                coordLabel.TextXAlignment = Enum.TextXAlignment.Left
+                coordLabel.ZIndex = 501
+                coordLabel.Parent = infoFrame
+                local nearestLabel = Instance.new("TextLabel")
+                nearestLabel.Size = UDim2.new(1, -16, 0, 90)
+                nearestLabel.Position = UDim2.new(0, 8, 0, 72)
+                nearestLabel.Font = Enum.Font.Gotham
+                nearestLabel.TextSize = 11
+                nearestLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+                nearestLabel.BackgroundTransparency = 1
+                nearestLabel.TextXAlignment = Enum.TextXAlignment.Left
+                nearestLabel.TextYAlignment = Enum.TextYAlignment.Top
+                nearestLabel.ZIndex = 501
+                nearestLabel.Parent = infoFrame
+                local infoActive = true
+                infJumpConnection = RunService.RenderStepped:Connect(function()
+                    if not infoActive then return end
+                    playerCountLabel.Text = "服务器人数: " .. #Players:GetPlayers()
+                    local c = Players.LocalPlayer.Character
+                    if c and c:FindFirstChild("HumanoidRootPart") then
+                        local pos = c.HumanoidRootPart.Position
+                        coordLabel.Text = "坐标: X:" .. math.floor(pos.X) .. " Y:" .. math.floor(pos.Y) .. " Z:" .. math.floor(pos.Z)
+                    end
+                    local nearestText = "附近玩家:\n"
+                    local myPos = c and c:FindFirstChild("HumanoidRootPart") and c.HumanoidRootPart.Position
+                    for _, p in ipairs(Players:GetPlayers()) do
+                        if p ~= Players.LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and myPos then
+                            local dist = math.floor((p.Character.HumanoidRootPart.Position - myPos).Magnitude)
+                            nearestText = nearestText .. "  " .. p.Name .. " - " .. dist .. "m\n"
+                        end
+                    end
+                    nearestLabel.Text = nearestText
+                end)
+                infJumpConnection = {Disconnect = function() infoActive = false; infoGui:Destroy() end}
             elseif runCode == "dance1" then
                 local c = Players.LocalPlayer.Character
                 if c and c:FindFirstChild("Humanoid") then
@@ -969,6 +1060,15 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
             elseif runCode == "enemyglow" then if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end; clearEnemyGlow()
             elseif runCode == "autoattack" then if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
             elseif runCode == "fulllight" then Lighting.Brightness = 1; Lighting.GlobalShadows = true
+            elseif runCode == "superspeed" then
+                local c = Players.LocalPlayer.Character
+                if c and c:FindFirstChild("Humanoid") then c.Humanoid.WalkSpeed = 16 end
+            elseif runCode == "infstamina" then if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
+            elseif runCode == "infammo" then if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
+            elseif runCode == "serverinfo" then
+                if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
+                local infoGui = PlayerGui:FindFirstChild("ServerInfoGui")
+                if infoGui then infoGui:Destroy() end
             elseif runCode == "dance1" then
                 if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
                 local c = Players.LocalPlayer.Character
@@ -1135,15 +1235,19 @@ local pageContents = {
             {type = "button", name = "跟随玩家", desc = "选择玩家自动跟随", icon = "🚶", url = "follow"},
             {type = "button", name = "快速回家", desc = "传送到执行脚本时的位置", icon = "🏠", url = "home"},
             {type = "toggle", name = "无敌模式", desc = "免疫伤害（客户端）", icon = "🛡️", code = "god"},
-            {type = "toggle", name = "自动收集", desc = "自动吸附近物品（可能卡顿）", icon = "📦", code = "collect"},
+            {type = "toggle", name = "千倍速度", desc = "移动速度1000", icon = "⚡", code = "superspeed"},
+            {type = "toggle", name = "无限体力", desc = "体力不会减少", icon = "💪", code = "infstamina"},
+            {type = "toggle", name = "无限弹药", desc = "弹药永远999", icon = "🔫", code = "infammo"},
+            {type = "toggle", name = "服务器信息", desc = "人数+坐标+附近玩家", icon = "📊", code = "serverinfo"},
+            {type = "toggle", name = "自动收集", desc = "自动吸附近物品", icon = "📦", code = "collect"},
             {type = "toggle", name = "点击传送", desc = "鼠标点哪里传哪里", icon = "📍", code = "clicktp"},
             {type = "toggle", name = "自动连点", desc = "自动点击屏幕准心", icon = "🖱️", code = "autoclick"},
             {type = "toggle", name = "踏空", desc = "走到哪定到哪不往下掉", icon = "🦶", code = "float"},
             {type = "toggle", name = "防挂机", desc = "自动防止被踢出游戏", icon = "⏰", code = "antiafk"},
-            {type = "toggle", name = "加速模式", desc = "游戏全局加速（客户端）", icon = "⏩", code = "speedhack"},
-            {type = "toggle", name = "穿墙模式", desc = "可以穿过墙壁（客户端）", icon = "👻", code = "noclip"},
-            {type = "toggle", name = "透视物品", desc = "高亮可拾取物品（客户端）", icon = "✨", code = "itemesp"},
-            {type = "toggle", name = "隐身模式", desc = "别人看不到你（客户端）", icon = "👻", code = "invisible"},
+            {type = "toggle", name = "加速模式", desc = "游戏全局加速", icon = "⏩", code = "speedhack"},
+            {type = "toggle", name = "穿墙模式", desc = "可以穿过墙壁", icon = "👻", code = "noclip"},
+            {type = "toggle", name = "透视物品", desc = "高亮可拾取物品", icon = "✨", code = "itemesp"},
+            {type = "toggle", name = "隐身模式", desc = "别人看不到你", icon = "👻", code = "invisible"},
             {type = "toggle", name = "删除建模", desc = "点击方块确认后删除", icon = "🗑️", code = "deletepart"},
             {type = "toggle", name = "去雾功能", desc = "消除游戏中的雾气", icon = "🌫️", code = "clearfog"},
             {type = "input", name = "旋转速度", desc = "角色自动旋转", icon = "🔄", default = "0", execute = function(v)
@@ -1172,8 +1276,8 @@ local pageContents = {
     ["战斗功能"] = {
         type = "toggles",
         items = {
-            {type = "toggle", name = "团队高亮", desc = "队友蓝色高亮（客户端）", icon = "🔵", code = "teamglow"},
-            {type = "toggle", name = "敌对高亮", desc = "敌人红色高亮（客户端）", icon = "🔴", code = "enemyglow"},
+            {type = "toggle", name = "团队高亮", desc = "队友蓝色高亮", icon = "🔵", code = "teamglow"},
+            {type = "toggle", name = "敌对高亮", desc = "敌人红色高亮", icon = "🔴", code = "enemyglow"},
             {type = "toggle", name = "自动攻击", desc = "自动追踪攻击敌人", icon = "⚔️", code = "autoattack"},
             {type = "toggle", name = "全图点亮", desc = "消除所有阴影", icon = "💡", code = "fulllight"},
             {type = "toggle", name = "一键自杀", desc = "立即重置角色", icon = "💀", code = "suicide"},
