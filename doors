@@ -1,4 +1,4 @@
--- Doors ESP 完整版
+-- Doors 透视ESP - 增加拉杆透视
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -11,7 +11,10 @@ local showDoors = true
 local showKeys = true
 local showItems = true
 local showMonsters = true
+local showLevers = true
 local nightVision = true
+local rayEnabled = false
+local beamData = {}
 
 -- GUI
 local gui = Instance.new("ScreenGui")
@@ -19,51 +22,77 @@ gui.Name = "ESP"
 gui.Parent = game:GetService("CoreGui")
 
 local f = Instance.new("Frame")
-f.Size = UDim2.new(0, 250, 0, 280)
+f.Size = UDim2.new(0, 250, 0, 340)
 f.Position = UDim2.new(0, 50, 0, 100)
 f.BackgroundColor3 = Color3.fromRGB(35,35,35)
 f.BorderSizePixel = 0
 f.Active = true
 f.Draggable = true
+f.ClipsDescendants = true
 f.Parent = gui
 
-local t = Instance.new("TextLabel")
-t.Size = UDim2.new(1,0,0,35)
-t.BackgroundColor3 = Color3.fromRGB(25,25,25)
-t.TextColor3 = Color3.fromRGB(255,255,255)
-t.Text = "Doors ESP"
-t.Font = Enum.Font.SourceSansBold
-t.TextSize = 16
-t.Parent = f
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.new(1, 0, 0, 35)
+titleBar.BackgroundColor3 = Color3.fromRGB(25,25,25)
+titleBar.Parent = f
+
+local titleText = Instance.new("TextLabel")
+titleText.Size = UDim2.new(0.75, 0, 1, 0)
+titleText.BackgroundTransparency = 1
+titleText.TextColor3 = Color3.fromRGB(255,255,255)
+titleText.Text = "Doors ESP"
+titleText.Font = Enum.Font.SourceSansBold
+titleText.TextSize = 16
+titleText.TextXAlignment = Enum.TextXAlignment.Left
+titleText.Parent = titleBar
+
+local isCollapsed = false
+local collapseBtn = Instance.new("TextButton")
+collapseBtn.Size = UDim2.new(0, 30, 0, 30)
+collapseBtn.Position = UDim2.new(1, -32, 0, 3)
+collapseBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+collapseBtn.TextColor3 = Color3.fromRGB(255,255,255)
+collapseBtn.Text = "-"
+collapseBtn.Font = Enum.Font.SourceSansBold
+collapseBtn.TextSize = 20
+collapseBtn.Parent = titleBar
+
+local content = Instance.new("Frame")
+content.Size = UDim2.new(1, 0, 0, 305)
+content.Position = UDim2.new(0, 0, 0, 35)
+content.BackgroundTransparency = 1
+content.Parent = f
 
 local mainBtn = Instance.new("TextButton")
 mainBtn.Size = UDim2.new(0.85,0,0,40)
-mainBtn.Position = UDim2.new(0.075,0,0,45)
+mainBtn.Position = UDim2.new(0.075,0,0,5)
 mainBtn.BackgroundColor3 = Color3.fromRGB(180,40,40)
 mainBtn.TextColor3 = Color3.fromRGB(255,255,255)
 mainBtn.Text = "ESP: OFF"
 mainBtn.Font = Enum.Font.SourceSansBold
 mainBtn.TextSize = 16
-mainBtn.Parent = f
+mainBtn.Parent = content
 
 local function makeBtn(name, y)
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.85,0,0,30)
+    btn.Size = UDim2.new(0.85,0,0,28)
     btn.Position = UDim2.new(0.075,0,0,y)
     btn.BackgroundColor3 = Color3.fromRGB(50,180,50)
     btn.TextColor3 = Color3.fromRGB(255,255,255)
     btn.Text = name..": ON"
     btn.Font = Enum.Font.SourceSansBold
     btn.TextSize = 13
-    btn.Parent = f
+    btn.Parent = content
     return btn
 end
 
-local doorBtn = makeBtn("门", 95)
-local keyBtn = makeBtn("钥匙", 130)
-local itemBtn = makeBtn("道具", 165)
-local monsterBtn = makeBtn("怪物", 200)
-local nightBtn = makeBtn("夜视", 235)
+local doorBtn = makeBtn("门", 55)
+local keyBtn = makeBtn("钥匙", 87)
+local itemBtn = makeBtn("道具", 119)
+local leverBtn = makeBtn("拉杆", 151)
+local monsterBtn = makeBtn("怪物", 183)
+local nightBtn = makeBtn("夜视", 215)
+local rayBtn = makeBtn("射线", 247)
 
 local warn = Instance.new("Frame")
 warn.Size = UDim2.new(0,400,0,80)
@@ -84,6 +113,17 @@ warnText.Font = Enum.Font.SourceSansBold
 warnText.TextSize = 30
 warnText.Parent = warn
 
+collapseBtn.MouseButton1Click:Connect(function()
+    isCollapsed = not isCollapsed
+    if isCollapsed then
+        f:TweenSize(UDim2.new(0, 250, 0, 35), "Out", "Quad", 0.3)
+        collapseBtn.Text = "+"
+    else
+        f:TweenSize(UDim2.new(0, 250, 0, 340), "Out", "Quad", 0.3)
+        collapseBtn.Text = "-"
+    end
+end)
+
 function clearAll()
     for _, d in pairs(highlights) do
         pcall(function()
@@ -93,6 +133,27 @@ function clearAll()
         end)
     end
     highlights = {}
+    clearBeams()
+end
+
+function clearBeams()
+    for _, b in pairs(beamData) do
+        pcall(function()
+            if b.beam then b.beam:Destroy() end
+            if b.a0 then b.a0:Destroy() end
+            if b.a1 then b.a1:Destroy() end
+        end)
+    end
+    beamData = {}
+end
+
+function getPos(obj)
+    if obj:IsA("BasePart") then return obj.Position end
+    if obj:IsA("Model") then
+        local p = obj:FindFirstChildWhichIsA("BasePart")
+        if p then return p.Position end
+    end
+    return nil
 end
 
 function addESP(obj, color, name)
@@ -127,12 +188,7 @@ function addESP(obj, color, name)
             end
             local char = LocalPlayer.Character
             if char and char:FindFirstChild("HumanoidRootPart") then
-                local pos
-                if obj:IsA("BasePart") then pos = obj.Position
-                elseif obj:IsA("Model") then
-                    local p = obj:FindFirstChildWhichIsA("BasePart")
-                    if p then pos = p.Position end
-                end
+                local pos = getPos(obj)
                 if pos then
                     lb.Text = string.format("%s %.1fm", name, (char.HumanoidRootPart.Position - pos).Magnitude)
                 end
@@ -143,7 +199,71 @@ function addESP(obj, color, name)
     end)
 end
 
-local function getMonsterName(obj)
+function addBeam(targetObj, color)
+    pcall(function()
+        local char = LocalPlayer.Character
+        if not char or not char:FindFirstChild("Head") then return end
+        local targetPos = getPos(targetObj)
+        if not targetPos then return end
+        
+        local a0 = Instance.new("Attachment")
+        a0.Parent = char.Head
+        local a1 = Instance.new("Attachment")
+        a1.Parent = targetObj
+        a1.WorldPosition = targetPos
+        
+        local beam = Instance.new("Beam")
+        beam.Attachment0 = a0
+        beam.Attachment1 = a1
+        beam.Color = ColorSequence.new(color)
+        beam.Width0 = 0.04
+        beam.Width1 = 0.04
+        beam.Transparency = NumberSequence.new(0.4)
+        beam.FaceCamera = true
+        beam.Parent = a0
+        
+        table.insert(beamData, {beam=beam, a0=a0, a1=a1})
+    end)
+end
+
+function updateBeams()
+    clearBeams()
+    if not rayEnabled then return end
+    
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("Head") then return end
+    local hp = char.Head.Position
+    
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        local pos = getPos(obj)
+        if not pos or (hp - pos).Magnitude > 150 then continue end
+        
+        local color = nil
+        if showDoors and obj:IsA("Model") and obj.Name == "Door" then
+            color = Color3.fromRGB(50,150,255)
+        elseif showKeys and obj.Name == "KeyObtain" then
+            color = Color3.fromRGB(255,200,0)
+        elseif showLevers and obj.Name:lower():find("lever") then
+            color = Color3.fromRGB(255,100,255)
+        elseif showItems then
+            if obj:IsA("Tool") then color = Color3.fromRGB(50,255,50)
+            elseif obj:IsA("Model") then
+                local n = obj.Name:lower()
+                if n:find("gold") or n:find("coin") or n:find("flashlight") or n:find("lighter") or n:find("vitamin") or n:find("lockpick") or n:find("bandage") or n:find("crucifix") or n:find("revolver") or n:find("shotgun") or n:find("rifle") or n:find("skeletonkey") or n:find("pills") then
+                    color = Color3.fromRGB(50,255,50)
+                end
+            end
+        elseif showMonsters and obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
+            local n = obj.Name:lower()
+            if n:find("rush") or n:find("ambush") or n:find("screech") or n:find("figure") or n:find("seek") or n:find("halt") or n:find("eyes") or n:find("hide") or n:find("dupe") or n:find("shadow") or n:find("granny") or obj:FindFirstChild("Humanoid") then
+                color = Color3.fromRGB(255,50,50)
+            end
+        end
+        if color then addBeam(obj, color) end
+    end
+end
+
+function getMonsterName(obj)
     local n = obj.Name:lower()
     if n:find("ambush") then return "Ambush" end
     if n:find("rush") then return "Rush" end
@@ -173,11 +293,12 @@ function updateESP()
             addESP(obj, Color3.fromRGB(50,150,255), "门")
         end
         -- 钥匙
-        if showKeys then
-            local n = obj.Name:lower()
-            if not n:find("typewriter") and n:find("key") then
-                addESP(obj, Color3.fromRGB(255,200,0), "钥匙")
-            end
+        if showKeys and obj.Name == "KeyObtain" then
+            addESP(obj, Color3.fromRGB(255,200,0), "钥匙")
+        end
+        -- 拉杆
+        if showLevers and obj.Name:lower():find("lever") then
+            addESP(obj, Color3.fromRGB(255,100,255), "拉杆")
         end
         -- 道具
         if showItems then
@@ -185,14 +306,8 @@ function updateESP()
                 addESP(obj, Color3.fromRGB(50,255,50), "道具")
             elseif obj:IsA("Model") then
                 local n = obj.Name:lower()
-                if not n:find("book") then
-                    if n:find("gold") or n:find("coin") then
-                        addESP(obj, Color3.fromRGB(50,255,50), "道具")
-                    else
-                        for _, item in ipairs({"flashlight","lighter","vitamin","lockpick","bandage","crucifix","revolver","shotgun","rifle","skeletonkey","pills"}) do
-                            if n:find(item) then addESP(obj, Color3.fromRGB(50,255,50), "道具"); break end
-                        end
-                    end
+                if not n:find("book") and (n:find("gold") or n:find("coin") or n:find("flashlight") or n:find("lighter") or n:find("vitamin") or n:find("lockpick") or n:find("bandage") or n:find("crucifix") or n:find("revolver") or n:find("shotgun") or n:find("rifle") or n:find("skeletonkey") or n:find("pills")) then
+                    addESP(obj, Color3.fromRGB(50,255,50), "道具")
                 end
             end
         end
@@ -200,10 +315,10 @@ function updateESP()
         if showMonsters and obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
             local mn = getMonsterName(obj)
             if mn then
-                local char = LocalPlayer.Character
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    local pos = obj:FindFirstChildWhichIsA("BasePart")
-                    if pos then
+                local pos = obj:FindFirstChildWhichIsA("BasePart")
+                if pos then
+                    local char = LocalPlayer.Character
+                    if char and char:FindFirstChild("HumanoidRootPart") then
                         local dist = (char.HumanoidRootPart.Position - pos.Position).Magnitude
                         local maxD = (mn=="Rush" or mn=="Ambush") and 300 or 50
                         if dist < maxD then
@@ -215,6 +330,8 @@ function updateESP()
             end
         end
     end
+    
+    updateBeams()
     
     if nm then
         warn.Visible = true
@@ -233,7 +350,6 @@ function updateESP()
     end
 end
 
--- 夜视
 spawn(function()
     while true do
         if nightVision then
@@ -241,14 +357,9 @@ spawn(function()
                 local a = (Lighting.Ambient.R + Lighting.Ambient.G + Lighting.Ambient.B) / 3
                 local o = (Lighting.OutdoorAmbient.R + Lighting.OutdoorAmbient.G + Lighting.OutdoorAmbient.B) / 3
                 if a < 0.3 and o < 0.3 then
-                    Lighting.Brightness = 5
-                    Lighting.ClockTime = 14
-                    Lighting.FogEnd = 999999
-                    Lighting.ExposureCompensation = 1.5
+                    Lighting.Brightness = 5; Lighting.FogEnd = 999999; Lighting.ExposureCompensation = 1.5
                 else
-                    Lighting.Brightness = 1
-                    Lighting.FogEnd = 500
-                    Lighting.ExposureCompensation = 0
+                    Lighting.Brightness = 1; Lighting.FogEnd = 500; Lighting.ExposureCompensation = 0
                 end
             end)
         end
@@ -256,7 +367,6 @@ spawn(function()
     end
 end)
 
--- ESP循环
 spawn(function()
     while true do
         if espEnabled then updateESP() end
@@ -264,7 +374,6 @@ spawn(function()
     end
 end)
 
--- 按钮事件
 mainBtn.MouseButton1Click:Connect(function()
     espEnabled = not espEnabled
     mainBtn.Text = espEnabled and "ESP: ON" or "ESP: OFF"
@@ -287,6 +396,11 @@ itemBtn.MouseButton1Click:Connect(function()
     itemBtn.BackgroundColor3 = showItems and Color3.fromRGB(50,180,50) or Color3.fromRGB(180,40,40)
 end)
 
+leverBtn.MouseButton1Click:Connect(function()
+    showLevers = not showLevers; leverBtn.Text = showLevers and "拉杆: ON" or "拉杆: OFF"
+    leverBtn.BackgroundColor3 = showLevers and Color3.fromRGB(50,180,50) or Color3.fromRGB(180,40,40)
+end)
+
 monsterBtn.MouseButton1Click:Connect(function()
     showMonsters = not showMonsters; monsterBtn.Text = showMonsters and "怪物: ON" or "怪物: OFF"
     monsterBtn.BackgroundColor3 = showMonsters and Color3.fromRGB(50,180,50) or Color3.fromRGB(180,40,40)
@@ -296,11 +410,14 @@ nightBtn.MouseButton1Click:Connect(function()
     nightVision = not nightVision
     nightBtn.Text = nightVision and "夜视: ON" or "夜视: OFF"
     nightBtn.BackgroundColor3 = nightVision and Color3.fromRGB(50,180,50) or Color3.fromRGB(180,40,40)
-    if not nightVision then
-        Lighting.Brightness = 1; Lighting.FogEnd = 500; Lighting.ExposureCompensation = 0
-    end
+    if not nightVision then Lighting.Brightness = 1; Lighting.FogEnd = 500; Lighting.ExposureCompensation = 0 end
+end)
+
+rayBtn.MouseButton1Click:Connect(function()
+    rayEnabled = not rayEnabled
+    rayBtn.Text = rayEnabled and "射线: ON" or "射线: OFF"
+    rayBtn.BackgroundColor3 = rayEnabled and Color3.fromRGB(50,180,50) or Color3.fromRGB(180,40,40)
+    if not rayEnabled then clearBeams() end
 end)
 
 print("Doors ESP 完整版加载完成")
-print("门:Door | 钥匙:key | 道具 | 怪物:Rush/Ambush 300m 其他50m | 夜视自动")
-print("Figure检测: figure/granny/blind/library")
