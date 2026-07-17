@@ -1,4 +1,4 @@
--- Doors ESP 独立脚本（与主脚本UI风格一致）
+-- Doors ESP 独立脚本（与主脚本UI风格一致，含怪物警告）
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -105,8 +105,8 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 400, 0, 400)
-MainFrame.Position = UDim2.new(0.5, -200, 0.5, -200)
+MainFrame.Size = UDim2.new(0, 400, 0, 460)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -230)
 MainFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 MainFrame.BackgroundTransparency = 0.06
 MainFrame.Visible = false
@@ -148,7 +148,7 @@ local TopBarCorner = Instance.new("UICorner")
 TopBarCorner.CornerRadius = UDim.new(0, 12)
 TopBarCorner.Parent = TopBar
 local TitleLabel = Instance.new("TextLabel")
-TitleLabel.Size = UDim2.new(0, 150, 1, 0)
+TitleLabel.Size = UDim2.new(0, 160, 1, 0)
 TitleLabel.Position = UDim2.new(0, 12, 0, 0)
 TitleLabel.Text = "黑脚本-Doors ESP"
 TitleLabel.TextColor3 = Color3.fromRGB(50, 50, 50)
@@ -193,6 +193,30 @@ ContentArea.Parent = InnerPanel
 local ContentList = Instance.new("UIListLayout")
 ContentList.Padding = UDim.new(0, 6)
 ContentList.Parent = ContentArea
+
+local warnFrame = Instance.new("Frame")
+warnFrame.Size = UDim2.new(0, 400, 0, 80)
+warnFrame.Position = UDim2.new(0.5, -200, 0.5, -300)
+warnFrame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+warnFrame.BackgroundTransparency = 0.2
+warnFrame.BorderSizePixel = 0
+warnFrame.Visible = false
+warnFrame.ZIndex = 100
+warnFrame.Parent = ScreenGui
+local warnCorner = Instance.new("UICorner")
+warnCorner.CornerRadius = UDim.new(0, 10)
+warnCorner.Parent = warnFrame
+
+local warnText = Instance.new("TextLabel")
+warnText.Size = UDim2.new(1, 0, 1, 0)
+warnText.BackgroundTransparency = 1
+warnText.TextColor3 = Color3.fromRGB(255, 255, 255)
+warnText.TextStrokeTransparency = 0
+warnText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+warnText.Font = Enum.Font.GothamBold
+warnText.TextSize = 24
+warnText.ZIndex = 101
+warnText.Parent = warnFrame
 
 local function createToggleCard(name, desc, icon, defaultState, onToggle)
     local Card = Instance.new("Frame")
@@ -440,7 +464,10 @@ end
 
 function updateESP()
     clearAll()
-    if not espEnabled then return end
+    if not espEnabled then warnFrame.Visible = false; return end
+    
+    local nm = nil
+    local nd = 999
     
     for _, obj in ipairs(workspace:GetDescendants()) do
         if showDoors and obj:IsA("Model") and obj.Name == "Door" then
@@ -465,12 +492,39 @@ function updateESP()
         if showMonsters and obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
             local mn = getMonsterName(obj)
             if mn then
-                addESP(obj, Color3.fromRGB(255,50,50), mn)
+                local pos = obj:FindFirstChildWhichIsA("BasePart")
+                if pos then
+                    local char = LocalPlayer.Character
+                    if char and char:FindFirstChild("HumanoidRootPart") then
+                        local dist = (char.HumanoidRootPart.Position - pos.Position).Magnitude
+                        local maxD = (mn=="Rush" or mn=="Ambush") and 300 or 50
+                        if dist < maxD then
+                            addESP(obj, Color3.fromRGB(255,50,50), mn)
+                            if dist < nd then nd = dist; nm = mn end
+                        end
+                    end
+                end
             end
         end
     end
     
     updateBeams()
+    
+    if nm then
+        warnFrame.Visible = true
+        if nd < 8 then
+            warnText.Text = "⚠ "..nm.." 来了! "..string.format("%.1fm",nd).." ⚠"
+            warnFrame.BackgroundColor3 = Color3.fromRGB(255,0,0)
+        elseif nd < 25 then
+            warnText.Text = "⚠ "..nm.." "..string.format("%.1fm",nd).." ⚠"
+            warnFrame.BackgroundColor3 = Color3.fromRGB(255,80,0)
+        else
+            warnText.Text = nm.." "..string.format("%.1fm",nd)
+            warnFrame.BackgroundColor3 = Color3.fromRGB(200,120,0)
+        end
+    else
+        warnFrame.Visible = false
+    end
 end
 
 spawn(function()
@@ -493,7 +547,7 @@ end)
 
 createToggleCard("ESP总开关", "开启/关闭所有透视", "👁️", false, function(state)
     espEnabled = state
-    if espEnabled then updateESP() else clearAll() end
+    if espEnabled then updateESP() else clearAll(); warnFrame.Visible = false end
 end)
 
 createToggleCard("门透视", "高亮显示门", "🚪", true, function(state)
@@ -512,7 +566,7 @@ createToggleCard("拉杆透视", "高亮显示拉杆", "🔧", true, function(st
     showLevers = state
 end)
 
-createToggleCard("怪物透视", "高亮显示怪物", "👹", true, function(state)
+createToggleCard("怪物透视", "高亮显示怪物+警告", "👹", true, function(state)
     showMonsters = state
 end)
 
@@ -533,7 +587,7 @@ local function openPanel()
     isOpen = true
     MainFrame.Size = UDim2.new(0, 0, 0, 0); MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
     MainFrame.Visible = true
-    TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 400, 0, 400), Position = UDim2.new(0.5, -200, 0.5, -200)}):Play()
+    TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 400, 0, 460), Position = UDim2.new(0.5, -200, 0.5, -230)}):Play()
 end
 local function closePanel()
     isOpen = false
