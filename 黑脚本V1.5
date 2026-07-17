@@ -459,7 +459,7 @@ local NavTopPad = Instance.new("Frame")
 NavTopPad.Size = UDim2.new(1, 0, 0, 5)
 NavTopPad.BackgroundTransparency = 1
 NavTopPad.Parent = NavScroll
-local navItems = {{name = "公告", icon = "📢"},{name = "通用", icon = "⚙️"},{name = "战斗功能", icon = "⚔️"},{name = "整活功能", icon = "🎭"},{name = "甩飞", icon = "💨"},{name = "服务器", icon = "📡"},{name = "国内脚本", icon = "🇨🇳"}}
+local navItems = {{name = "公告", icon = "📢"},{name = "通用", icon = "⚙️"},{name = "战斗功能", icon = "⚔️"},{name = "整活功能", icon = "🎭"},{name = "音乐区", icon = "🎵"},{name = "甩飞", icon = "💨"},{name = "服务器", icon = "📡"},{name = "国内脚本", icon = "🇨🇳"}}
 local navButtons = {}
 local selectedNav = nil
 local ContentArea = Instance.new("Frame")
@@ -1205,6 +1205,70 @@ local function createInputCard(parent, name, description, icon, defaultValue, on
     end)
     return Card
 end
+
+local function createMusicCard(parent, name, desc, icon, soundId)
+    local Card = Instance.new("Frame")
+    Card.Size = UDim2.new(1, -16, 0, 46); Card.Position = UDim2.new(0, 8, 0, 0)
+    Card.BackgroundColor3 = Color3.fromRGB(252, 252, 252); Card.BorderSizePixel = 0; Card.ZIndex = 7; Card.Parent = parent
+    local CardCorner = Instance.new("UICorner"); CardCorner.CornerRadius = UDim.new(0, 10); CardCorner.Parent = Card
+    local CardStroke = Instance.new("UIStroke"); CardStroke.Color = Color3.fromRGB(230, 230, 230); CardStroke.Thickness = 1; CardStroke.Parent = Card
+    local IconFrame = Instance.new("Frame")
+    IconFrame.Size = UDim2.new(0, 26, 0, 26); IconFrame.Position = UDim2.new(0, 10, 0, 10)
+    IconFrame.BackgroundColor3 = Color3.fromRGB(240, 240, 240); IconFrame.BorderSizePixel = 0; IconFrame.ZIndex = 8; IconFrame.Parent = Card
+    local IconCorner = Instance.new("UICorner"); IconCorner.CornerRadius = UDim.new(0, 6); IconCorner.Parent = IconFrame
+    local IconText = Instance.new("TextLabel")
+    IconText.Size = UDim2.new(1, 0, 1, 0); IconText.Text = icon; IconText.TextSize = 11
+    IconText.BackgroundTransparency = 1; IconText.ZIndex = 9; IconText.Parent = IconFrame
+    local TitleText = Instance.new("TextLabel")
+    TitleText.Size = UDim2.new(0, 180, 0, 15); TitleText.Position = UDim2.new(0, 44, 0, 5)
+    TitleText.Text = name; TitleText.TextColor3 = Color3.fromRGB(50, 50, 50)
+    TitleText.Font = Enum.Font.GothamSemibold; TitleText.TextSize = 11
+    TitleText.BackgroundTransparency = 1; TitleText.TextXAlignment = Enum.TextXAlignment.Left; TitleText.ZIndex = 8; TitleText.Parent = Card
+    local DescText = Instance.new("TextLabel")
+    DescText.Size = UDim2.new(1, -100, 0, 13); DescText.Position = UDim2.new(0, 44, 0, 22)
+    DescText.Text = desc; DescText.TextColor3 = Color3.fromRGB(130, 130, 130)
+    DescText.Font = Enum.Font.Gotham; DescText.TextSize = 9; DescText.BackgroundTransparency = 1
+    DescText.TextXAlignment = Enum.TextXAlignment.Left; DescText.ZIndex = 8; DescText.Parent = Card
+    local Btn = Instance.new("TextButton")
+    Btn.Size = UDim2.new(0, 50, 0, 20); Btn.Position = UDim2.new(1, -58, 0, 13)
+    Btn.Text = "播放"; Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Btn.Font = Enum.Font.GothamBold; Btn.TextSize = 10; Btn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+    Btn.BorderSizePixel = 0; Btn.ZIndex = 9; Btn.AutoButtonColor = false; Btn.Parent = Card
+    local BtnCorner = Instance.new("UICorner"); BtnCorner.CornerRadius = UDim.new(0, 5); BtnCorner.Parent = Btn
+    local sound = nil
+    local isPlaying = false
+    Btn.MouseButton1Click:Connect(function()
+        if isPlaying then
+            if sound then sound:Stop(); sound:Destroy(); sound = nil end
+            isPlaying = false
+            Btn.Text = "播放"
+            Btn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+        else
+            sound = Instance.new("Sound")
+            sound.SoundId = "rbxassetid://" .. soundId
+            sound.Volume = 1
+            sound.Parent = workspace
+            sound:Play()
+            sound.Ended:Connect(function()
+                sound:Destroy()
+                sound = nil
+                isPlaying = false
+                Btn.Text = "播放"
+                Btn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+            end)
+            isPlaying = true
+            Btn.Text = "停止播放"
+            Btn.BackgroundColor3 = Color3.fromRGB(244, 67, 54)
+        end
+    end)
+    Btn.MouseEnter:Connect(function()
+        if not isPlaying then Btn.BackgroundColor3 = Color3.fromRGB(255, 160, 20) end
+    end)
+    Btn.MouseLeave:Connect(function()
+        if not isPlaying then Btn.BackgroundColor3 = Color3.fromRGB(255, 140, 0) end
+    end)
+end
+
 local announcementTextBox
 local function getTime()
     local now = os.date("*t")
@@ -1301,6 +1365,13 @@ local pageContents = {
             {type = "button", name = "祖国人", desc = "祖国人脚本", icon = "🦸", url = "https://raw.githubusercontent.com/giobolqv1/homelander-by-GioBolqv1-/refs/heads/main/homelander.lua"},
         }
     },
+    ["音乐区"] = {
+        type = "music",
+        items = {
+            {name = "进击的巨人", desc = "点击播放", icon = "🎵", soundId = "89711807693889"},
+            {name = "误闯天家", desc = "点击播放", icon = "🎶", soundId = "124384558101360"},
+        }
+    },
     ["甩飞"] = {
         type = "buttons",
         items = {{name = "多人甩飞", desc = "选择玩家然后甩飞", icon = "💨", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/%E7%94%A9%E9%A3%9E"}}
@@ -1357,6 +1428,12 @@ for pageName, contentData in pairs(pageContents) do
         local n = 0
         for _, item in ipairs(contentData.items) do
             createButtonCard(Page, item.name, item.desc, item.icon, item.url); n = n + 1
+        end
+        Page.CanvasSize = UDim2.new(0, 0, 0, n * 52 + 12)
+    elseif contentData.type == "music" then
+        local n = 0
+        for _, item in ipairs(contentData.items) do
+            createMusicCard(Page, item.name, item.desc, item.icon, item.soundId); n = n + 1
         end
         Page.CanvasSize = UDim2.new(0, 0, 0, n * 52 + 12)
     end
