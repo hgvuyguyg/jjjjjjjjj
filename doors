@@ -1,4 +1,4 @@
--- Doors ESP 独立脚本（与主脚本UI风格一致，含怪物警告）
+-- Doors ESP 独立脚本 第1段：UI框架 + 灵动岛 + 主面板 + 卡片创建函数
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -17,7 +17,10 @@ local showMonsters = true
 local showLevers = true
 local nightVision = true
 local rayEnabled = false
+local alertEnabled = true
 local beamData = {}
+local lastAlert = {}
+local alertCooldown = 10
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "DoorsESPUI"
@@ -105,8 +108,8 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 400, 0, 460)
-MainFrame.Position = UDim2.new(0.5, -200, 0.5, -230)
+MainFrame.Size = UDim2.new(0, 400, 0, 500)
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
 MainFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 MainFrame.BackgroundTransparency = 0.06
 MainFrame.Visible = false
@@ -148,7 +151,7 @@ local TopBarCorner = Instance.new("UICorner")
 TopBarCorner.CornerRadius = UDim.new(0, 12)
 TopBarCorner.Parent = TopBar
 local TitleLabel = Instance.new("TextLabel")
-TitleLabel.Size = UDim2.new(0, 160, 1, 0)
+TitleLabel.Size = UDim2.new(0, 180, 1, 0)
 TitleLabel.Position = UDim2.new(0, 12, 0, 0)
 TitleLabel.Text = "黑脚本-Doors ESP"
 TitleLabel.TextColor3 = Color3.fromRGB(50, 50, 50)
@@ -196,7 +199,7 @@ ContentList.Parent = ContentArea
 
 local warnFrame = Instance.new("Frame")
 warnFrame.Size = UDim2.new(0, 400, 0, 80)
-warnFrame.Position = UDim2.new(0.5, -200, 0.5, -300)
+warnFrame.Position = UDim2.new(0.5, -200, 0.5, -320)
 warnFrame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
 warnFrame.BackgroundTransparency = 0.2
 warnFrame.BorderSizePixel = 0
@@ -206,7 +209,6 @@ warnFrame.Parent = ScreenGui
 local warnCorner = Instance.new("UICorner")
 warnCorner.CornerRadius = UDim.new(0, 10)
 warnCorner.Parent = warnFrame
-
 local warnText = Instance.new("TextLabel")
 warnText.Size = UDim2.new(1, 0, 1, 0)
 warnText.BackgroundTransparency = 1
@@ -214,7 +216,7 @@ warnText.TextColor3 = Color3.fromRGB(255, 255, 255)
 warnText.TextStrokeTransparency = 0
 warnText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
 warnText.Font = Enum.Font.GothamBold
-warnText.TextSize = 24
+warnText.TextSize = 22
 warnText.ZIndex = 101
 warnText.Parent = warnFrame
 
@@ -306,6 +308,7 @@ local function createToggleCard(name, desc, icon, defaultState, onToggle)
         onToggle(toggleState)
     end)
 end
+-- Doors ESP 独立脚本 第2段：ESP功能 + 卡片创建 + 打开关闭动画
 
 function clearAll()
     for _, d in pairs(highlights) do
@@ -386,14 +389,14 @@ function addBeam(targetObj, color)
     pcall(function()
         local char = LocalPlayer.Character
         if not char or not char:FindFirstChild("Head") then return end
-        local targetPos = getPos(targetObj)
-        if not targetPos then return end
+        local tp = getPos(targetObj)
+        if not tp then return end
         
         local a0 = Instance.new("Attachment")
         a0.Parent = char.Head
         local a1 = Instance.new("Attachment")
         a1.Parent = targetObj
-        a1.WorldPosition = targetPos
+        a1.WorldPosition = tp
         
         local beam = Instance.new("Beam")
         beam.Attachment0 = a0
@@ -438,7 +441,7 @@ function updateBeams()
             end
         elseif showMonsters and obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
             local n = obj.Name:lower()
-            if n:find("rush") or n:find("ambush") or n:find("screech") or n:find("figure") or n:find("seek") or n:find("halt") or n:find("eyes") or n:find("hide") or n:find("dupe") or n:find("shadow") or obj:FindFirstChild("Humanoid") then
+            if n:find("rush") or n:find("ambush") or n:find("screech") or n:find("figure") or n:find("seek") or n:find("halt") or n:find("eyes") or n:find("hide") or n:find("dupe") or n:find("shadow") or n:find("granny") or obj:FindFirstChild("Humanoid") then
                 color = Color3.fromRGB(255,50,50)
             end
         end
@@ -446,19 +449,25 @@ function updateBeams()
     end
 end
 
+function sendChat(msg)
+    pcall(function() game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(msg) end)
+    pcall(function() game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents").SayMessageRequest:FireServer(msg,"All") end)
+end
+
 function getMonsterName(obj)
     local n = obj.Name:lower()
-    if n:find("ambush") then return "Ambush" end
-    if n:find("rush") then return "Rush" end
-    if n:find("screech") then return "Screech" end
-    if n:find("figure") then return "Figure" end
-    if n:find("seek") then return "Seek" end
-    if n:find("halt") then return "Halt" end
-    if n:find("eyes") then return "Eyes" end
-    if n:find("hide") then return "Hide" end
-    if n:find("dupe") then return "Dupe" end
-    if n:find("shadow") then return "Shadow" end
-    if obj:FindFirstChild("Humanoid") then return "怪物" end
+    if n:find("ambush") then return "Ambush"
+    elseif n:find("rush") then return "Rush"
+    elseif n:find("screech") then return "Screech"
+    elseif n:find("figure") then return "Figure"
+    elseif n:find("seek") then return "Seek"
+    elseif n:find("halt") then return "Halt"
+    elseif n:find("eyes") then return "Eyes"
+    elseif n:find("hide") then return "Hide"
+    elseif n:find("dupe") then return "Dupe"
+    elseif n:find("shadow") then return "Shadow"
+    elseif n:find("granny") or n:find("blind") or n:find("library") then return "Figure"
+    elseif obj:FindFirstChild("Humanoid") then return "怪物" end
     return nil
 end
 
@@ -497,10 +506,17 @@ function updateESP()
                     local char = LocalPlayer.Character
                     if char and char:FindFirstChild("HumanoidRootPart") then
                         local dist = (char.HumanoidRootPart.Position - pos.Position).Magnitude
-                        local maxD = (mn=="Rush" or mn=="Ambush") and 300 or 50
+                        local maxD = (mn=="Rush" or mn=="Ambush") and 500 or 60
                         if dist < maxD then
                             addESP(obj, Color3.fromRGB(255,50,50), mn)
                             if dist < nd then nd = dist; nm = mn end
+                            if alertEnabled then
+                                local now = tick()
+                                if not lastAlert[mn] or (now - lastAlert[mn]) > alertCooldown then
+                                    lastAlert[mn] = now
+                                    sendChat("⚠ "..mn.." 来了! "..string.format("%.1fm",dist))
+                                end
+                            end
                         end
                     end
                 end
@@ -515,7 +531,7 @@ function updateESP()
         if nd < 8 then
             warnText.Text = "⚠ "..nm.." 来了! "..string.format("%.1fm",nd).." ⚠"
             warnFrame.BackgroundColor3 = Color3.fromRGB(255,0,0)
-        elseif nd < 25 then
+        elseif nd < 50 then
             warnText.Text = "⚠ "..nm.." "..string.format("%.1fm",nd).." ⚠"
             warnFrame.BackgroundColor3 = Color3.fromRGB(255,80,0)
         else
@@ -541,7 +557,7 @@ end)
 spawn(function()
     while true do
         if espEnabled then updateESP() end
-        task.wait(0.5)
+        task.wait(0.3)
     end
 end)
 
@@ -570,6 +586,10 @@ createToggleCard("怪物透视", "高亮显示怪物+警告", "👹", true, func
     showMonsters = state
 end)
 
+createToggleCard("怪物喊话", "怪物来了自动发消息", "📢", true, function(state)
+    alertEnabled = state
+end)
+
 createToggleCard("夜视模式", "提高黑暗环境亮度", "🔦", true, function(state)
     nightVision = state
     if not nightVision then Lighting.Brightness = 1; Lighting.FogEnd = 500; Lighting.ExposureCompensation = 0 end
@@ -580,14 +600,14 @@ createToggleCard("射线连线", "从头部连线到目标", "📡", false, func
     if not rayEnabled then clearBeams() end
 end)
 
-ContentArea.CanvasSize = UDim2.new(0, 0, 0, 8 * 52 + 8)
+ContentArea.CanvasSize = UDim2.new(0, 0, 0, 9 * 52 + 8)
 
 local isOpen = false
 local function openPanel()
     isOpen = true
     MainFrame.Size = UDim2.new(0, 0, 0, 0); MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
     MainFrame.Visible = true
-    TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 400, 0, 460), Position = UDim2.new(0.5, -200, 0.5, -230)}):Play()
+    TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 400, 0, 500), Position = UDim2.new(0.5, -200, 0.5, -250)}):Play()
 end
 local function closePanel()
     isOpen = false
