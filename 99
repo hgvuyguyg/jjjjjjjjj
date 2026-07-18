@@ -1,0 +1,756 @@
+-- 森林中的九十九夜 第1段：UI框架 + 灵动岛 + 主面板 + 导航 + 公告
+
+local Players = game:GetService("Players")
+local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "Forest99UI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = PlayerGui
+
+local Bar = Instance.new("Frame")
+Bar.Size = UDim2.new(0, 280, 0, 46)
+Bar.Position = UDim2.new(0.5, -140, 0, 8)
+Bar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Bar.BackgroundTransparency = 0.25
+Bar.BorderSizePixel = 0
+Bar.ZIndex = 20
+Bar.Parent = ScreenGui
+local BarCorner = Instance.new("UICorner")
+BarCorner.CornerRadius = UDim.new(0, 14)
+BarCorner.Parent = Bar
+local RGBOutline = Instance.new("Frame")
+RGBOutline.Size = UDim2.new(1, 3, 1, 3)
+RGBOutline.Position = UDim2.new(0, -1.5, 0, -1.5)
+RGBOutline.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+RGBOutline.ZIndex = 19
+RGBOutline.Parent = Bar
+local RGBOutlineCorner = Instance.new("UICorner")
+RGBOutlineCorner.CornerRadius = UDim.new(0, 15)
+RGBOutlineCorner.Parent = RGBOutline
+local barHue = 0
+RunService.RenderStepped:Connect(function(delta)
+    barHue = (barHue + delta * 0.3) % 1
+    RGBOutline.BackgroundColor3 = Color3.fromHSV(barHue, 0.7, 1)
+end)
+local DragBtn = Instance.new("TextButton")
+DragBtn.Size = UDim2.new(0, 60, 1, 0)
+DragBtn.Position = UDim2.new(0, 0, 0, 0)
+DragBtn.Text = "+"
+DragBtn.TextColor3 = Color3.fromRGB(80, 80, 80)
+DragBtn.Font = Enum.Font.GothamBold
+DragBtn.TextSize = 22
+DragBtn.BackgroundTransparency = 1
+DragBtn.BorderSizePixel = 0
+DragBtn.ZIndex = 21
+DragBtn.AutoButtonColor = false
+DragBtn.Parent = Bar
+local Divider = Instance.new("Frame")
+Divider.Size = UDim2.new(0, 1, 0.6, 0)
+Divider.Position = UDim2.new(0, 60, 0.2, 0)
+Divider.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
+Divider.BorderSizePixel = 0
+Divider.ZIndex = 22
+Divider.Parent = Bar
+local OpenBtn = Instance.new("TextButton")
+OpenBtn.Size = UDim2.new(1, -64, 1, -6)
+OpenBtn.Position = UDim2.new(0, 62, 0, 3)
+OpenBtn.Text = "森林中的九十九夜"
+OpenBtn.TextColor3 = Color3.fromRGB(40, 40, 40)
+OpenBtn.Font = Enum.Font.GothamBold
+OpenBtn.TextSize = 14
+OpenBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+OpenBtn.BackgroundTransparency = 0.15
+OpenBtn.BorderSizePixel = 0
+OpenBtn.ZIndex = 21
+OpenBtn.AutoButtonColor = false
+OpenBtn.Parent = Bar
+local OpenCorner = Instance.new("UICorner")
+OpenCorner.CornerRadius = UDim.new(0, 10)
+OpenCorner.Parent = OpenBtn
+OpenBtn.MouseEnter:Connect(function() OpenBtn.BackgroundColor3 = Color3.fromRGB(240, 240, 240) end)
+OpenBtn.MouseLeave:Connect(function() OpenBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end)
+local dragging = false
+local dragStart = nil
+local startPos = nil
+DragBtn.MouseButton1Down:Connect(function()
+    dragging = true
+    dragStart = UserInputService:GetMouseLocation()
+    startPos = Bar.Position
+end)
+DragBtn.MouseMoved:Connect(function(x, y)
+    if dragging then
+        local delta = UserInputService:GetMouseLocation() - dragStart
+        Bar.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+end)
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 580, 0, 440)
+MainFrame.Position = UDim2.new(0.5, -290, 0.5, -220)
+MainFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+MainFrame.BackgroundTransparency = 0.06
+MainFrame.Visible = false
+MainFrame.ZIndex = 2
+MainFrame.Parent = ScreenGui
+local MainCorner = Instance.new("UICorner")
+MainCorner.CornerRadius = UDim.new(0, 14)
+MainCorner.Parent = MainFrame
+local RGBBorder = Instance.new("Frame")
+RGBBorder.Size = UDim2.new(1, 5, 1, 5)
+RGBBorder.Position = UDim2.new(0, -2.5, 0, -2.5)
+RGBBorder.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+RGBBorder.ZIndex = 1
+RGBBorder.Parent = MainFrame
+local RGBBorderCorner = Instance.new("UICorner")
+RGBBorderCorner.CornerRadius = UDim.new(0, 16)
+RGBBorderCorner.Parent = RGBBorder
+local hue = 0
+RunService.RenderStepped:Connect(function(delta)
+    if MainFrame.Visible then hue = (hue + delta * 0.3) % 1; RGBBorder.BackgroundColor3 = Color3.fromHSV(hue, 0.7, 1) end
+end)
+local InnerPanel = Instance.new("Frame")
+InnerPanel.Size = UDim2.new(1, -6, 1, -6)
+InnerPanel.Position = UDim2.new(0, 3, 0, 3)
+InnerPanel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+InnerPanel.ClipsDescendants = true
+InnerPanel.ZIndex = 3
+InnerPanel.Parent = MainFrame
+local InnerCorner = Instance.new("UICorner")
+InnerCorner.CornerRadius = UDim.new(0, 12)
+InnerCorner.Parent = InnerPanel
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1, 0, 0, 36)
+TopBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+TopBar.BorderSizePixel = 0
+TopBar.ZIndex = 10
+TopBar.Parent = InnerPanel
+local TopBarCorner = Instance.new("UICorner")
+TopBarCorner.CornerRadius = UDim.new(0, 12)
+TopBarCorner.Parent = TopBar
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(0, 140, 1, 0)
+TitleLabel.Position = UDim2.new(0, 12, 0, 0)
+TitleLabel.Text = "森林中的九十九夜"
+TitleLabel.TextColor3 = Color3.fromRGB(50, 50, 50)
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextSize = 14
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.ZIndex = 11
+TitleLabel.Parent = TopBar
+local InfoBox = Instance.new("Frame")
+InfoBox.Size = UDim2.new(0, 200, 0, 26)
+InfoBox.Position = UDim2.new(0, 150, 0, 5)
+InfoBox.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
+InfoBox.BorderSizePixel = 0
+InfoBox.ZIndex = 12
+InfoBox.Parent = TopBar
+local InfoCorner = Instance.new("UICorner")
+InfoCorner.CornerRadius = UDim.new(0, 6)
+InfoCorner.Parent = InfoBox
+local InfoRGBOutline = Instance.new("Frame")
+InfoRGBOutline.Size = UDim2.new(1, 2, 1, 2)
+InfoRGBOutline.Position = UDim2.new(0, -1, 0, -1)
+InfoRGBOutline.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+InfoRGBOutline.ZIndex = 11
+InfoRGBOutline.Parent = InfoBox
+local InfoRGBCorner = Instance.new("UICorner")
+InfoRGBCorner.CornerRadius = UDim.new(0, 7)
+InfoRGBCorner.Parent = InfoRGBOutline
+local infoHue = 0
+RunService.RenderStepped:Connect(function(delta)
+    infoHue = (infoHue + delta * 0.5) % 1
+    InfoRGBOutline.BackgroundColor3 = Color3.fromHSV(infoHue, 0.7, 1)
+end)
+local InfoLabel = Instance.new("TextLabel")
+InfoLabel.Size = UDim2.new(1, 0, 1, 0)
+InfoLabel.Text = "森林99夜 V1.0 | " .. os.date("%m月%d日 %H:%M:%S")
+InfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+InfoLabel.Font = Enum.Font.GothamBold
+InfoLabel.TextSize = 10
+InfoLabel.BackgroundTransparency = 1
+InfoLabel.ZIndex = 13
+InfoLabel.Parent = InfoBox
+spawn(function()
+    while true do
+        InfoLabel.Text = "森林99夜 V1.0 | " .. os.date("%m月%d日 %H:%M:%S")
+        wait(1)
+    end
+end)
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0, 28, 0, 28)
+CloseButton.Position = UDim2.new(1, -34, 0, 4)
+CloseButton.Text = "×"
+CloseButton.TextColor3 = Color3.fromRGB(100, 100, 100)
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.TextSize = 18
+CloseButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+CloseButton.BorderSizePixel = 0
+CloseButton.ZIndex = 11
+CloseButton.Parent = TopBar
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(1, 0)
+CloseCorner.Parent = CloseButton
+CloseButton.MouseEnter:Connect(function() CloseButton.BackgroundColor3 = Color3.fromRGB(200, 200, 200) end)
+CloseButton.MouseLeave:Connect(function() CloseButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230) end)
+local TopDivider = Instance.new("Frame")
+TopDivider.Size = UDim2.new(1, -24, 0, 1)
+TopDivider.Position = UDim2.new(0, 12, 0, 36)
+TopDivider.BackgroundColor3 = Color3.fromRGB(225, 225, 225)
+TopDivider.BorderSizePixel = 0
+TopDivider.ZIndex = 10
+TopDivider.Parent = InnerPanel
+local MainContentContainer = Instance.new("Frame")
+MainContentContainer.Size = UDim2.new(1, 0, 1, -36)
+MainContentContainer.Position = UDim2.new(0, 0, 0, 36)
+MainContentContainer.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+MainContentContainer.BorderSizePixel = 0
+MainContentContainer.ZIndex = 5
+MainContentContainer.Parent = InnerPanel
+
+local NavFrame = Instance.new("Frame")
+NavFrame.Size = UDim2.new(0, 135, 1, 0)
+NavFrame.Position = UDim2.new(0, 0, 0, 0)
+NavFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+NavFrame.BackgroundTransparency = 0.03
+NavFrame.BorderSizePixel = 0
+NavFrame.ZIndex = 6
+NavFrame.Parent = MainContentContainer
+local NavDivider = Instance.new("Frame")
+NavDivider.Size = UDim2.new(0, 1, 1, 0)
+NavDivider.Position = UDim2.new(1, 0, 0, 0)
+NavDivider.BackgroundColor3 = Color3.fromRGB(225, 225, 225)
+NavDivider.BorderSizePixel = 0
+NavDivider.ZIndex = 7
+NavDivider.Parent = NavFrame
+local NavScroll = Instance.new("ScrollingFrame")
+NavScroll.Size = UDim2.new(1, 0, 1, 0)
+NavScroll.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+NavScroll.BackgroundTransparency = 0.03
+NavScroll.BorderSizePixel = 0
+NavScroll.ScrollBarThickness = 0
+NavScroll.CanvasSize = UDim2.new(0, 0, 0, 200)
+NavScroll.ZIndex = 6
+NavScroll.Parent = NavFrame
+local NavList = Instance.new("UIListLayout")
+NavList.Padding = UDim.new(0, 2)
+NavList.Parent = NavScroll
+local NavTopPad = Instance.new("Frame")
+NavTopPad.Size = UDim2.new(1, 0, 0, 5)
+NavTopPad.BackgroundTransparency = 1
+NavTopPad.Parent = NavScroll
+local navItems = {{name = "公告", icon = "📢"},{name = "主要功能", icon = "⚙️"},{name = "物品区", icon = "📦"}}
+local navButtons = {}
+local selectedNav = nil
+local ContentArea = Instance.new("Frame")
+ContentArea.Size = UDim2.new(1, -136, 1, 0)
+ContentArea.Position = UDim2.new(0, 136, 0, 0)
+ContentArea.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+ContentArea.BorderSizePixel = 0
+ContentArea.ZIndex = 6
+ContentArea.Parent = MainContentContainer
+local contentPages = {}
+function switchContent(n) for a, b in pairs(contentPages) do b.Visible = (a == n) end end
+local function selectNav(button, itemName)
+    if selectedNav then selectedNav.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end
+    button.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+    selectedNav = button
+    TitleLabel.Text = itemName
+    switchContent(itemName)
+end
+for _, item in ipairs(navItems) do
+    local NavButton = Instance.new("TextButton")
+    NavButton.Size = UDim2.new(1, -12, 0, 36); NavButton.Position = UDim2.new(0, 6, 0, 0)
+    NavButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255); NavButton.Text = ""
+    NavButton.BorderSizePixel = 0; NavButton.ZIndex = 7; NavButton.AutoButtonColor = false; NavButton.Parent = NavScroll
+    local NavCorner = Instance.new("UICorner"); NavCorner.CornerRadius = UDim.new(0, 8); NavCorner.Parent = NavButton
+    local NavIcon = Instance.new("TextLabel")
+    NavIcon.Size = UDim2.new(0, 14, 1, 0); NavIcon.Position = UDim2.new(0, 2, 0, 0)
+    NavIcon.Text = item.icon; NavIcon.TextSize = 10; NavIcon.BackgroundTransparency = 1
+    NavIcon.TextXAlignment = Enum.TextXAlignment.Left; NavIcon.ZIndex = 8; NavIcon.Parent = NavButton
+    local NavLabel = Instance.new("TextLabel")
+    NavLabel.Size = UDim2.new(1, -22, 1, 0); NavLabel.Position = UDim2.new(0, 26, 0, 0)
+    NavLabel.Text = "  " .. item.name; NavLabel.TextColor3 = Color3.fromRGB(60, 60, 60)
+    NavLabel.Font = Enum.Font.GothamSemibold; NavLabel.TextSize = 11; NavLabel.BackgroundTransparency = 1
+    NavLabel.TextXAlignment = Enum.TextXAlignment.Left; NavLabel.ZIndex = 8; NavLabel.Parent = NavButton
+    NavButton.MouseButton1Click:Connect(function() selectNav(NavButton, item.name) end)
+    NavButton.MouseEnter:Connect(function() if NavButton ~= selectedNav then NavButton.BackgroundColor3 = Color3.fromRGB(240, 240, 240) end end)
+    NavButton.MouseLeave:Connect(function() if NavButton ~= selectedNav then NavButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end end)
+    table.insert(navButtons, {button = NavButton, name = item.name})
+end
+
+local announcementPage = Instance.new("ScrollingFrame")
+announcementPage.Size = UDim2.new(1, 0, 1, 0)
+announcementPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+announcementPage.BorderSizePixel = 0
+announcementPage.ScrollBarThickness = 3
+announcementPage.Visible = false
+announcementPage.ZIndex = 7
+announcementPage.Parent = ContentArea
+local announcementText = Instance.new("TextLabel")
+announcementText.Size = UDim2.new(1, -20, 0, 400)
+announcementText.Position = UDim2.new(0, 10, 0, 10)
+announcementText.Text = "📢 森林中的九十九夜\n\n本脚本由C工作室亲自制作\n用于森林中的九十九夜\n\n功能：传送篝火 + 吸取物品\n\n感谢使用！"
+announcementText.TextColor3 = Color3.fromRGB(70, 70, 70)
+announcementText.Font = Enum.Font.Gotham
+announcementText.TextSize = 13
+announcementText.BackgroundTransparency = 1
+announcementText.TextXAlignment = Enum.TextXAlignment.Left
+announcementText.TextYAlignment = Enum.TextYAlignment.Top
+announcementText.TextWrapped = true
+announcementText.LineHeight = 1.8
+announcementText.ZIndex = 8
+announcementText.Parent = announcementPage
+contentPages["公告"] = announcementPage
+-- 森林中的九十九夜 第2段：主要功能（传送篝火）+ 物品区（吸取物品分类）
+
+local mainPage = Instance.new("ScrollingFrame")
+mainPage.Size = UDim2.new(1, 0, 1, 0)
+mainPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+mainPage.BorderSizePixel = 0
+mainPage.ScrollBarThickness = 3
+mainPage.Visible = false
+mainPage.ZIndex = 7
+mainPage.Parent = ContentArea
+local mainPageList = Instance.new("UIListLayout")
+mainPageList.Padding = UDim.new(0, 6)
+mainPageList.Parent = mainPage
+local mainPageSpacer = Instance.new("Frame")
+mainPageSpacer.Size = UDim2.new(1, 0, 0, 6)
+mainPageSpacer.BackgroundTransparency = 1
+mainPageSpacer.Parent = mainPage
+
+local Card1 = Instance.new("Frame")
+Card1.Size = UDim2.new(1, -16, 0, 46)
+Card1.Position = UDim2.new(0, 8, 0, 0)
+Card1.BackgroundColor3 = Color3.fromRGB(252, 252, 252)
+Card1.BorderSizePixel = 0
+Card1.ZIndex = 7
+Card1.Parent = mainPage
+local CardCorner1 = Instance.new("UICorner")
+CardCorner1.CornerRadius = UDim.new(0, 10)
+CardCorner1.Parent = Card1
+local CardStroke1 = Instance.new("UIStroke")
+CardStroke1.Color = Color3.fromRGB(230, 230, 230)
+CardStroke1.Thickness = 1
+CardStroke1.Parent = Card1
+local IconFrame1 = Instance.new("Frame")
+IconFrame1.Size = UDim2.new(0, 26, 0, 26)
+IconFrame1.Position = UDim2.new(0, 10, 0, 10)
+IconFrame1.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+IconFrame1.BorderSizePixel = 0
+IconFrame1.ZIndex = 8
+IconFrame1.Parent = Card1
+local IconCorner1 = Instance.new("UICorner")
+IconCorner1.CornerRadius = UDim.new(0, 6)
+IconCorner1.Parent = IconFrame1
+local IconText1 = Instance.new("TextLabel")
+IconText1.Size = UDim2.new(1, 0, 1, 0)
+IconText1.Text = "🔥"
+IconText1.TextSize = 11
+IconText1.BackgroundTransparency = 1
+IconText1.ZIndex = 9
+IconText1.Parent = IconFrame1
+local TitleText1 = Instance.new("TextLabel")
+TitleText1.Size = UDim2.new(0, 180, 0, 15)
+TitleText1.Position = UDim2.new(0, 44, 0, 5)
+TitleText1.Text = "传送篝火"
+TitleText1.TextColor3 = Color3.fromRGB(50, 50, 50)
+TitleText1.Font = Enum.Font.GothamSemibold
+TitleText1.TextSize = 11
+TitleText1.BackgroundTransparency = 1
+TitleText1.TextXAlignment = Enum.TextXAlignment.Left
+TitleText1.ZIndex = 8
+TitleText1.Parent = Card1
+local DescText1 = Instance.new("TextLabel")
+DescText1.Size = UDim2.new(1, -100, 0, 13)
+DescText1.Position = UDim2.new(0, 44, 0, 22)
+DescText1.Text = "传送到 13, 3, 3"
+DescText1.TextColor3 = Color3.fromRGB(130, 130, 130)
+DescText1.Font = Enum.Font.Gotham
+DescText1.TextSize = 9
+DescText1.BackgroundTransparency = 1
+DescText1.TextXAlignment = Enum.TextXAlignment.Left
+DescText1.ZIndex = 8
+DescText1.Parent = Card1
+local Btn1 = Instance.new("TextButton")
+Btn1.Size = UDim2.new(0, 50, 0, 20)
+Btn1.Position = UDim2.new(1, -58, 0, 13)
+Btn1.Text = "传送"
+Btn1.TextColor3 = Color3.fromRGB(255, 255, 255)
+Btn1.Font = Enum.Font.GothamBold
+Btn1.TextSize = 10
+Btn1.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+Btn1.BorderSizePixel = 0
+Btn1.ZIndex = 9
+Btn1.AutoButtonColor = false
+Btn1.Parent = Card1
+local BtnCorner1 = Instance.new("UICorner")
+BtnCorner1.CornerRadius = UDim.new(0, 5)
+BtnCorner1.Parent = Btn1
+Btn1.MouseButton1Click:Connect(function()
+    local c = LocalPlayer.Character
+    if c and c:FindFirstChild("HumanoidRootPart") then
+        c.HumanoidRootPart.CFrame = CFrame.new(13, 3, 3)
+    end
+end)
+Btn1.MouseEnter:Connect(function() Btn1.BackgroundColor3 = Color3.fromRGB(255, 160, 20) end)
+Btn1.MouseLeave:Connect(function() Btn1.BackgroundColor3 = Color3.fromRGB(255, 140, 0) end)
+
+mainPage.CanvasSize = UDim2.new(0, 0, 0, 60)
+contentPages["主要功能"] = mainPage
+
+local itemPage = Instance.new("ScrollingFrame")
+itemPage.Size = UDim2.new(1, 0, 1, 0)
+itemPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+itemPage.BorderSizePixel = 0
+itemPage.ScrollBarThickness = 3
+itemPage.Visible = false
+itemPage.ZIndex = 7
+itemPage.Parent = ContentArea
+local itemPageList = Instance.new("UIListLayout")
+itemPageList.Padding = UDim.new(0, 6)
+itemPageList.Parent = itemPage
+local itemPageSpacer = Instance.new("Frame")
+itemPageSpacer.Size = UDim2.new(1, 0, 0, 6)
+itemPageSpacer.BackgroundTransparency = 1
+itemPageSpacer.Parent = itemPage
+
+local enabled = false
+local pullLog = false
+local pullCoal = false
+local pullOil = false
+local pullBandage = false
+local pullCarrot = false
+local pullBerry = false
+local pullCake = false
+
+local excludedNames = {"Workbench", "工作台", "Table", "Crafting"}
+
+function isExcluded(obj)
+    for _, name in ipairs(excludedNames) do
+        if string.find(obj.Name, name) then return true end
+        local parent = obj.Parent
+        if parent and string.find(parent.Name, name) then return true end
+    end
+    return false
+end
+
+function pullItems()
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
+    
+    local allItems = {}
+    local processed = {}
+    
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if pullLog and obj.Name == "Log" and obj:IsA("BasePart") then
+            if not processed[obj] and not isExcluded(obj) then
+                table.insert(allItems, obj)
+                processed[obj] = true
+            end
+        end
+        
+        if pullCoal and obj.Name == "Coal" and obj:IsA("BasePart") then
+            if not processed[obj] and not isExcluded(obj) then
+                table.insert(allItems, obj)
+                processed[obj] = true
+            end
+        end
+        
+        if obj:IsA("BasePart") then
+            local parent = obj.Parent
+            if parent and parent:IsA("Model") and not processed[parent] and not isExcluded(parent) then
+                if parent:FindFirstChild("Humanoid") then continue end
+                
+                local hasCap = parent:FindFirstChild("Cap")
+                local hasMain = parent:FindFirstChild("Main")
+                local hasTie = parent:FindFirstChild("Tie")
+                local hasHandle = parent:FindFirstChild("Handle")
+                local hasPart = parent:FindFirstChild("Part")
+                local hasLeaf = parent:FindFirstChild("Leaf")
+                
+                if pullOil and hasCap and hasMain then
+                    table.insert(allItems, parent)
+                    processed[parent] = true
+                elseif pullBandage and hasTie and hasHandle then
+                    table.insert(allItems, parent)
+                    processed[parent] = true
+                elseif pullCarrot and hasPart and hasLeaf and hasHandle and not hasCap and not hasMain and not hasTie then
+                    table.insert(allItems, parent)
+                    processed[parent] = true
+                elseif pullBerry and hasPart and hasHandle and not hasLeaf and not hasCap and not hasMain and not hasTie then
+                    local isWorkbench = false
+                    for _, name in ipairs(excludedNames) do
+                        if string.find(parent.Name, name) then isWorkbench = true; break end
+                    end
+                    if not isWorkbench then
+                        table.insert(allItems, parent)
+                        processed[parent] = true
+                    end
+                elseif pullCake and hasHandle and not hasCap and not hasMain and not hasTie and not hasPart and not hasLeaf then
+                    local childCount = 0
+                    for _, child in pairs(parent:GetChildren()) do
+                        if child:IsA("BasePart") then childCount = childCount + 1 end
+                    end
+                    if childCount == 1 then
+                        table.insert(allItems, parent)
+                        processed[parent] = true
+                    end
+                end
+            end
+        end
+    end
+    
+    local total = #allItems
+    if total > 0 then
+        local radius = 3.5
+        local angleStep = (2 * math.pi) / total
+        local groundY = hrp.Position.Y - 1.0
+        
+        for i, obj in ipairs(allItems) do
+            local angle = i * angleStep + os.clock() * 0.2
+            local xOffset = math.cos(angle) * radius
+            local zOffset = math.sin(angle) * radius
+            local targetPos = Vector3.new(hrp.Position.X + xOffset, groundY, hrp.Position.Z + zOffset)
+            
+            if obj:IsA("Model") then
+                obj:MoveTo(targetPos)
+            elseif obj:IsA("BasePart") then
+                obj.CFrame = CFrame.new(targetPos)
+            end
+        end
+    end
+end
+
+spawn(function()
+    while ScreenGui and ScreenGui.Parent do
+        if enabled then pullItems() end
+        task.wait(0.8)
+    end
+end)
+
+local function createItemCard(name, desc, icon, defaultState, code)
+    local Card = Instance.new("Frame")
+    Card.Size = UDim2.new(1, -16, 0, 46)
+    Card.BackgroundColor3 = Color3.fromRGB(252, 252, 252)
+    Card.BorderSizePixel = 0
+    Card.ZIndex = 7
+    Card.Parent = itemPage
+    local CardCorner = Instance.new("UICorner")
+    CardCorner.CornerRadius = UDim.new(0, 10)
+    CardCorner.Parent = Card
+    local CardStroke = Instance.new("UIStroke")
+    CardStroke.Color = Color3.fromRGB(230, 230, 230)
+    CardStroke.Thickness = 1
+    CardStroke.Parent = Card
+    local IconFrame = Instance.new("Frame")
+    IconFrame.Size = UDim2.new(0, 26, 0, 26)
+    IconFrame.Position = UDim2.new(0, 10, 0, 10)
+    IconFrame.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+    IconFrame.BorderSizePixel = 0
+    IconFrame.ZIndex = 8
+    IconFrame.Parent = Card
+    local IconCorner = Instance.new("UICorner")
+    IconCorner.CornerRadius = UDim.new(0, 6)
+    IconCorner.Parent = IconFrame
+    local IconText = Instance.new("TextLabel")
+    IconText.Size = UDim2.new(1, 0, 1, 0)
+    IconText.Text = icon
+    IconText.TextSize = 11
+    IconText.BackgroundTransparency = 1
+    IconText.ZIndex = 9
+    IconText.Parent = IconFrame
+    local TitleText = Instance.new("TextLabel")
+    TitleText.Size = UDim2.new(0, 180, 0, 15)
+    TitleText.Position = UDim2.new(0, 44, 0, 5)
+    TitleText.Text = name
+    TitleText.TextColor3 = Color3.fromRGB(50, 50, 50)
+    TitleText.Font = Enum.Font.GothamSemibold
+    TitleText.TextSize = 11
+    TitleText.BackgroundTransparency = 1
+    TitleText.TextXAlignment = Enum.TextXAlignment.Left
+    TitleText.ZIndex = 8
+    TitleText.Parent = Card
+    local DescText = Instance.new("TextLabel")
+    DescText.Size = UDim2.new(1, -80, 0, 13)
+    DescText.Position = UDim2.new(0, 44, 0, 22)
+    DescText.Text = desc
+    DescText.TextColor3 = Color3.fromRGB(130, 130, 130)
+    DescText.Font = Enum.Font.Gotham
+    DescText.TextSize = 9
+    DescText.BackgroundTransparency = 1
+    DescText.TextXAlignment = Enum.TextXAlignment.Left
+    DescText.ZIndex = 8
+    DescText.Parent = Card
+    local Toggle = Instance.new("TextButton")
+    Toggle.Size = UDim2.new(0, 36, 0, 20)
+    Toggle.Position = UDim2.new(1, -46, 0, 13)
+    Toggle.BackgroundColor3 = defaultState and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(200, 200, 200)
+    Toggle.Text = ""
+    Toggle.BorderSizePixel = 0
+    Toggle.ZIndex = 8
+    Toggle.AutoButtonColor = false
+    Toggle.Parent = Card
+    local ToggleCorner = Instance.new("UICorner")
+    ToggleCorner.CornerRadius = UDim.new(1, 0)
+    ToggleCorner.Parent = Toggle
+    local ToggleKnob = Instance.new("Frame")
+    ToggleKnob.Size = UDim2.new(0, 16, 0, 16)
+    ToggleKnob.Position = defaultState and UDim2.new(1, -18, 0, 2) or UDim2.new(0, 2, 0, 2)
+    ToggleKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleKnob.BorderSizePixel = 0
+    ToggleKnob.ZIndex = 9
+    ToggleKnob.Parent = Toggle
+    local KnobCorner = Instance.new("UICorner")
+    KnobCorner.CornerRadius = UDim.new(1, 0)
+    KnobCorner.Parent = ToggleKnob
+    local toggleState = defaultState
+    Toggle.MouseButton1Click:Connect(function()
+        toggleState = not toggleState
+        if toggleState then
+            Toggle.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+            ToggleKnob:TweenPosition(UDim2.new(1, -18, 0, 2), "Out", "Quad", 0.15)
+        else
+            Toggle.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+            ToggleKnob:TweenPosition(UDim2.new(0, 2, 0, 2), "Out", "Quad", 0.15)
+        end
+        if code == "log" then pullLog = toggleState
+        elseif code == "coal" then pullCoal = toggleState
+        elseif code == "oil" then pullOil = toggleState
+        elseif code == "bandage" then pullBandage = toggleState
+        elseif code == "carrot" then pullCarrot = toggleState
+        elseif code == "berry" then pullBerry = toggleState
+        elseif code == "cake" then pullCake = toggleState
+        end
+    end)
+end
+
+local CardMain = Instance.new("Frame")
+CardMain.Size = UDim2.new(1, -16, 0, 46)
+CardMain.BackgroundColor3 = Color3.fromRGB(252, 252, 252)
+CardMain.BorderSizePixel = 0
+CardMain.ZIndex = 7
+CardMain.Parent = itemPage
+local CardMainCorner = Instance.new("UICorner")
+CardMainCorner.CornerRadius = UDim.new(0, 10)
+CardMainCorner.Parent = CardMain
+local CardMainStroke = Instance.new("UIStroke")
+CardMainStroke.Color = Color3.fromRGB(230, 230, 230)
+CardMainStroke.Thickness = 1
+CardMainStroke.Parent = CardMain
+local IconFrameM = Instance.new("Frame")
+IconFrameM.Size = UDim2.new(0, 26, 0, 26)
+IconFrameM.Position = UDim2.new(0, 10, 0, 10)
+IconFrameM.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+IconFrameM.BorderSizePixel = 0
+IconFrameM.ZIndex = 8
+IconFrameM.Parent = CardMain
+local IconCornerM = Instance.new("UICorner")
+IconCornerM.CornerRadius = UDim.new(0, 6)
+IconCornerM.Parent = IconFrameM
+local IconTextM = Instance.new("TextLabel")
+IconTextM.Size = UDim2.new(1, 0, 1, 0)
+IconTextM.Text = "⚡"
+IconTextM.TextSize = 11
+IconTextM.BackgroundTransparency = 1
+IconTextM.ZIndex = 9
+IconTextM.Parent = IconFrameM
+local TitleTextM = Instance.new("TextLabel")
+TitleTextM.Size = UDim2.new(0, 180, 0, 15)
+TitleTextM.Position = UDim2.new(0, 44, 0, 5)
+TitleTextM.Text = "开启吸取"
+TitleTextM.TextColor3 = Color3.fromRGB(50, 50, 50)
+TitleTextM.Font = Enum.Font.GothamSemibold
+TitleTextM.TextSize = 11
+TitleTextM.BackgroundTransparency = 1
+TitleTextM.TextXAlignment = Enum.TextXAlignment.Left
+TitleTextM.ZIndex = 8
+TitleTextM.Parent = CardMain
+local DescTextM = Instance.new("TextLabel")
+DescTextM.Size = UDim2.new(1, -80, 0, 13)
+DescTextM.Position = UDim2.new(0, 44, 0, 22)
+DescTextM.Text = "总开关"
+DescTextM.TextColor3 = Color3.fromRGB(130, 130, 130)
+DescTextM.Font = Enum.Font.Gotham
+DescTextM.TextSize = 9
+DescTextM.BackgroundTransparency = 1
+DescTextM.TextXAlignment = Enum.TextXAlignment.Left
+DescTextM.ZIndex = 8
+DescTextM.Parent = CardMain
+local BtnMain = Instance.new("TextButton")
+BtnMain.Size = UDim2.new(0, 50, 0, 20)
+BtnMain.Position = UDim2.new(1, -58, 0, 13)
+BtnMain.Text = "执行"
+BtnMain.TextColor3 = Color3.fromRGB(255, 255, 255)
+BtnMain.Font = Enum.Font.GothamBold
+BtnMain.TextSize = 10
+BtnMain.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+BtnMain.BorderSizePixel = 0
+BtnMain.ZIndex = 9
+BtnMain.AutoButtonColor = false
+BtnMain.Parent = CardMain
+local BtnMainCorner = Instance.new("UICorner")
+BtnMainCorner.CornerRadius = UDim.new(0, 5)
+BtnMainCorner.Parent = BtnMain
+local mainToggle = false
+BtnMain.MouseButton1Click:Connect(function()
+    mainToggle = not mainToggle
+    if mainToggle then
+        BtnMain.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
+        BtnMain.Text = "停止"
+        enabled = true
+    else
+        BtnMain.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+        BtnMain.Text = "执行"
+        enabled = false
+    end
+end)
+BtnMain.MouseEnter:Connect(function()
+    if not mainToggle then BtnMain.BackgroundColor3 = Color3.fromRGB(255, 160, 20) end
+end)
+BtnMain.MouseLeave:Connect(function()
+    if not mainToggle then BtnMain.BackgroundColor3 = Color3.fromRGB(255, 140, 0) end
+end)
+
+createItemCard("木头", "吸取Log", "🌲", false, "log")
+createItemCard("煤炭", "吸取Coal", "🍙", false, "coal")
+createItemCard("油桶", "吸取油桶", "🛢️", false, "oil")
+createItemCard("绷带", "吸取绷带", "🩹", false, "bandage")
+createItemCard("胡萝卜", "吸取胡萝卜", "🥕", false, "carrot")
+createItemCard("浆果", "吸取浆果", "🫐", false, "berry")
+createItemCard("蛋糕", "吸取蛋糕", "🍰", false, "cake")
+
+itemPage.CanvasSize = UDim2.new(0, 0, 0, 8 * 52 + 12)
+contentPages["物品区"] = itemPage
+-- 森林中的九十九夜 第3段：打开关闭动画 + 导航初始化
+
+contentPages["公告"].Visible = true
+
+local isOpen = false
+local function openPanel()
+    isOpen = true
+    MainFrame.Size = UDim2.new(0, 0, 0, 0); MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    MainFrame.Visible = true
+    TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 580, 0, 440), Position = UDim2.new(0.5, -290, 0.5, -220)}):Play()
+end
+local function closePanel()
+    isOpen = false
+    TweenService:Create(MainFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0)}):Play()
+    wait(0.15); MainFrame.Visible = false
+end
+OpenBtn.MouseButton1Click:Connect(function()
+    if isOpen then closePanel() else openPanel() end
+end)
+CloseButton.MouseButton1Click:Connect(function() closePanel() end)
+selectNav(navButtons[1].button, "公告")
+
