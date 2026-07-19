@@ -1,4 +1,4 @@
--- Doors 透视ESP - 第一部分上（GUI框架）
+-- Doors 透视ESP - 第一部分上
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
@@ -26,7 +26,7 @@ gui.Name = "ESP"
 gui.Parent = game:GetService("CoreGui")
 
 local f = Instance.new("Frame")
-f.Size = UDim2.new(0, 250, 0, 430)
+f.Size = UDim2.new(0, 250, 0, 370)
 f.Position = UDim2.new(0, 50, 0, 100)
 f.BackgroundColor3 = Color3.fromRGB(20,20,30)
 f.BorderSizePixel = 2
@@ -96,13 +96,13 @@ collapseBtn.MouseButton1Click:Connect(function()
         f:TweenSize(UDim2.new(0, 250, 0, 35), "Out", "Quad", 0.3)
         collapseBtn.Text = "+"
     else
-        f:TweenSize(UDim2.new(0, 250, 0, 430), "Out", "Quad", 0.3)
+        f:TweenSize(UDim2.new(0, 250, 0, 370), "Out", "Quad", 0.3)
         collapseBtn.Text = "−"
     end
 end)
 
 local content = Instance.new("Frame")
-content.Size = UDim2.new(1, 0, 0, 395)
+content.Size = UDim2.new(1, 0, 0, 335)
 content.Position = UDim2.new(0, 0, 0, 35)
 content.BackgroundTransparency = 1
 content.Parent = f
@@ -111,8 +111,151 @@ function updateBtnColor(btn, on)
     btn.BackgroundColor3 = on and Color3.fromRGB(50,180,50) or Color3.fromRGB(180,40,40)
 end
 
-print("=== 第一部分上 GUI框架 加载完成 ===")
--- Doors 透视ESP - 第二部分
+print("=== 第一部分上 加载完成 ===")
+-- Doors 透视ESP - 第一部分下
+
+local function makeMainBtn()
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.85,0,0,38)
+    btn.Position = UDim2.new(0.075,0,0,5)
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Text = "ESP: OFF"
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 15
+    btn.BackgroundColor3 = Color3.fromRGB(40,40,60)
+    btn.Parent = content
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
+    return btn
+end
+
+local function makeBtn(name, y)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.85,0,0,27)
+    btn.Position = UDim2.new(0.075,0,0,y)
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Text = name..": ON"
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 12
+    btn.BackgroundColor3 = Color3.fromRGB(50,180,50)
+    btn.Parent = content
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
+    return btn
+end
+
+local mainBtn = makeMainBtn()
+local doorBtn = makeBtn("🚪 门", 50)
+local bookBtn = makeBtn("📖 透视书", 80)
+local keyBtn = makeBtn("🔑 钥匙", 110)
+local itemBtn = makeBtn("📦 道具", 140)
+local leverBtn = makeBtn("🕹 拉杆", 170)
+local monsterBtn = makeBtn("👻 怪物", 200)
+local alertBtn = makeBtn("📢 怪物喊话", 230)
+local nightBtn = makeBtn("🔦 夜视", 260)
+local rayBtn = makeBtn("📡 射线", 290)
+
+local statusBar = Instance.new("Frame")
+statusBar.Size = UDim2.new(0.85,0,0,22)
+statusBar.Position = UDim2.new(0.075,0,0,325)
+statusBar.BackgroundColor3 = Color3.fromRGB(30,30,40)
+statusBar.Parent = content
+Instance.new("UICorner", statusBar).CornerRadius = UDim.new(0,6)
+
+local statusText = Instance.new("TextLabel")
+statusText.Size = UDim2.new(1,0,1,0)
+statusText.BackgroundTransparency = 1
+statusText.TextColor3 = Color3.fromRGB(180,180,200)
+statusText.Text = "💡 就绪"
+statusText.Font = Enum.Font.SourceSansBold
+statusText.TextSize = 10
+statusText.Parent = statusBar
+
+-- 弹窗
+local popupContainer = Instance.new("Frame")
+popupContainer.Size = UDim2.new(0, 300, 0, 500)
+popupContainer.Position = UDim2.new(1, -310, 0, 10)
+popupContainer.BackgroundTransparency = 1
+popupContainer.ZIndex = 200
+popupContainer.Parent = gui
+
+local activePopups = {}
+
+function showPopup(name)
+    while #activePopups >= 5 do
+        table.remove(activePopups, 1):Destroy()
+    end
+    for _, p in ipairs(activePopups) do
+        game:GetService("TweenService"):Create(p, TweenInfo.new(0.25), {Position = UDim2.new(0, 0, 0, p.Position.Y.Offset + 72)}):Play()
+    end
+    
+    local popup = Instance.new("Frame")
+    popup.Size = UDim2.new(0, 280, 0, 60)
+    popup.Position = UDim2.new(0, -300, 0, 0)
+    popup.BackgroundColor3 = Color3.fromRGB(200,10,10)
+    popup.BorderSizePixel = 2
+    popup.BorderColor3 = Color3.fromRGB(255,80,80)
+    popup.ZIndex = 200
+    popup.Parent = popupContainer
+    Instance.new("UICorner", popup).CornerRadius = UDim.new(0,10)
+    
+    local icon = Instance.new("TextLabel")
+    icon.Size = UDim2.new(0,40,0,40)
+    icon.Position = UDim2.new(0,8,0,10)
+    icon.BackgroundTransparency = 1
+    icon.Text = "⚠"
+    icon.Font = Enum.Font.SourceSansBold
+    icon.TextSize = 28
+    icon.ZIndex = 201
+    icon.Parent = popup
+    
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1,-60,0,28)
+    title.Position = UDim2.new(0,50,0,5)
+    title.BackgroundTransparency = 1
+    title.TextColor3 = Color3.fromRGB(255,255,255)
+    title.Text = name.." 来了！"
+    title.Font = Enum.Font.SourceSansBold
+    title.TextSize = 16
+    title.ZIndex = 201
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Parent = popup
+    
+    local desc = Instance.new("TextLabel")
+    desc.Size = UDim2.new(1,-60,0,22)
+    desc.Position = UDim2.new(0,50,0,33)
+    desc.BackgroundTransparency = 1
+    desc.TextColor3 = Color3.fromRGB(255,200,200)
+    desc.Text = "🏃 找个地方躲起来！"
+    desc.Font = Enum.Font.SourceSans
+    desc.TextSize = 12
+    desc.ZIndex = 201
+    desc.TextXAlignment = Enum.TextXAlignment.Left
+    desc.Parent = popup
+    
+    table.insert(activePopups, popup)
+    game:GetService("TweenService"):Create(popup, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {Position = UDim2.new(0,0,0,0)}):Play()
+    
+    pcall(function()
+        local sound = Instance.new("Sound", popup)
+        sound.SoundId = "rbxassetid://9126073011"
+        sound.Volume = 1.5
+        sound:Play()
+    end)
+    
+    task.delay(5, function()
+        pcall(function()
+            game:GetService("TweenService"):Create(popup, TweenInfo.new(0.4), {Position = UDim2.new(0,-300,0,popup.Position.Y.Offset)}):Play()
+            task.wait(0.4)
+            for i, p in ipairs(activePopups) do if p == popup then table.remove(activePopups, i); break end end
+            popup:Destroy()
+            for _, p in ipairs(activePopups) do
+                game:GetService("TweenService"):Create(p, TweenInfo.new(0.25), {Position = UDim2.new(0,0,0,p.Position.Y.Offset-72)}):Play()
+            end
+        end)
+    end)
+end
+
+print("=== 第一部分下 加载完成 ===")
+-- Doors 透视ESP - 第二部分（纯线条射线，无屏幕标签）
 
 spawn(function() while true do hue=(hue+2)%360;f.BorderColor3=Color3.fromHSV(hue/360,1,1);task.wait(0.03) end end)
 spawn(function() while true do local now=os.date("*t");timeText.Text=string.format("%02d:%02d",now.hour,now.min);task.wait(1) end end)
@@ -123,7 +266,7 @@ function clearAll()
 end
 
 function clearBeams()
-    for _, b in pairs(beamData) do pcall(function() if b.beam then b.beam:Destroy() end if b.a0 then b.a0:Destroy() end if b.a1 then b.a1:Destroy() end if b.label then b.label:Destroy() end end) end
+    for _, b in pairs(beamData) do pcall(function() if b.beam then b.beam:Destroy() end if b.a0 then b.a0:Destroy() end if b.a1 then b.a1:Destroy() end end) end
     beamData = {}
 end
 
@@ -159,22 +302,7 @@ function addScreenBeam(targetObj, color, name)
         beam.Color=ColorSequence.new(color);beam.Width0=0.03;beam.Width1=0.03
         beam.Transparency=NumberSequence.new(0.3);beam.FaceCamera=true;beam.Parent=a0
         
-        local dist = (char.Head.Position-tp).Magnitude
-        
-        -- 标签在射线中间位置（屏幕空间）
-        local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(0,200,0,22)
-        label.Position = UDim2.new(0.5,-100,0.5,-11)
-        label.BackgroundColor3 = Color3.fromRGB(0,0,0,0.4)
-        label.TextColor3 = color
-        label.Text = name.." "..string.format("%.0fm",dist)
-        label.Font = Enum.Font.SourceSansBold
-        label.TextSize = 16
-        label.ZIndex = 50
-        label.Parent = gui
-        Instance.new("UICorner", label).CornerRadius = UDim.new(0,4)
-        
-        table.insert(beamData,{beam=beam,a0=a0,a1=a1,label=label})
+        table.insert(beamData,{beam=beam,a0=a0,a1=a1})
     end)
 end
 
@@ -183,31 +311,20 @@ function updateBeams()
     local char=LocalPlayer.Character;if not char or not char:FindFirstChild("Head") then return end;local hp=char.Head.Position
     for _,obj in ipairs(workspace:GetDescendants()) do
         local pos=getPos(obj);if not pos or (hp-pos).Magnitude>150 then continue end
-        local color=nil;local nm=nil
-        if showDoors and obj:IsA("Model") and obj.Name=="Door" then color=Color3.fromRGB(50,150,255);nm="门"
-        elseif showBook and obj.Name=="LiveHintBook" then color=Color3.fromRGB(255,150,50);nm="书"
-        elseif showKeys and obj.Name=="KeyObtain" then color=Color3.fromRGB(255,200,0);nm="钥匙"
-        elseif showLevers and obj.Name:lower():find("lever") then color=Color3.fromRGB(255,100,255);nm="拉杆"
+        local color,nm=nil,nil
+        if showDoors and obj:IsA("Model") and obj.Name=="Door" then color=Color3.fromRGB(50,150,255)
+        elseif showBook and obj.Name=="LiveHintBook" then color=Color3.fromRGB(255,150,50)
+        elseif showKeys and obj.Name=="KeyObtain" then color=Color3.fromRGB(255,200,0)
+        elseif showLevers and obj.Name:lower():find("lever") then color=Color3.fromRGB(255,100,255)
         elseif showItems then
-            if obj:IsA("Tool") then color=Color3.fromRGB(50,255,50);nm="道具"
+            if obj:IsA("Tool") then color=Color3.fromRGB(50,255,50)
             elseif obj:IsA("Model") then local n=obj.Name:lower()
                 if n:find("candle") and n:find("medium") then
-                elseif n:find("gold") or n:find("coin") or n:find("flashlight") or n:find("lighter") or n:find("vitamin") or n:find("lockpick") or n:find("bandage") or n:find("crucifix") or n:find("candle") or n:find("revolver") or n:find("shotgun") or n:find("rifle") or n:find("skeletonkey") or n:find("pills") or n:find("keyobtain") then color=Color3.fromRGB(50,255,50);nm="道具" end end
+                elseif n:find("gold") or n:find("coin") or n:find("flashlight") or n:find("lighter") or n:find("vitamin") or n:find("lockpick") or n:find("bandage") or n:find("crucifix") or n:find("candle") or n:find("revolver") or n:find("shotgun") or n:find("rifle") or n:find("skeletonkey") or n:find("pills") or n:find("keyobtain") then color=Color3.fromRGB(50,255,50) end end
         elseif showMonsters and obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then local n=obj.Name:lower()
-            if n:find("rush") then color=Color3.fromRGB(255,50,50);nm="Rush"
-            elseif n:find("ambush") then color=Color3.fromRGB(255,50,50);nm="Ambush"
-            elseif n:find("screech") then color=Color3.fromRGB(255,50,50);nm="Screech"
-            elseif n:find("figure") then color=Color3.fromRGB(255,50,50);nm="Figure"
-            elseif n:find("seek") then color=Color3.fromRGB(255,50,50);nm="Seek"
-            elseif n:find("halt") then color=Color3.fromRGB(255,50,50);nm="Halt"
-            elseif n:find("eyes") then color=Color3.fromRGB(255,50,50);nm="Eyes"
-            elseif n:find("hide") then color=Color3.fromRGB(255,50,50);nm="Hide"
-            elseif n:find("dupe") then color=Color3.fromRGB(255,50,50);nm="Dupe"
-            elseif n:find("shadow") then color=Color3.fromRGB(255,50,50);nm="Shadow"
-            elseif n:find("granny") then color=Color3.fromRGB(255,50,50);nm="Figure"
-            elseif obj:FindFirstChild("Humanoid") then color=Color3.fromRGB(255,50,50);nm="怪物" end
+            if n:find("rush") or n:find("ambush") or n:find("screech") or n:find("figure") or n:find("seek") or n:find("halt") or n:find("eyes") or n:find("hide") or n:find("dupe") or n:find("shadow") or n:find("granny") or obj:FindFirstChild("Humanoid") then color=Color3.fromRGB(255,50,50) end
         end
-        if color then addScreenBeam(obj,color,nm) end
+        if color then addScreenBeam(obj,color) end
     end
 end
 
@@ -223,8 +340,6 @@ function getMonsterName(obj)
 end
 
 local popupCooldown = {}
-local monsterRepeatCount = {}
-local monsterRepeatTime = {}
 
 function updateESP()
     clearAll();if not espEnabled then statusText.Text="ESP关闭";return end
@@ -248,16 +363,9 @@ function updateESP()
                     if char and char:FindFirstChild("HumanoidRootPart") then local dist=(char.HumanoidRootPart.Position-pos.Position).Magnitude;local maxD=(mn=="Rush" or mn=="Ambush") and 500 or 60
                         if dist<maxD then addESP(obj,Color3.fromRGB(255,50,50),mn);tm=tm+1
                             local now=tick()
-                            if not monsterRepeatTime[mn] or (now-monsterRepeatTime[mn])>20 then
-                                monsterRepeatCount[mn]=1;monsterRepeatTime[mn]=now
-                            else
-                                monsterRepeatCount[mn]=(monsterRepeatCount[mn]or 0)+1
-                            end
-                            local cd=(monsterRepeatCount[mn]>=2 and 30 or 10)
-                            if not popupCooldown[mn] or (now-popupCooldown[mn])>cd then
+                            if not popupCooldown[mn] or (now-popupCooldown[mn])>10 then
                                 popupCooldown[mn]=now
-                                if monsterRepeatCount[mn]>=2 then monsterRepeatCount[mn]=0 end
-                                showPopup(mn, dist)
+                                showPopup(mn)
                             end
                             if alertEnabled then local now2=tick();if not lastAlert[mn] or (now2-lastAlert[mn])>alertCooldown then lastAlert[mn]=now2;sendChat("⚠ "..mn.." 来了！找个地方躲起来！") end end
                         end
@@ -273,9 +381,9 @@ end
 spawn(function() while true do if nightVision then pcall(function() local a=(Lighting.Ambient.R+Lighting.Ambient.G+Lighting.Ambient.B)/3;local o=(Lighting.OutdoorAmbient.R+Lighting.OutdoorAmbient.G+Lighting.OutdoorAmbient.B)/3;if a<0.3 and o<0.3 then Lighting.Brightness=5;Lighting.FogEnd=999999;Lighting.ExposureCompensation=1.5 else Lighting.Brightness=1;Lighting.FogEnd=500;Lighting.ExposureCompensation=0 end end) end;task.wait(0.5) end end)
 spawn(function() while true do if espEnabled then updateESP() end;task.wait(0.3) end end)
 
-mainBtn.MouseButton1Click:Connect(function() espEnabled=not espEnabled;mainBtn.Text=espEnabled and "✨ ESP: ON" or "ESP: OFF";updateBtnColor(mainBtn,espEnabled);if espEnabled then updateESP() else clearAll() end end)
+mainBtn.MouseButton1Click:Connect(function() espEnabled=not espEnabled;mainBtn.Text=espEnabled and "ESP: ON" or "ESP: OFF";updateBtnColor(mainBtn,espEnabled);if espEnabled then updateESP() else clearAll() end end)
 doorBtn.MouseButton1Click:Connect(function() showDoors=not showDoors;doorBtn.Text=showDoors and "🚪 门: ON" or "🚪 门: OFF";updateBtnColor(doorBtn,showDoors) end)
-bookBtn.MouseButton1Click:Connect(function() showBook=not showBook;bookBtn.Text=showBook and "📖 透视LiveHintBook: ON" or "📖 透视LiveHintBook: OFF";updateBtnColor(bookBtn,showBook) end)
+bookBtn.MouseButton1Click:Connect(function() showBook=not showBook;bookBtn.Text=showBook and "📖 透视书: ON" or "📖 透视书: OFF";updateBtnColor(bookBtn,showBook) end)
 keyBtn.MouseButton1Click:Connect(function() showKeys=not showKeys;keyBtn.Text=showKeys and "🔑 钥匙: ON" or "🔑 钥匙: OFF";updateBtnColor(keyBtn,showKeys) end)
 itemBtn.MouseButton1Click:Connect(function() showItems=not showItems;itemBtn.Text=showItems and "📦 道具: ON" or "📦 道具: OFF";updateBtnColor(itemBtn,showItems) end)
 leverBtn.MouseButton1Click:Connect(function() showLevers=not showLevers;leverBtn.Text=showLevers and "🕹 拉杆: ON" or "🕹 拉杆: OFF";updateBtnColor(leverBtn,showLevers) end)
@@ -284,4 +392,4 @@ alertBtn.MouseButton1Click:Connect(function() alertEnabled=not alertEnabled;aler
 nightBtn.MouseButton1Click:Connect(function() nightVision=not nightVision;nightBtn.Text=nightVision and "🔦 夜视: ON" or "🔦 夜视: OFF";updateBtnColor(nightBtn,nightVision);if not nightVision then Lighting.Brightness=1;Lighting.FogEnd=500;Lighting.ExposureCompensation=0 end end)
 rayBtn.MouseButton1Click:Connect(function() rayEnabled=not rayEnabled;rayBtn.Text=rayEnabled and "📡 射线: ON" or "📡 射线: OFF";updateBtnColor(rayBtn,rayEnabled);if not rayEnabled then clearBeams() end end)
 
-print("✨ Doors ESP 加载 ✨")
+print("✨ Doors ESP 加载完成 ✨")
