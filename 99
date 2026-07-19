@@ -1,4 +1,4 @@
--- 森林中的九十九夜 第1段：UI框架 + 灵动岛 + 主面板 + 导航 + 公告
+-- 森林中的九十九夜 第1段：灵动岛 + 拖拽 + 主面板框架
 
 local Players = game:GetService("Players")
 local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
@@ -12,6 +12,7 @@ ScreenGui.Name = "Forest99UI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
+-- ===== 灵动岛 =====
 local Bar = Instance.new("Frame")
 Bar.Size = UDim2.new(0, 280, 0, 46)
 Bar.Position = UDim2.new(0.5, -140, 0, 8)
@@ -37,6 +38,7 @@ RunService.RenderStepped:Connect(function(delta)
     barHue = (barHue + delta * 0.3) % 1
     RGBOutline.BackgroundColor3 = Color3.fromHSV(barHue, 0.7, 1)
 end)
+
 local DragBtn = Instance.new("TextButton")
 DragBtn.Size = UDim2.new(0, 60, 1, 0)
 DragBtn.Position = UDim2.new(0, 0, 0, 0)
@@ -49,6 +51,7 @@ DragBtn.BorderSizePixel = 0
 DragBtn.ZIndex = 21
 DragBtn.AutoButtonColor = false
 DragBtn.Parent = Bar
+
 local Divider = Instance.new("Frame")
 Divider.Size = UDim2.new(0, 1, 0.6, 0)
 Divider.Position = UDim2.new(0, 60, 0.2, 0)
@@ -56,6 +59,7 @@ Divider.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
 Divider.BorderSizePixel = 0
 Divider.ZIndex = 22
 Divider.Parent = Bar
+
 local OpenBtn = Instance.new("TextButton")
 OpenBtn.Size = UDim2.new(1, -64, 1, -6)
 OpenBtn.Position = UDim2.new(0, 62, 0, 3)
@@ -72,8 +76,10 @@ OpenBtn.Parent = Bar
 local OpenCorner = Instance.new("UICorner")
 OpenCorner.CornerRadius = UDim.new(0, 10)
 OpenCorner.Parent = OpenBtn
+
 OpenBtn.MouseEnter:Connect(function() OpenBtn.BackgroundColor3 = Color3.fromRGB(240, 240, 240) end)
 OpenBtn.MouseLeave:Connect(function() OpenBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end)
+
 local dragging = false
 local dragStart = nil
 local startPos = nil
@@ -82,7 +88,7 @@ DragBtn.MouseButton1Down:Connect(function()
     dragStart = UserInputService:GetMouseLocation()
     startPos = Bar.Position
 end)
-DragBtn.MouseMoved:Connect(function(x, y)
+DragBtn.MouseMoved:Connect(function()
     if dragging then
         local delta = UserInputService:GetMouseLocation() - dragStart
         Bar.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
@@ -91,7 +97,9 @@ end)
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
 end)
+-- 森林中的九十九夜 第2段：主面板 + 顶部栏 + 导航栏 + 公告页
 
+-- ===== 主面板 =====
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 580, 0, 440)
 MainFrame.Position = UDim2.new(0.5, -290, 0.5, -220)
@@ -103,6 +111,7 @@ MainFrame.Parent = ScreenGui
 local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 14)
 MainCorner.Parent = MainFrame
+
 local RGBBorder = Instance.new("Frame")
 RGBBorder.Size = UDim2.new(1, 5, 1, 5)
 RGBBorder.Position = UDim2.new(0, -2.5, 0, -2.5)
@@ -114,8 +123,12 @@ RGBBorderCorner.CornerRadius = UDim.new(0, 16)
 RGBBorderCorner.Parent = RGBBorder
 local hue = 0
 RunService.RenderStepped:Connect(function(delta)
-    if MainFrame.Visible then hue = (hue + delta * 0.3) % 1; RGBBorder.BackgroundColor3 = Color3.fromHSV(hue, 0.7, 1) end
+    if MainFrame.Visible then
+        hue = (hue + delta * 0.3) % 1
+        RGBBorder.BackgroundColor3 = Color3.fromHSV(hue, 0.7, 1)
+    end
 end)
+
 local InnerPanel = Instance.new("Frame")
 InnerPanel.Size = UDim2.new(1, -6, 1, -6)
 InnerPanel.Position = UDim2.new(0, 3, 0, 3)
@@ -126,6 +139,8 @@ InnerPanel.Parent = MainFrame
 local InnerCorner = Instance.new("UICorner")
 InnerCorner.CornerRadius = UDim.new(0, 12)
 InnerCorner.Parent = InnerPanel
+
+-- ===== 顶部栏 =====
 local TopBar = Instance.new("Frame")
 TopBar.Size = UDim2.new(1, 0, 0, 36)
 TopBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -135,6 +150,7 @@ TopBar.Parent = InnerPanel
 local TopBarCorner = Instance.new("UICorner")
 TopBarCorner.CornerRadius = UDim.new(0, 12)
 TopBarCorner.Parent = TopBar
+
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(0, 140, 1, 0)
 TitleLabel.Position = UDim2.new(0, 12, 0, 0)
@@ -146,6 +162,7 @@ TitleLabel.BackgroundTransparency = 1
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.ZIndex = 11
 TitleLabel.Parent = TopBar
+
 local InfoBox = Instance.new("Frame")
 InfoBox.Size = UDim2.new(0, 200, 0, 26)
 InfoBox.Position = UDim2.new(0, 150, 0, 5)
@@ -170,6 +187,7 @@ RunService.RenderStepped:Connect(function(delta)
     infoHue = (infoHue + delta * 0.5) % 1
     InfoRGBOutline.BackgroundColor3 = Color3.fromHSV(infoHue, 0.7, 1)
 end)
+
 local InfoLabel = Instance.new("TextLabel")
 InfoLabel.Size = UDim2.new(1, 0, 1, 0)
 InfoLabel.Text = "森林99夜 V1.0 | " .. os.date("%m月%d日 %H:%M:%S")
@@ -182,9 +200,10 @@ InfoLabel.Parent = InfoBox
 spawn(function()
     while true do
         InfoLabel.Text = "森林99夜 V1.0 | " .. os.date("%m月%d日 %H:%M:%S")
-        wait(1)
+        task.wait(1)
     end
 end)
+
 local CloseButton = Instance.new("TextButton")
 CloseButton.Size = UDim2.new(0, 28, 0, 28)
 CloseButton.Position = UDim2.new(1, -34, 0, 4)
@@ -201,6 +220,7 @@ CloseCorner.CornerRadius = UDim.new(1, 0)
 CloseCorner.Parent = CloseButton
 CloseButton.MouseEnter:Connect(function() CloseButton.BackgroundColor3 = Color3.fromRGB(200, 200, 200) end)
 CloseButton.MouseLeave:Connect(function() CloseButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230) end)
+
 local TopDivider = Instance.new("Frame")
 TopDivider.Size = UDim2.new(1, -24, 0, 1)
 TopDivider.Position = UDim2.new(0, 12, 0, 36)
@@ -208,6 +228,7 @@ TopDivider.BackgroundColor3 = Color3.fromRGB(225, 225, 225)
 TopDivider.BorderSizePixel = 0
 TopDivider.ZIndex = 10
 TopDivider.Parent = InnerPanel
+
 local MainContentContainer = Instance.new("Frame")
 MainContentContainer.Size = UDim2.new(1, 0, 1, -36)
 MainContentContainer.Position = UDim2.new(0, 0, 0, 36)
@@ -216,6 +237,7 @@ MainContentContainer.BorderSizePixel = 0
 MainContentContainer.ZIndex = 5
 MainContentContainer.Parent = InnerPanel
 
+-- ===== 导航栏 =====
 local NavFrame = Instance.new("Frame")
 NavFrame.Size = UDim2.new(0, 135, 1, 0)
 NavFrame.Position = UDim2.new(0, 0, 0, 0)
@@ -231,6 +253,7 @@ NavDivider.BackgroundColor3 = Color3.fromRGB(225, 225, 225)
 NavDivider.BorderSizePixel = 0
 NavDivider.ZIndex = 7
 NavDivider.Parent = NavFrame
+
 local NavScroll = Instance.new("ScrollingFrame")
 NavScroll.Size = UDim2.new(1, 0, 1, 0)
 NavScroll.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -247,7 +270,12 @@ local NavTopPad = Instance.new("Frame")
 NavTopPad.Size = UDim2.new(1, 0, 0, 5)
 NavTopPad.BackgroundTransparency = 1
 NavTopPad.Parent = NavScroll
-local navItems = {{name = "公告", icon = "📢"},{name = "主要功能", icon = "⚙️"},{name = "物品区", icon = "📦"}}
+
+local navItems = {
+    {name = "公告", icon = "📢"},
+    {name = "主要功能", icon = "⚙️"},
+    {name = "物品区", icon = "📦"}
+}
 local navButtons = {}
 local selectedNav = nil
 local ContentArea = Instance.new("Frame")
@@ -257,8 +285,14 @@ ContentArea.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 ContentArea.BorderSizePixel = 0
 ContentArea.ZIndex = 6
 ContentArea.Parent = MainContentContainer
+
 local contentPages = {}
-function switchContent(n) for a, b in pairs(contentPages) do b.Visible = (a == n) end end
+function switchContent(n)
+    for a, b in pairs(contentPages) do
+        b.Visible = (a == n)
+    end
+end
+
 local function selectNav(button, itemName)
     if selectedNav then selectedNav.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end
     button.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
@@ -266,27 +300,60 @@ local function selectNav(button, itemName)
     TitleLabel.Text = itemName
     switchContent(itemName)
 end
+
 for _, item in ipairs(navItems) do
     local NavButton = Instance.new("TextButton")
-    NavButton.Size = UDim2.new(1, -12, 0, 36); NavButton.Position = UDim2.new(0, 6, 0, 0)
-    NavButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255); NavButton.Text = ""
-    NavButton.BorderSizePixel = 0; NavButton.ZIndex = 7; NavButton.AutoButtonColor = false; NavButton.Parent = NavScroll
-    local NavCorner = Instance.new("UICorner"); NavCorner.CornerRadius = UDim.new(0, 8); NavCorner.Parent = NavButton
+    NavButton.Size = UDim2.new(1, -12, 0, 36)
+    NavButton.Position = UDim2.new(0, 6, 0, 0)
+    NavButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    NavButton.Text = ""
+    NavButton.BorderSizePixel = 0
+    NavButton.ZIndex = 7
+    NavButton.AutoButtonColor = false
+    NavButton.Parent = NavScroll
+    local NavCorner = Instance.new("UICorner")
+    NavCorner.CornerRadius = UDim.new(0, 8)
+    NavCorner.Parent = NavButton
+
     local NavIcon = Instance.new("TextLabel")
-    NavIcon.Size = UDim2.new(0, 14, 1, 0); NavIcon.Position = UDim2.new(0, 2, 0, 0)
-    NavIcon.Text = item.icon; NavIcon.TextSize = 10; NavIcon.BackgroundTransparency = 1
-    NavIcon.TextXAlignment = Enum.TextXAlignment.Left; NavIcon.ZIndex = 8; NavIcon.Parent = NavButton
+    NavIcon.Size = UDim2.new(0, 14, 1, 0)
+    NavIcon.Position = UDim2.new(0, 2, 0, 0)
+    NavIcon.Text = item.icon
+    NavIcon.TextSize = 10
+    NavIcon.BackgroundTransparency = 1
+    NavIcon.TextXAlignment = Enum.TextXAlignment.Left
+    NavIcon.ZIndex = 8
+    NavIcon.Parent = NavButton
+
     local NavLabel = Instance.new("TextLabel")
-    NavLabel.Size = UDim2.new(1, -22, 1, 0); NavLabel.Position = UDim2.new(0, 26, 0, 0)
-    NavLabel.Text = "  " .. item.name; NavLabel.TextColor3 = Color3.fromRGB(60, 60, 60)
-    NavLabel.Font = Enum.Font.GothamSemibold; NavLabel.TextSize = 11; NavLabel.BackgroundTransparency = 1
-    NavLabel.TextXAlignment = Enum.TextXAlignment.Left; NavLabel.ZIndex = 8; NavLabel.Parent = NavButton
-    NavButton.MouseButton1Click:Connect(function() selectNav(NavButton, item.name) end)
-    NavButton.MouseEnter:Connect(function() if NavButton ~= selectedNav then NavButton.BackgroundColor3 = Color3.fromRGB(240, 240, 240) end end)
-    NavButton.MouseLeave:Connect(function() if NavButton ~= selectedNav then NavButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end end)
+    NavLabel.Size = UDim2.new(1, -22, 1, 0)
+    NavLabel.Position = UDim2.new(0, 26, 0, 0)
+    NavLabel.Text = "  " .. item.name
+    NavLabel.TextColor3 = Color3.fromRGB(60, 60, 60)
+    NavLabel.Font = Enum.Font.GothamSemibold
+    NavLabel.TextSize = 11
+    NavLabel.BackgroundTransparency = 1
+    NavLabel.TextXAlignment = Enum.TextXAlignment.Left
+    NavLabel.ZIndex = 8
+    NavLabel.Parent = NavButton
+
+    NavButton.MouseButton1Click:Connect(function()
+        selectNav(NavButton, item.name)
+    end)
+    NavButton.MouseEnter:Connect(function()
+        if NavButton ~= selectedNav then
+            NavButton.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+        end
+    end)
+    NavButton.MouseLeave:Connect(function()
+        if NavButton ~= selectedNav then
+            NavButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        end
+    end)
     table.insert(navButtons, {button = NavButton, name = item.name})
 end
 
+-- ===== 公告页 =====
 local announcementPage = Instance.new("ScrollingFrame")
 announcementPage.Size = UDim2.new(1, 0, 1, 0)
 announcementPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -295,10 +362,11 @@ announcementPage.ScrollBarThickness = 3
 announcementPage.Visible = false
 announcementPage.ZIndex = 7
 announcementPage.Parent = ContentArea
+
 local announcementText = Instance.new("TextLabel")
 announcementText.Size = UDim2.new(1, -20, 0, 400)
 announcementText.Position = UDim2.new(0, 10, 0, 10)
-announcementText.Text = "📢 森林中的九十九夜\n\n本脚本由C工作室亲自制作\n用于森林中的九十九夜\n\n功能：传送篝火 + 吸取物品\n\n感谢使用！"
+announcementText.Text = "📢 森林中的九十九夜\n\n本脚本由C工作室亲自制作\n用于森林中的九十九夜\n\n功能：传送篝火 + 夜视 + 吸取物品\n\n感谢使用！"
 announcementText.TextColor3 = Color3.fromRGB(70, 70, 70)
 announcementText.Font = Enum.Font.Gotham
 announcementText.TextSize = 13
@@ -310,7 +378,7 @@ announcementText.LineHeight = 1.8
 announcementText.ZIndex = 8
 announcementText.Parent = announcementPage
 contentPages["公告"] = announcementPage
--- 森林中的九十九夜 第2段：主要功能（传送篝火）+ 物品区（吸取物品分类）
+-- 森林中的九十九夜 第3段：主要功能（传送篝火 + 夜视）
 
 local mainPage = Instance.new("ScrollingFrame")
 mainPage.Size = UDim2.new(1, 0, 1, 0)
@@ -328,6 +396,7 @@ mainPageSpacer.Size = UDim2.new(1, 0, 0, 6)
 mainPageSpacer.BackgroundTransparency = 1
 mainPageSpacer.Parent = mainPage
 
+-- 传送篝火
 local Card1 = Instance.new("Frame")
 Card1.Size = UDim2.new(1, -16, 0, 46)
 Card1.Position = UDim2.new(0, 8, 0, 0)
@@ -405,8 +474,105 @@ end)
 Btn1.MouseEnter:Connect(function() Btn1.BackgroundColor3 = Color3.fromRGB(255, 160, 20) end)
 Btn1.MouseLeave:Connect(function() Btn1.BackgroundColor3 = Color3.fromRGB(255, 140, 0) end)
 
-mainPage.CanvasSize = UDim2.new(0, 0, 0, 60)
+-- 夜视
+local NVCard = Instance.new("Frame")
+NVCard.Size = UDim2.new(1, -16, 0, 46)
+NVCard.Position = UDim2.new(0, 8, 0, 0)
+NVCard.BackgroundColor3 = Color3.fromRGB(252, 252, 252)
+NVCard.BorderSizePixel = 0
+NVCard.ZIndex = 7
+NVCard.Parent = mainPage
+local NVCardCorner = Instance.new("UICorner")
+NVCardCorner.CornerRadius = UDim.new(0, 10)
+NVCardCorner.Parent = NVCard
+local NVCardStroke = Instance.new("UIStroke")
+NVCardStroke.Color = Color3.fromRGB(230, 230, 230)
+NVCardStroke.Thickness = 1
+NVCardStroke.Parent = NVCard
+local NVIconFrame = Instance.new("Frame")
+NVIconFrame.Size = UDim2.new(0, 26, 0, 26)
+NVIconFrame.Position = UDim2.new(0, 10, 0, 10)
+NVIconFrame.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+NVIconFrame.BorderSizePixel = 0
+NVIconFrame.ZIndex = 8
+NVIconFrame.Parent = NVCard
+local NVIconCorner = Instance.new("UICorner")
+NVIconCorner.CornerRadius = UDim.new(0, 6)
+NVIconCorner.Parent = NVIconFrame
+local NVIconText = Instance.new("TextLabel")
+NVIconText.Size = UDim2.new(1, 0, 1, 0)
+NVIconText.Text = "🌙"
+NVIconText.TextSize = 11
+NVIconText.BackgroundTransparency = 1
+NVIconText.ZIndex = 9
+NVIconText.Parent = NVIconFrame
+local NVTitleText = Instance.new("TextLabel")
+NVTitleText.Size = UDim2.new(0, 180, 0, 15)
+NVTitleText.Position = UDim2.new(0, 44, 0, 5)
+NVTitleText.Text = "夜视模式"
+NVTitleText.TextColor3 = Color3.fromRGB(50, 50, 50)
+NVTitleText.Font = Enum.Font.GothamSemibold
+NVTitleText.TextSize = 11
+NVTitleText.BackgroundTransparency = 1
+NVTitleText.TextXAlignment = Enum.TextXAlignment.Left
+NVTitleText.ZIndex = 8
+NVTitleText.Parent = NVCard
+local NVDescText = Instance.new("TextLabel")
+NVDescText.Size = UDim2.new(1, -80, 0, 13)
+NVDescText.Position = UDim2.new(0, 44, 0, 22)
+NVDescText.Text = "提高亮度，夜晚变白天"
+NVDescText.TextColor3 = Color3.fromRGB(130, 130, 130)
+NVDescText.Font = Enum.Font.Gotham
+NVDescText.TextSize = 9
+NVDescText.BackgroundTransparency = 1
+NVDescText.TextXAlignment = Enum.TextXAlignment.Left
+NVDescText.ZIndex = 8
+NVDescText.Parent = NVCard
+local NVBtn = Instance.new("TextButton")
+NVBtn.Size = UDim2.new(0, 50, 0, 20)
+NVBtn.Position = UDim2.new(1, -58, 0, 13)
+NVBtn.Text = "关闭"
+NVBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+NVBtn.Font = Enum.Font.GothamBold
+NVBtn.TextSize = 10
+NVBtn.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
+NVBtn.BorderSizePixel = 0
+NVBtn.ZIndex = 9
+NVBtn.AutoButtonColor = false
+NVBtn.Parent = NVCard
+local NVBtnCorner = Instance.new("UICorner")
+NVBtnCorner.CornerRadius = UDim.new(0, 5)
+NVBtnCorner.Parent = NVBtn
+
+local nvEnabled = false
+NVBtn.MouseButton1Click:Connect(function()
+    nvEnabled = not nvEnabled
+    if nvEnabled then
+        NVBtn.Text = "开启"
+        NVBtn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+        game.Lighting.Brightness = 3
+        game.Lighting.ExposureCompensation = 2
+        game.Lighting.Ambient = Color3.fromRGB(200, 200, 200)
+        game.Lighting.OutdoorAmbient = Color3.fromRGB(200, 200, 200)
+    else
+        NVBtn.Text = "关闭"
+        NVBtn.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
+        game.Lighting.Brightness = 2
+        game.Lighting.ExposureCompensation = 0
+        game.Lighting.Ambient = Color3.fromRGB(127, 127, 127)
+        game.Lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
+    end
+end)
+NVBtn.MouseEnter:Connect(function()
+    if not nvEnabled then NVBtn.BackgroundColor3 = Color3.fromRGB(200, 200, 200) end
+end)
+NVBtn.MouseLeave:Connect(function()
+    if not nvEnabled then NVBtn.BackgroundColor3 = Color3.fromRGB(180, 180, 180) end
+end)
+
+mainPage.CanvasSize = UDim2.new(0, 0, 0, 110)
 contentPages["主要功能"] = mainPage
+-- 森林中的九十九夜 第4段：物品区 + 变量 + 状态标签 + 核心吸取函数（上半部分）
 
 local itemPage = Instance.new("ScrollingFrame")
 itemPage.Size = UDim2.new(1, 0, 1, 0)
@@ -424,6 +590,7 @@ itemPageSpacer.Size = UDim2.new(1, 0, 0, 6)
 itemPageSpacer.BackgroundTransparency = 1
 itemPageSpacer.Parent = itemPage
 
+-- ===== 变量 =====
 local enabled = false
 local pullLog = false
 local pullCoal = false
@@ -432,8 +599,16 @@ local pullBandage = false
 local pullCarrot = false
 local pullBerry = false
 local pullCake = false
+local pullIron = false
+local pullMicrowave = false
+local pullScrew = false
+local pullFan = false
+local pullTire = false
 
 local excludedNames = {"Workbench", "工作台", "Table", "Crafting"}
+local oilKeywords = {"Barrel", "Oil", "桶", "油"}
+local ironKeywords = {"Iron", "铁板", "铁", "Sheet", "Metal"}
+local screwKeywords = {"Screw", "螺丝", "钉", "Bolt"}
 
 function isExcluded(obj)
     for _, name in ipairs(excludedNames) do
@@ -444,51 +619,120 @@ function isExcluded(obj)
     return false
 end
 
+function isOilBarrel(obj)
+    for _, kw in ipairs(oilKeywords) do
+        if string.find(obj.Name, kw) then return true end
+    end
+    return false
+end
+
+function isIronPlate(obj)
+    for _, kw in ipairs(ironKeywords) do
+        if string.find(obj.Name, kw) then return true end
+    end
+    return false
+end
+
+function isScrew(obj)
+    for _, kw in ipairs(screwKeywords) do
+        if string.find(obj.Name, kw) then return true end
+    end
+    return false
+end
+
+-- ===== 状态标签 =====
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(1, -16, 0, 24)
+statusLabel.Position = UDim2.new(0, 8, 0, 0)
+statusLabel.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
+statusLabel.TextColor3 = Color3.fromRGB(60, 60, 60)
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.TextSize = 11
+statusLabel.Text = "状态: 等待中..."
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.ZIndex = 7
+statusLabel.Parent = itemPage
+local statusCorner = Instance.new("UICorner")
+statusCorner.CornerRadius = UDim.new(0, 6)
+statusCorner.Parent = statusLabel
+
+-- ===== 核心吸取函数 =====
 function pullItems()
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
     local hrp = char.HumanoidRootPart
-    
+
+    local counts = {
+        log = 0, coal = 0, oil = 0, bandage = 0,
+        carrot = 0, berry = 0, cake = 0,
+        iron = 0, microwave = 0, screw = 0,
+        fan = 0, tire = 0
+    }
     local allItems = {}
     local processed = {}
-    
+
     for _, obj in ipairs(workspace:GetDescendants()) do
         if pullLog and obj.Name == "Log" and obj:IsA("BasePart") then
             if not processed[obj] and not isExcluded(obj) then
                 table.insert(allItems, obj)
                 processed[obj] = true
+                counts.log = counts.log + 1
             end
         end
-        
+
         if pullCoal and obj.Name == "Coal" and obj:IsA("BasePart") then
             if not processed[obj] and not isExcluded(obj) then
                 table.insert(allItems, obj)
                 processed[obj] = true
+                counts.coal = counts.coal + 1
             end
         end
-        
+
         if obj:IsA("BasePart") then
             local parent = obj.Parent
             if parent and parent:IsA("Model") and not processed[parent] and not isExcluded(parent) then
                 if parent:FindFirstChild("Humanoid") then continue end
-                
+
                 local hasCap = parent:FindFirstChild("Cap")
                 local hasMain = parent:FindFirstChild("Main")
                 local hasTie = parent:FindFirstChild("Tie")
                 local hasHandle = parent:FindFirstChild("Handle")
                 local hasPart = parent:FindFirstChild("Part")
                 local hasLeaf = parent:FindFirstChild("Leaf")
-                
-                if pullOil and hasCap and hasMain then
+                local hasAttachPoint = parent:FindFirstChild("AttachPoint")
+                local hasBack = parent:FindFirstChild("Back")
+                local hasBase = parent:FindFirstChild("Base")
+                local hasGlass = parent:FindFirstChild("Glass")
+                local hasStand = parent:FindFirstChild("Stand")
+                local hasHead = parent:FindFirstChild("Head")
+                local hasMiddle = parent:FindFirstChild("Middle")
+                local hasFans = parent:FindFirstChild("Fans")
+                local hasRim = parent:FindFirstChild("Rim")
+                local hasCenter = parent:FindFirstChild("Center")
+
+                -- 油桶
+                if pullOil and hasCap and hasMain and isOilBarrel(parent) then
                     table.insert(allItems, parent)
                     processed[parent] = true
-                elseif pullBandage and hasTie and hasHandle then
+                    counts.oil = counts.oil + 1
+                end
+
+                -- 绷带
+                if pullBandage and hasTie and hasHandle then
                     table.insert(allItems, parent)
                     processed[parent] = true
-                elseif pullCarrot and hasPart and hasLeaf and hasHandle and not hasCap and not hasMain and not hasTie then
+                    counts.bandage = counts.bandage + 1
+                end
+
+                -- 胡萝卜
+                if pullCarrot and hasPart and hasLeaf and hasHandle and not hasCap and not hasMain and not hasTie then
                     table.insert(allItems, parent)
                     processed[parent] = true
-                elseif pullBerry and hasPart and hasHandle and not hasLeaf and not hasCap and not hasMain and not hasTie then
+                    counts.carrot = counts.carrot + 1
+                end
+
+                -- 浆果
+                if pullBerry and hasPart and hasHandle and not hasLeaf and not hasCap and not hasMain and not hasTie then
                     local isWorkbench = false
                     for _, name in ipairs(excludedNames) do
                         if string.find(parent.Name, name) then isWorkbench = true; break end
@@ -496,8 +740,12 @@ function pullItems()
                     if not isWorkbench then
                         table.insert(allItems, parent)
                         processed[parent] = true
+                        counts.berry = counts.berry + 1
                     end
-                elseif pullCake and hasHandle and not hasCap and not hasMain and not hasTie and not hasPart and not hasLeaf then
+                end
+
+                -- 蛋糕
+                if pullCake and hasHandle and not hasCap and not hasMain and not hasTie and not hasPart and not hasLeaf then
                     local childCount = 0
                     for _, child in pairs(parent:GetChildren()) do
                         if child:IsA("BasePart") then childCount = childCount + 1 end
@@ -505,30 +753,77 @@ function pullItems()
                     if childCount == 1 then
                         table.insert(allItems, parent)
                         processed[parent] = true
+                        counts.cake = counts.cake + 1
                     end
+                end
+
+                -- 铁板
+                if pullIron and hasMain and not hasCap and not hasTie and not hasHandle and not hasPart and not hasLeaf and isIronPlate(parent) then
+                    if counts.iron < 8 then
+                        table.insert(allItems, parent)
+                        processed[parent] = true
+                        counts.iron = counts.iron + 1
+                    end
+                end
+
+                -- 微波炉
+                if pullMicrowave and hasPart and hasMain and hasBack and hasBase and hasGlass and hasAttachPoint then
+                    table.insert(allItems, parent)
+                    processed[parent] = true
+                    counts.microwave = counts.microwave + 1
+                end
+
+                -- 螺丝钉
+                if pullScrew and hasMain and not hasCap and not hasTie and not hasHandle and not hasPart and not hasLeaf and isScrew(parent) then
+                    if counts.screw < 8 then
+                        table.insert(allItems, parent)
+                        processed[parent] = true
+                        counts.screw = counts.screw + 1
+                    end
+                end
+
+                -- 风扇
+                if pullFan and hasStand and hasMain and hasHead and hasMiddle and hasFans then
+                    table.insert(allItems, parent)
+                    processed[parent] = true
+                    counts.fan = counts.fan + 1
+                end
+
+                -- 新轮胎
+                if pullTire and hasRim and hasCenter and hasMain and hasPart then
+                    table.insert(allItems, parent)
+                    processed[parent] = true
+                    counts.tire = counts.tire + 1
                 end
             end
         end
     end
-    
+
     local total = #allItems
     if total > 0 then
         local radius = 3.5
         local angleStep = (2 * math.pi) / total
         local groundY = hrp.Position.Y - 1.0
-        
+
         for i, obj in ipairs(allItems) do
             local angle = i * angleStep + os.clock() * 0.2
             local xOffset = math.cos(angle) * radius
             local zOffset = math.sin(angle) * radius
             local targetPos = Vector3.new(hrp.Position.X + xOffset, groundY, hrp.Position.Z + zOffset)
-            
+
             if obj:IsA("Model") then
                 obj:MoveTo(targetPos)
             elseif obj:IsA("BasePart") then
                 obj.CFrame = CFrame.new(targetPos)
             end
         end
+    end
+
+    local totalCount = counts.log + counts.coal + counts.oil + counts.bandage + counts.carrot + counts.berry + counts.cake + counts.iron + counts.microwave + counts.screw + counts.fan + counts.tire
+    if totalCount > 0 then
+        statusLabel.Text = "已吸 " .. totalCount .. " 件 | 🪵"..counts.log.." 🪨"..counts.coal.." 🛢️"..counts.oil.." 🩹"..counts.bandage.." 🥕"..counts.carrot.." 🫐"..counts.berry.." 🍰"..counts.cake.." 🔩"..counts.iron.." 📺"..counts.microwave.." 🔧"..counts.screw.." 🌀"..counts.fan.." 🛞"..counts.tire
+    else
+        statusLabel.Text = "状态: 等待中..."
     end
 end
 
@@ -538,6 +833,7 @@ spawn(function()
         task.wait(0.8)
     end
 end)
+-- 森林中的九十九夜 第5段：物品卡片（上半部分：总开关 + 前6个物品）
 
 local function createItemCard(name, desc, icon, defaultState, code)
     local Card = Instance.new("Frame")
@@ -553,6 +849,7 @@ local function createItemCard(name, desc, icon, defaultState, code)
     CardStroke.Color = Color3.fromRGB(230, 230, 230)
     CardStroke.Thickness = 1
     CardStroke.Parent = Card
+
     local IconFrame = Instance.new("Frame")
     IconFrame.Size = UDim2.new(0, 26, 0, 26)
     IconFrame.Position = UDim2.new(0, 10, 0, 10)
@@ -570,6 +867,7 @@ local function createItemCard(name, desc, icon, defaultState, code)
     IconText.BackgroundTransparency = 1
     IconText.ZIndex = 9
     IconText.Parent = IconFrame
+
     local TitleText = Instance.new("TextLabel")
     TitleText.Size = UDim2.new(0, 180, 0, 15)
     TitleText.Position = UDim2.new(0, 44, 0, 5)
@@ -581,6 +879,7 @@ local function createItemCard(name, desc, icon, defaultState, code)
     TitleText.TextXAlignment = Enum.TextXAlignment.Left
     TitleText.ZIndex = 8
     TitleText.Parent = Card
+
     local DescText = Instance.new("TextLabel")
     DescText.Size = UDim2.new(1, -80, 0, 13)
     DescText.Position = UDim2.new(0, 44, 0, 22)
@@ -592,6 +891,7 @@ local function createItemCard(name, desc, icon, defaultState, code)
     DescText.TextXAlignment = Enum.TextXAlignment.Left
     DescText.ZIndex = 8
     DescText.Parent = Card
+
     local Toggle = Instance.new("TextButton")
     Toggle.Size = UDim2.new(0, 36, 0, 20)
     Toggle.Position = UDim2.new(1, -46, 0, 13)
@@ -614,6 +914,7 @@ local function createItemCard(name, desc, icon, defaultState, code)
     local KnobCorner = Instance.new("UICorner")
     KnobCorner.CornerRadius = UDim.new(1, 0)
     KnobCorner.Parent = ToggleKnob
+
     local toggleState = defaultState
     Toggle.MouseButton1Click:Connect(function()
         toggleState = not toggleState
@@ -631,10 +932,16 @@ local function createItemCard(name, desc, icon, defaultState, code)
         elseif code == "carrot" then pullCarrot = toggleState
         elseif code == "berry" then pullBerry = toggleState
         elseif code == "cake" then pullCake = toggleState
+        elseif code == "iron" then pullIron = toggleState
+        elseif code == "microwave" then pullMicrowave = toggleState
+        elseif code == "screw" then pullScrew = toggleState
+        elseif code == "fan" then pullFan = toggleState
+        elseif code == "tire" then pullTire = toggleState
         end
     end)
 end
 
+-- 总开关卡片
 local CardMain = Instance.new("Frame")
 CardMain.Size = UDim2.new(1, -16, 0, 46)
 CardMain.BackgroundColor3 = Color3.fromRGB(252, 252, 252)
@@ -702,6 +1009,7 @@ BtnMain.Parent = CardMain
 local BtnMainCorner = Instance.new("UICorner")
 BtnMainCorner.CornerRadius = UDim.new(0, 5)
 BtnMainCorner.Parent = BtnMain
+
 local mainToggle = false
 BtnMain.MouseButton1Click:Connect(function()
     mainToggle = not mainToggle
@@ -722,35 +1030,60 @@ BtnMain.MouseLeave:Connect(function()
     if not mainToggle then BtnMain.BackgroundColor3 = Color3.fromRGB(255, 140, 0) end
 end)
 
-createItemCard("木头", "吸取Log", "🌲", false, "log")
-createItemCard("煤炭", "吸取Coal", "🍙", false, "coal")
+-- 创建所有物品卡片（前6个）
+createItemCard("木头", "吸取Log", "🪵", false, "log")
+createItemCard("煤炭", "吸取Coal", "🪨", false, "coal")
 createItemCard("油桶", "吸取油桶", "🛢️", false, "oil")
 createItemCard("绷带", "吸取绷带", "🩹", false, "bandage")
 createItemCard("胡萝卜", "吸取胡萝卜", "🥕", false, "carrot")
 createItemCard("浆果", "吸取浆果", "🫐", false, "berry")
+-- 森林中的九十九夜 第6段：物品卡片（下半部分：后6个物品）+ 打开关闭动画 + 导航初始化
+
+-- 创建剩余物品卡片（后6个）
 createItemCard("蛋糕", "吸取蛋糕", "🍰", false, "cake")
+createItemCard("铁板", "吸取铁板", "🔩", false, "iron")
+createItemCard("微波炉", "吸取微波炉", "📺", false, "microwave")
+createItemCard("螺丝钉", "吸取螺丝钉", "🔧", false, "screw")
+createItemCard("风扇", "吸取风扇", "🌀", false, "fan")
+createItemCard("新轮胎", "吸取新轮胎", "🛞", false, "tire")
 
-itemPage.CanvasSize = UDim2.new(0, 0, 0, 8 * 52 + 12)
+itemPage.CanvasSize = UDim2.new(0, 0, 0, 13 * 52 + 60)
 contentPages["物品区"] = itemPage
--- 森林中的九十九夜 第3段：打开关闭动画 + 导航初始化
 
+-- ===== 打开关闭动画 =====
 contentPages["公告"].Visible = true
 
 local isOpen = false
 local function openPanel()
     isOpen = true
-    MainFrame.Size = UDim2.new(0, 0, 0, 0); MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    MainFrame.Size = UDim2.new(0, 0, 0, 0)
+    MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
     MainFrame.Visible = true
-    TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 580, 0, 440), Position = UDim2.new(0.5, -290, 0.5, -220)}):Play()
+    TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Size = UDim2.new(0, 580, 0, 440),
+        Position = UDim2.new(0.5, -290, 0.5, -220)
+    }):Play()
 end
+
 local function closePanel()
     isOpen = false
-    TweenService:Create(MainFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0)}):Play()
-    wait(0.15); MainFrame.Visible = false
+    TweenService:Create(MainFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+        Size = UDim2.new(0, 0, 0, 0),
+        Position = UDim2.new(0.5, 0, 0.5, 0)
+    }):Play()
+    task.wait(0.15)
+    MainFrame.Visible = false
 end
+
 OpenBtn.MouseButton1Click:Connect(function()
     if isOpen then closePanel() else openPanel() end
 end)
-CloseButton.MouseButton1Click:Connect(function() closePanel() end)
+
+CloseButton.MouseButton1Click:Connect(function()
+    closePanel()
+end)
+
 selectNav(navButtons[1].button, "公告")
 
+print("森林中的九十九夜 UI 加载完成")
+print("功能: 传送篝火 | 夜视 | 吸取 12种物品")
