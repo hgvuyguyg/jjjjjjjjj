@@ -1,4 +1,4 @@
--- 第1段：UI初始化 + 音频 + 欢迎文字 + 顶部拖拽栏 + FPS显示 + ESP + 主窗口框架 + 导航栏
+-- 主脚本 第1段：UI初始化 + 音频 + 欢迎文字 + 顶部拖拽栏 + FPS显示 + ESP + 主窗口框架 + 导航栏
 
 local Players = game:GetService("Players")
 local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
@@ -498,7 +498,7 @@ for _, item in ipairs(navItems) do
     NavButton.MouseLeave:Connect(function() if NavButton ~= selectedNav then NavButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end end)
     table.insert(navButtons, {button = NavButton, name = item.name})
 end
--- 第2段：createButtonCard + createFeatureToggle 前半（到 god 结束并接上 teamglow）
+-- 主脚本 第2段：createButtonCard + createFeatureToggle 前半（到 god 结束并接上 teamglow）
 
 local function createButtonCard(parent, name, desc, icon, url)
     local Card = Instance.new("Frame")
@@ -714,7 +714,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                     end)
                 end
             elseif runCode == "teamglow" then
-            -- 第3段：createFeatureToggle 后半（teamglow 到结束）
+-- 主脚本 第3段：createFeatureToggle 后半（teamglow 到结束）
 
             elseif runCode == "teamglow" then
                 local myTeam = Players.LocalPlayer.Team
@@ -1150,7 +1150,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
         end
     end)
 end
--- 第4段：createInputCard + 公告 + homePosition + pageContents
+-- 主脚本 第4段：createInputCard + 公告 + homePosition + pageContents
 
 local function createInputCard(parent, name, description, icon, defaultValue, onExecute)
     local Card = Instance.new("Frame")
@@ -1366,37 +1366,37 @@ local pageContents = {
         }
     },
     ["音乐区"] = {
-    type = "music",
-    items = {
-        {name = "进击的巨人", desc = "点击播放", icon = "🎵", soundId = "89711807693889"},
-        {name = "误闯天家", desc = "点击播放", icon = "🎶", soundId = "124384558101360"},
-        {name = "DJ喂喂喂", desc = "点击播放", icon = "🎧", soundId = "90054735589094"},
-        {name = "震撼小曲", desc = "点击播放有bug", icon = "🔊", soundId = "1051583349933991"},
-        {name = "震撼小曲二", desc = "点击播放", icon = "🎼", soundId = "137717310854691"},
-        {name = "迈克尔·杰克逊", desc = "点击播放有bug", icon = "🕺", soundId = "70866141429636"},
-        {name = "法修散打", desc = "点击播放有bug", icon = "🥊", soundId = "82944401312241"},
-        {name = "一路生花", desc = "点击播放有bug", icon = "🌸", soundId = "140272680129289"},
-        {name = "兰亭序", desc = "点击播放有bug", icon = "📜", soundId = "135324082524426"},
-    }
-},
+        type = "music",
+        items = {
+            {name = "进击的巨人", desc = "点击播放", icon = "🎵", soundId = "89711807693889"},
+            {name = "误闯天家", desc = "点击播放", icon = "🎶", soundId = "124384558101360"},
+            {name = "DJ喂喂喂", desc = "点击播放", icon = "🎧", soundId = "90054735589094"},
+            {name = "震撼小曲", desc = "点击播放", icon = "🔊", soundId = "1051583349933991"},
+            {name = "震撼小曲二", desc = "点击播放", icon = "🎼", soundId = "137717310854691"},
+            {name = "迈克尔·杰克逊", desc = "点击播放", icon = "🕺", soundId = "70866141429636"},
+            {name = "法修散打", desc = "点击播放", icon = "🥊", soundId = "82944401312241"},
+            {name = "一路生花", desc = "点击播放", icon = "🌸", soundId = "140272680129289"},
+            {name = "兰亭序", desc = "点击播放", icon = "📜", soundId = "135324082524426"},
+        }
+    },
     ["甩飞"] = {
         type = "buttons",
         items = {{name = "多人甩飞", desc = "选择玩家然后甩飞", icon = "💨", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/%E7%94%A9%E9%A3%9E"}}
     },
     ["服务器"] = {
-    type = "buttons",
-    items = {
-        {name = "磁铁轨服务器", desc = "点击执行", icon = "🔧", url = "https://raw.githubusercontent.com/erewe23/deadrailsring.github.io/refs/heads/main/ringta.lua"},
-        {name = "柠檬大亨", desc = "点击执行", icon = "🍋", url = "https://rawscripts.net/raw/Sell-Lemons-Fluid-Orchard-Update-Read-Description-241132"},
-        {name = "键盘逃脱", desc = "点击执行", icon = "⌨️", url = "https://raw.githubusercontent.com/ccdushii/zzzzzzzzz/refs/heads/main/ssssssssss"},
-        {name = "驾驶帝国", desc = "皮脚本版", icon = "🚗", url = "https://raw.githubusercontent.com/xiaopi77/xiaopi77/refs/heads/main/Roblox-Pi-Drivingempire-Script.lua"},
-        {name = "排干湖水服务器", desc = "纯原创", icon = "💧", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/%E6%8E%92%E5%B9%B2%E6%B9%96%E6%B0%B4"},
-        {name = "Doors", desc = "纯原创", icon = "🚪", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/doors"},
-        {name = "后巷", desc = "点击执行", icon = "🏚️", url = "https://github.com/mryitang-sys/Ting-script/releases/download/nsjxjxhs/GE.2.6.lua"},
-        {name = "点击一次加一弹药", desc = "点击执行", icon = "🔫", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/%E5%BC%B9%E8%8D%AF"},
-        {name = "森林中的九十九夜", desc = "点击执行", icon = "🌲", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/99"},
-    }
-},
+        type = "buttons",
+        items = {
+            {name = "死铁轨服务器", desc = "点击执行", icon = "🔧", url = "https://raw.githubusercontent.com/erewe23/deadrailsring.github.io/refs/heads/main/ringta.lua"},
+            {name = "柠檬大亨", desc = "点击执行", icon = "🍋", url = "https://rawscripts.net/raw/Sell-Lemons-Fluid-Orchard-Update-Read-Description-241132"},
+            {name = "键盘逃脱", desc = "点击执行", icon = "⌨️", url = "https://raw.githubusercontent.com/ccdushii/zzzzzzzzz/refs/heads/main/ssssssssss"},
+            {name = "驾驶帝国", desc = "皮脚本版", icon = "🚗", url = "https://raw.githubusercontent.com/xiaopi77/xiaopi77/refs/heads/main/Roblox-Pi-Drivingempire-Script.lua"},
+            {name = "排干湖水服务器", desc = "纯原创", icon = "💧", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/%E6%8E%92%E5%B9%B2%E6%B9%96%E6%B0%B4"},
+            {name = "Doors", desc = "纯原创", icon = "🚪", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/doors"},
+            {name = "后巷", desc = "点击执行", icon = "🏚️", url = "https://github.com/mryitang-sys/Ting-script/releases/download/nsjxjxhs/GE.2.6.lua"},
+            {name = "点击一次加一弹药", desc = "纯原创", icon = "🔫", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/%E5%BC%B9%E8%8D%AF"},
+            {name = "森林中的九十九夜", desc = "纯原创", icon = "🌲", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/99"},
+        }
+    },
     ["国内脚本"] = {
         type = "buttons",
         items = {
@@ -1406,7 +1406,7 @@ local pageContents = {
         }
     },
 }
--- 第5段：页面生成 + 打开/关闭动画 + 导航初始化
+-- 主脚本 第5段：页面生成 + 打开/关闭动画 + 导航初始化
 
 for pageName, contentData in pairs(pageContents) do
     local Page = Instance.new("ScrollingFrame")
@@ -1467,3 +1467,6 @@ OpenBtn.MouseButton1Click:Connect(function()
 end)
 CloseButton.MouseButton1Click:Connect(function() closePanel() end)
 selectNav(navButtons[1].button, "公告")
+
+
+
