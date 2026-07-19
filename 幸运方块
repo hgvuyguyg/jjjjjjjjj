@@ -1,275 +1,275 @@
--- 踢一个信息反馈 独立脚本
+-- 踢一个幸运方块 第1段：UI框架 + 灵动岛 + 主面板 + 导航 + 公告 + 主要功能
 
 local Players = game:GetService("Players")
-local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+local lucky_PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "KickInfoUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = PlayerGui
+local lucky_ScreenGui = Instance.new("ScreenGui")
+lucky_ScreenGui.Name = "LuckyKickUI"
+lucky_ScreenGui.ResetOnSpawn = false
+lucky_ScreenGui.Parent = lucky_PlayerGui
 
-local Bar = Instance.new("Frame")
-Bar.Size = UDim2.new(0, 280, 0, 46)
-Bar.Position = UDim2.new(0.5, -140, 0, 8)
-Bar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-Bar.BackgroundTransparency = 0.25
-Bar.BorderSizePixel = 0
-Bar.ZIndex = 20
-Bar.Parent = ScreenGui
-local BarCorner = Instance.new("UICorner")
-BarCorner.CornerRadius = UDim.new(0, 14)
-BarCorner.Parent = Bar
-local RGBOutline = Instance.new("Frame")
-RGBOutline.Size = UDim2.new(1, 3, 1, 3)
-RGBOutline.Position = UDim2.new(0, -1.5, 0, -1.5)
-RGBOutline.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-RGBOutline.ZIndex = 19
-RGBOutline.Parent = Bar
-local RGBOutlineCorner = Instance.new("UICorner")
-RGBOutlineCorner.CornerRadius = UDim.new(0, 15)
-RGBOutlineCorner.Parent = RGBOutline
-local barHue = 0
+local lucky_Bar = Instance.new("Frame")
+lucky_Bar.Size = UDim2.new(0, 280, 0, 46)
+lucky_Bar.Position = UDim2.new(0.5, -140, 0, 8)
+lucky_Bar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+lucky_Bar.BackgroundTransparency = 0.25
+lucky_Bar.BorderSizePixel = 0
+lucky_Bar.ZIndex = 20
+lucky_Bar.Parent = lucky_ScreenGui
+local lucky_BarCorner = Instance.new("UICorner")
+lucky_BarCorner.CornerRadius = UDim.new(0, 14)
+lucky_BarCorner.Parent = lucky_Bar
+local lucky_RGBOutline = Instance.new("Frame")
+lucky_RGBOutline.Size = UDim2.new(1, 3, 1, 3)
+lucky_RGBOutline.Position = UDim2.new(0, -1.5, 0, -1.5)
+lucky_RGBOutline.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+lucky_RGBOutline.ZIndex = 19
+lucky_RGBOutline.Parent = lucky_Bar
+local lucky_RGBOutlineCorner = Instance.new("UICorner")
+lucky_RGBOutlineCorner.CornerRadius = UDim.new(0, 15)
+lucky_RGBOutlineCorner.Parent = lucky_RGBOutline
+local lucky_barHue = 0
 RunService.RenderStepped:Connect(function(delta)
-    barHue = (barHue + delta * 0.3) % 1
-    RGBOutline.BackgroundColor3 = Color3.fromHSV(barHue, 0.7, 1)
+    lucky_barHue = (lucky_barHue + delta * 0.3) % 1
+    lucky_RGBOutline.BackgroundColor3 = Color3.fromHSV(lucky_barHue, 0.7, 1)
 end)
-local DragBtn = Instance.new("TextButton")
-DragBtn.Size = UDim2.new(0, 60, 1, 0)
-DragBtn.Position = UDim2.new(0, 0, 0, 0)
-DragBtn.Text = "+"
-DragBtn.TextColor3 = Color3.fromRGB(80, 80, 80)
-DragBtn.Font = Enum.Font.GothamBold
-DragBtn.TextSize = 22
-DragBtn.BackgroundTransparency = 1
-DragBtn.BorderSizePixel = 0
-DragBtn.ZIndex = 21
-DragBtn.AutoButtonColor = false
-DragBtn.Parent = Bar
-local Divider = Instance.new("Frame")
-Divider.Size = UDim2.new(0, 1, 0.6, 0)
-Divider.Position = UDim2.new(0, 60, 0.2, 0)
-Divider.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
-Divider.BorderSizePixel = 0
-Divider.ZIndex = 22
-Divider.Parent = Bar
-local OpenBtn = Instance.new("TextButton")
-OpenBtn.Size = UDim2.new(1, -64, 1, -6)
-OpenBtn.Position = UDim2.new(0, 62, 0, 3)
-OpenBtn.Text = "踢一个幸运方块"
-OpenBtn.TextColor3 = Color3.fromRGB(40, 40, 40)
-OpenBtn.Font = Enum.Font.GothamBold
-OpenBtn.TextSize = 14
-OpenBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-OpenBtn.BackgroundTransparency = 0.15
-OpenBtn.BorderSizePixel = 0
-OpenBtn.ZIndex = 21
-OpenBtn.AutoButtonColor = false
-OpenBtn.Parent = Bar
-local OpenCorner = Instance.new("UICorner")
-OpenCorner.CornerRadius = UDim.new(0, 10)
-OpenCorner.Parent = OpenBtn
-OpenBtn.MouseEnter:Connect(function() OpenBtn.BackgroundColor3 = Color3.fromRGB(240, 240, 240) end)
-OpenBtn.MouseLeave:Connect(function() OpenBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end)
-local dragging = false
-local dragStart = nil
-local startPos = nil
-DragBtn.MouseButton1Down:Connect(function()
-    dragging = true
-    dragStart = UserInputService:GetMouseLocation()
-    startPos = Bar.Position
+local lucky_DragBtn = Instance.new("TextButton")
+lucky_DragBtn.Size = UDim2.new(0, 60, 1, 0)
+lucky_DragBtn.Position = UDim2.new(0, 0, 0, 0)
+lucky_DragBtn.Text = "+"
+lucky_DragBtn.TextColor3 = Color3.fromRGB(80, 80, 80)
+lucky_DragBtn.Font = Enum.Font.GothamBold
+lucky_DragBtn.TextSize = 22
+lucky_DragBtn.BackgroundTransparency = 1
+lucky_DragBtn.BorderSizePixel = 0
+lucky_DragBtn.ZIndex = 21
+lucky_DragBtn.AutoButtonColor = false
+lucky_DragBtn.Parent = lucky_Bar
+local lucky_Divider = Instance.new("Frame")
+lucky_Divider.Size = UDim2.new(0, 1, 0.6, 0)
+lucky_Divider.Position = UDim2.new(0, 60, 0.2, 0)
+lucky_Divider.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
+lucky_Divider.BorderSizePixel = 0
+lucky_Divider.ZIndex = 22
+lucky_Divider.Parent = lucky_Bar
+local lucky_OpenBtn = Instance.new("TextButton")
+lucky_OpenBtn.Size = UDim2.new(1, -64, 1, -6)
+lucky_OpenBtn.Position = UDim2.new(0, 62, 0, 3)
+lucky_OpenBtn.Text = "踢一个幸运方块"
+lucky_OpenBtn.TextColor3 = Color3.fromRGB(40, 40, 40)
+lucky_OpenBtn.Font = Enum.Font.GothamBold
+lucky_OpenBtn.TextSize = 14
+lucky_OpenBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+lucky_OpenBtn.BackgroundTransparency = 0.15
+lucky_OpenBtn.BorderSizePixel = 0
+lucky_OpenBtn.ZIndex = 21
+lucky_OpenBtn.AutoButtonColor = false
+lucky_OpenBtn.Parent = lucky_Bar
+local lucky_OpenCorner = Instance.new("UICorner")
+lucky_OpenCorner.CornerRadius = UDim.new(0, 10)
+lucky_OpenCorner.Parent = lucky_OpenBtn
+lucky_OpenBtn.MouseEnter:Connect(function() lucky_OpenBtn.BackgroundColor3 = Color3.fromRGB(240, 240, 240) end)
+lucky_OpenBtn.MouseLeave:Connect(function() lucky_OpenBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end)
+local lucky_dragging = false
+local lucky_dragStart = nil
+local lucky_startPos = nil
+lucky_DragBtn.MouseButton1Down:Connect(function()
+    lucky_dragging = true
+    lucky_dragStart = UserInputService:GetMouseLocation()
+    lucky_startPos = lucky_Bar.Position
 end)
-DragBtn.MouseMoved:Connect(function(x, y)
-    if dragging then
-        local delta = UserInputService:GetMouseLocation() - dragStart
-        Bar.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+lucky_DragBtn.MouseMoved:Connect(function()
+    if lucky_dragging then
+        local delta = UserInputService:GetMouseLocation() - lucky_dragStart
+        lucky_Bar.Position = UDim2.new(lucky_startPos.X.Scale, lucky_startPos.X.Offset + delta.X, lucky_startPos.Y.Scale, lucky_startPos.Y.Offset + delta.Y)
     end
 end)
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then lucky_dragging = false end
 end)
 
-local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 580, 0, 440)
-MainFrame.Position = UDim2.new(0.5, -290, 0.5, -220)
-MainFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-MainFrame.BackgroundTransparency = 0.06
-MainFrame.Visible = false
-MainFrame.ZIndex = 2
-MainFrame.Parent = ScreenGui
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 14)
-MainCorner.Parent = MainFrame
-local RGBBorder = Instance.new("Frame")
-RGBBorder.Size = UDim2.new(1, 5, 1, 5)
-RGBBorder.Position = UDim2.new(0, -2.5, 0, -2.5)
-RGBBorder.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-RGBBorder.ZIndex = 1
-RGBBorder.Parent = MainFrame
-local RGBBorderCorner = Instance.new("UICorner")
-RGBBorderCorner.CornerRadius = UDim.new(0, 16)
-RGBBorderCorner.Parent = RGBBorder
-local hue = 0
+local lucky_MainFrame = Instance.new("Frame")
+lucky_MainFrame.Size = UDim2.new(0, 580, 0, 440)
+lucky_MainFrame.Position = UDim2.new(0.5, -290, 0.5, -220)
+lucky_MainFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+lucky_MainFrame.BackgroundTransparency = 0.06
+lucky_MainFrame.Visible = false
+lucky_MainFrame.ZIndex = 2
+lucky_MainFrame.Parent = lucky_ScreenGui
+local lucky_MainCorner = Instance.new("UICorner")
+lucky_MainCorner.CornerRadius = UDim.new(0, 14)
+lucky_MainCorner.Parent = lucky_MainFrame
+local lucky_RGBBorder = Instance.new("Frame")
+lucky_RGBBorder.Size = UDim2.new(1, 5, 1, 5)
+lucky_RGBBorder.Position = UDim2.new(0, -2.5, 0, -2.5)
+lucky_RGBBorder.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+lucky_RGBBorder.ZIndex = 1
+lucky_RGBBorder.Parent = lucky_MainFrame
+local lucky_RGBBorderCorner = Instance.new("UICorner")
+lucky_RGBBorderCorner.CornerRadius = UDim.new(0, 16)
+lucky_RGBBorderCorner.Parent = lucky_RGBBorder
+local lucky_hue = 0
 RunService.RenderStepped:Connect(function(delta)
-    if MainFrame.Visible then hue = (hue + delta * 0.3) % 1; RGBBorder.BackgroundColor3 = Color3.fromHSV(hue, 0.7, 1) end
+    if lucky_MainFrame.Visible then lucky_hue = (lucky_hue + delta * 0.3) % 1; lucky_RGBBorder.BackgroundColor3 = Color3.fromHSV(lucky_hue, 0.7, 1) end
 end)
-local InnerPanel = Instance.new("Frame")
-InnerPanel.Size = UDim2.new(1, -6, 1, -6)
-InnerPanel.Position = UDim2.new(0, 3, 0, 3)
-InnerPanel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-InnerPanel.ClipsDescendants = true
-InnerPanel.ZIndex = 3
-InnerPanel.Parent = MainFrame
-local InnerCorner = Instance.new("UICorner")
-InnerCorner.CornerRadius = UDim.new(0, 12)
-InnerCorner.Parent = InnerPanel
-local TopBar = Instance.new("Frame")
-TopBar.Size = UDim2.new(1, 0, 0, 36)
-TopBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-TopBar.BorderSizePixel = 0
-TopBar.ZIndex = 10
-TopBar.Parent = InnerPanel
-local TopBarCorner = Instance.new("UICorner")
-TopBarCorner.CornerRadius = UDim.new(0, 12)
-TopBarCorner.Parent = TopBar
-local TitleLabel = Instance.new("TextLabel")
-TitleLabel.Size = UDim2.new(0, 120, 1, 0)
-TitleLabel.Position = UDim2.new(0, 12, 0, 0)
-TitleLabel.Text = "踢一个幸运方块"
-TitleLabel.TextColor3 = Color3.fromRGB(50, 50, 50)
-TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.TextSize = 14
-TitleLabel.BackgroundTransparency = 1
-TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-TitleLabel.ZIndex = 11
-TitleLabel.Parent = TopBar
-local InfoBox = Instance.new("Frame")
-InfoBox.Size = UDim2.new(0, 200, 0, 26)
-InfoBox.Position = UDim2.new(0, 130, 0, 5)
-InfoBox.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
-InfoBox.BorderSizePixel = 0
-InfoBox.ZIndex = 12
-InfoBox.Parent = TopBar
-local InfoCorner = Instance.new("UICorner")
-InfoCorner.CornerRadius = UDim.new(0, 6)
-InfoCorner.Parent = InfoBox
-local InfoRGBOutline = Instance.new("Frame")
-InfoRGBOutline.Size = UDim2.new(1, 2, 1, 2)
-InfoRGBOutline.Position = UDim2.new(0, -1, 0, -1)
-InfoRGBOutline.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-InfoRGBOutline.ZIndex = 11
-InfoRGBOutline.Parent = InfoBox
-local InfoRGBCorner = Instance.new("UICorner")
-InfoRGBCorner.CornerRadius = UDim.new(0, 7)
-InfoRGBCorner.Parent = InfoRGBOutline
-local infoHue = 0
+local lucky_InnerPanel = Instance.new("Frame")
+lucky_InnerPanel.Size = UDim2.new(1, -6, 1, -6)
+lucky_InnerPanel.Position = UDim2.new(0, 3, 0, 3)
+lucky_InnerPanel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+lucky_InnerPanel.ClipsDescendants = true
+lucky_InnerPanel.ZIndex = 3
+lucky_InnerPanel.Parent = lucky_MainFrame
+local lucky_InnerCorner = Instance.new("UICorner")
+lucky_InnerCorner.CornerRadius = UDim.new(0, 12)
+lucky_InnerCorner.Parent = lucky_InnerPanel
+local lucky_TopBar = Instance.new("Frame")
+lucky_TopBar.Size = UDim2.new(1, 0, 0, 36)
+lucky_TopBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+lucky_TopBar.BorderSizePixel = 0
+lucky_TopBar.ZIndex = 10
+lucky_TopBar.Parent = lucky_InnerPanel
+local lucky_TopBarCorner = Instance.new("UICorner")
+lucky_TopBarCorner.CornerRadius = UDim.new(0, 12)
+lucky_TopBarCorner.Parent = lucky_TopBar
+local lucky_TitleLabel = Instance.new("TextLabel")
+lucky_TitleLabel.Size = UDim2.new(0, 120, 1, 0)
+lucky_TitleLabel.Position = UDim2.new(0, 12, 0, 0)
+lucky_TitleLabel.Text = "踢一个幸运方块"
+lucky_TitleLabel.TextColor3 = Color3.fromRGB(50, 50, 50)
+lucky_TitleLabel.Font = Enum.Font.GothamBold
+lucky_TitleLabel.TextSize = 14
+lucky_TitleLabel.BackgroundTransparency = 1
+lucky_TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+lucky_TitleLabel.ZIndex = 11
+lucky_TitleLabel.Parent = lucky_TopBar
+local lucky_InfoBox = Instance.new("Frame")
+lucky_InfoBox.Size = UDim2.new(0, 200, 0, 26)
+lucky_InfoBox.Position = UDim2.new(0, 130, 0, 5)
+lucky_InfoBox.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
+lucky_InfoBox.BorderSizePixel = 0
+lucky_InfoBox.ZIndex = 12
+lucky_InfoBox.Parent = lucky_TopBar
+local lucky_InfoCorner = Instance.new("UICorner")
+lucky_InfoCorner.CornerRadius = UDim.new(0, 6)
+lucky_InfoCorner.Parent = lucky_InfoBox
+local lucky_InfoRGBOutline = Instance.new("Frame")
+lucky_InfoRGBOutline.Size = UDim2.new(1, 2, 1, 2)
+lucky_InfoRGBOutline.Position = UDim2.new(0, -1, 0, -1)
+lucky_InfoRGBOutline.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+lucky_InfoRGBOutline.ZIndex = 11
+lucky_InfoRGBOutline.Parent = lucky_InfoBox
+local lucky_InfoRGBCorner = Instance.new("UICorner")
+lucky_InfoRGBCorner.CornerRadius = UDim.new(0, 7)
+lucky_InfoRGBCorner.Parent = lucky_InfoRGBOutline
+local lucky_infoHue = 0
 RunService.RenderStepped:Connect(function(delta)
-    infoHue = (infoHue + delta * 0.5) % 1
-    InfoRGBOutline.BackgroundColor3 = Color3.fromHSV(infoHue, 0.7, 1)
+    lucky_infoHue = (lucky_infoHue + delta * 0.5) % 1
+    lucky_InfoRGBOutline.BackgroundColor3 = Color3.fromHSV(lucky_infoHue, 0.7, 1)
 end)
-local InfoLabel = Instance.new("TextLabel")
-InfoLabel.Size = UDim2.new(1, 0, 1, 0)
-InfoLabel.Text = "踢幸运块 V1.0 | " .. os.date("%m月%d日 %H:%M:%S")
-InfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-InfoLabel.Font = Enum.Font.GothamBold
-InfoLabel.TextSize = 10
-InfoLabel.BackgroundTransparency = 1
-InfoLabel.ZIndex = 13
-InfoLabel.Parent = InfoBox
+local lucky_InfoLabel = Instance.new("TextLabel")
+lucky_InfoLabel.Size = UDim2.new(1, 0, 1, 0)
+lucky_InfoLabel.Text = "踢幸运块 V1.0 | " .. os.date("%m月%d日 %H:%M:%S")
+lucky_InfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+lucky_InfoLabel.Font = Enum.Font.GothamBold
+lucky_InfoLabel.TextSize = 10
+lucky_InfoLabel.BackgroundTransparency = 1
+lucky_InfoLabel.ZIndex = 13
+lucky_InfoLabel.Parent = lucky_InfoBox
 spawn(function()
     while true do
-        InfoLabel.Text = "踢一个 V1.0 | " .. os.date("%m月%d日 %H:%M:%S")
+        lucky_InfoLabel.Text = "踢幸运块 V1.0 | " .. os.date("%m月%d日 %H:%M:%S")
         wait(1)
     end
 end)
-local CloseButton = Instance.new("TextButton")
-CloseButton.Size = UDim2.new(0, 28, 0, 28)
-CloseButton.Position = UDim2.new(1, -34, 0, 4)
-CloseButton.Text = "×"
-CloseButton.TextColor3 = Color3.fromRGB(100, 100, 100)
-CloseButton.Font = Enum.Font.GothamBold
-CloseButton.TextSize = 18
-CloseButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-CloseButton.BorderSizePixel = 0
-CloseButton.ZIndex = 11
-CloseButton.Parent = TopBar
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(1, 0)
-CloseCorner.Parent = CloseButton
-CloseButton.MouseEnter:Connect(function() CloseButton.BackgroundColor3 = Color3.fromRGB(200, 200, 200) end)
-CloseButton.MouseLeave:Connect(function() CloseButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230) end)
-local TopDivider = Instance.new("Frame")
-TopDivider.Size = UDim2.new(1, -24, 0, 1)
-TopDivider.Position = UDim2.new(0, 12, 0, 36)
-TopDivider.BackgroundColor3 = Color3.fromRGB(225, 225, 225)
-TopDivider.BorderSizePixel = 0
-TopDivider.ZIndex = 10
-TopDivider.Parent = InnerPanel
-local MainContentContainer = Instance.new("Frame")
-MainContentContainer.Size = UDim2.new(1, 0, 1, -36)
-MainContentContainer.Position = UDim2.new(0, 0, 0, 36)
-MainContentContainer.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-MainContentContainer.BorderSizePixel = 0
-MainContentContainer.ZIndex = 5
-MainContentContainer.Parent = InnerPanel
+local lucky_CloseButton = Instance.new("TextButton")
+lucky_CloseButton.Size = UDim2.new(0, 28, 0, 28)
+lucky_CloseButton.Position = UDim2.new(1, -34, 0, 4)
+lucky_CloseButton.Text = "×"
+lucky_CloseButton.TextColor3 = Color3.fromRGB(100, 100, 100)
+lucky_CloseButton.Font = Enum.Font.GothamBold
+lucky_CloseButton.TextSize = 18
+lucky_CloseButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
+lucky_CloseButton.BorderSizePixel = 0
+lucky_CloseButton.ZIndex = 11
+lucky_CloseButton.Parent = lucky_TopBar
+local lucky_CloseCorner = Instance.new("UICorner")
+lucky_CloseCorner.CornerRadius = UDim.new(1, 0)
+lucky_CloseCorner.Parent = lucky_CloseButton
+lucky_CloseButton.MouseEnter:Connect(function() lucky_CloseButton.BackgroundColor3 = Color3.fromRGB(200, 200, 200) end)
+lucky_CloseButton.MouseLeave:Connect(function() lucky_CloseButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230) end)
+local lucky_TopDivider = Instance.new("Frame")
+lucky_TopDivider.Size = UDim2.new(1, -24, 0, 1)
+lucky_TopDivider.Position = UDim2.new(0, 12, 0, 36)
+lucky_TopDivider.BackgroundColor3 = Color3.fromRGB(225, 225, 225)
+lucky_TopDivider.BorderSizePixel = 0
+lucky_TopDivider.ZIndex = 10
+lucky_TopDivider.Parent = lucky_InnerPanel
+local lucky_MainContentContainer = Instance.new("Frame")
+lucky_MainContentContainer.Size = UDim2.new(1, 0, 1, -36)
+lucky_MainContentContainer.Position = UDim2.new(0, 0, 0, 36)
+lucky_MainContentContainer.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+lucky_MainContentContainer.BorderSizePixel = 0
+lucky_MainContentContainer.ZIndex = 5
+lucky_MainContentContainer.Parent = lucky_InnerPanel
 
-local NavFrame = Instance.new("Frame")
-NavFrame.Size = UDim2.new(0, 135, 1, 0)
-NavFrame.Position = UDim2.new(0, 0, 0, 0)
-NavFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-NavFrame.BackgroundTransparency = 0.03
-NavFrame.BorderSizePixel = 0
-NavFrame.ZIndex = 6
-NavFrame.Parent = MainContentContainer
-local NavDivider = Instance.new("Frame")
-NavDivider.Size = UDim2.new(0, 1, 1, 0)
-NavDivider.Position = UDim2.new(1, 0, 0, 0)
-NavDivider.BackgroundColor3 = Color3.fromRGB(225, 225, 225)
-NavDivider.BorderSizePixel = 0
-NavDivider.ZIndex = 7
-NavDivider.Parent = NavFrame
-local NavScroll = Instance.new("ScrollingFrame")
-NavScroll.Size = UDim2.new(1, 0, 1, 0)
-NavScroll.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-NavScroll.BackgroundTransparency = 0.03
-NavScroll.BorderSizePixel = 0
-NavScroll.ScrollBarThickness = 0
-NavScroll.CanvasSize = UDim2.new(0, 0, 0, 200)
-NavScroll.ZIndex = 6
-NavScroll.Parent = NavFrame
-local NavList = Instance.new("UIListLayout")
-NavList.Padding = UDim.new(0, 2)
-NavList.Parent = NavScroll
-local NavTopPad = Instance.new("Frame")
-NavTopPad.Size = UDim2.new(1, 0, 0, 5)
-NavTopPad.BackgroundTransparency = 1
-NavTopPad.Parent = NavScroll
-local navItems = {{name = "公告", icon = "📢"},{name = "主要功能", icon = "⚙️"},{name = "其他功能", icon = "🔧"}}
-local navButtons = {}
-local selectedNav = nil
-local ContentArea = Instance.new("Frame")
-ContentArea.Size = UDim2.new(1, -136, 1, 0)
-ContentArea.Position = UDim2.new(0, 136, 0, 0)
-ContentArea.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-ContentArea.BorderSizePixel = 0
-ContentArea.ZIndex = 6
-ContentArea.Parent = MainContentContainer
-local contentPages = {}
-function switchContent(n) for a, b in pairs(contentPages) do b.Visible = (a == n) end end
-local function selectNav(button, itemName)
-    if selectedNav then selectedNav.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end
+local lucky_NavFrame = Instance.new("Frame")
+lucky_NavFrame.Size = UDim2.new(0, 135, 1, 0)
+lucky_NavFrame.Position = UDim2.new(0, 0, 0, 0)
+lucky_NavFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+lucky_NavFrame.BackgroundTransparency = 0.03
+lucky_NavFrame.BorderSizePixel = 0
+lucky_NavFrame.ZIndex = 6
+lucky_NavFrame.Parent = lucky_MainContentContainer
+local lucky_NavDivider = Instance.new("Frame")
+lucky_NavDivider.Size = UDim2.new(0, 1, 1, 0)
+lucky_NavDivider.Position = UDim2.new(1, 0, 0, 0)
+lucky_NavDivider.BackgroundColor3 = Color3.fromRGB(225, 225, 225)
+lucky_NavDivider.BorderSizePixel = 0
+lucky_NavDivider.ZIndex = 7
+lucky_NavDivider.Parent = lucky_NavFrame
+local lucky_NavScroll = Instance.new("ScrollingFrame")
+lucky_NavScroll.Size = UDim2.new(1, 0, 1, 0)
+lucky_NavScroll.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+lucky_NavScroll.BackgroundTransparency = 0.03
+lucky_NavScroll.BorderSizePixel = 0
+lucky_NavScroll.ScrollBarThickness = 0
+lucky_NavScroll.CanvasSize = UDim2.new(0, 0, 0, 200)
+lucky_NavScroll.ZIndex = 6
+lucky_NavScroll.Parent = lucky_NavFrame
+local lucky_NavList = Instance.new("UIListLayout")
+lucky_NavList.Padding = UDim.new(0, 2)
+lucky_NavList.Parent = lucky_NavScroll
+local lucky_NavTopPad = Instance.new("Frame")
+lucky_NavTopPad.Size = UDim2.new(1, 0, 0, 5)
+lucky_NavTopPad.BackgroundTransparency = 1
+lucky_NavTopPad.Parent = lucky_NavScroll
+local lucky_navItems = {{name = "公告", icon = "📢"},{name = "主要功能", icon = "⚙️"},{name = "其他功能", icon = "🔧"}}
+local lucky_navButtons = {}
+local lucky_selectedNav = nil
+local lucky_ContentArea = Instance.new("Frame")
+lucky_ContentArea.Size = UDim2.new(1, -136, 1, 0)
+lucky_ContentArea.Position = UDim2.new(0, 136, 0, 0)
+lucky_ContentArea.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+lucky_ContentArea.BorderSizePixel = 0
+lucky_ContentArea.ZIndex = 6
+lucky_ContentArea.Parent = lucky_MainContentContainer
+local lucky_contentPages = {}
+function lucky_switchContent(n) for a, b in pairs(lucky_contentPages) do b.Visible = (a == n) end end
+local function lucky_selectNav(button, itemName)
+    if lucky_selectedNav then lucky_selectedNav.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end
     button.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-    selectedNav = button
-    TitleLabel.Text = itemName
-    switchContent(itemName)
+    lucky_selectedNav = button
+    lucky_TitleLabel.Text = itemName
+    lucky_switchContent(itemName)
 end
-for _, item in ipairs(navItems) do
+for _, item in ipairs(lucky_navItems) do
     local NavButton = Instance.new("TextButton")
     NavButton.Size = UDim2.new(1, -12, 0, 36); NavButton.Position = UDim2.new(0, 6, 0, 0)
     NavButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255); NavButton.Text = ""
-    NavButton.BorderSizePixel = 0; NavButton.ZIndex = 7; NavButton.AutoButtonColor = false; NavButton.Parent = NavScroll
+    NavButton.BorderSizePixel = 0; NavButton.ZIndex = 7; NavButton.AutoButtonColor = false; NavButton.Parent = lucky_NavScroll
     local NavCorner = Instance.new("UICorner"); NavCorner.CornerRadius = UDim.new(0, 8); NavCorner.Parent = NavButton
     local NavIcon = Instance.new("TextLabel")
     NavIcon.Size = UDim2.new(0, 14, 1, 0); NavIcon.Position = UDim2.new(0, 2, 0, 0)
@@ -280,313 +280,314 @@ for _, item in ipairs(navItems) do
     NavLabel.Text = "  " .. item.name; NavLabel.TextColor3 = Color3.fromRGB(60, 60, 60)
     NavLabel.Font = Enum.Font.GothamSemibold; NavLabel.TextSize = 11; NavLabel.BackgroundTransparency = 1
     NavLabel.TextXAlignment = Enum.TextXAlignment.Left; NavLabel.ZIndex = 8; NavLabel.Parent = NavButton
-    NavButton.MouseButton1Click:Connect(function() selectNav(NavButton, item.name) end)
-    NavButton.MouseEnter:Connect(function() if NavButton ~= selectedNav then NavButton.BackgroundColor3 = Color3.fromRGB(240, 240, 240) end end)
-    NavButton.MouseLeave:Connect(function() if NavButton ~= selectedNav then NavButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end end)
-    table.insert(navButtons, {button = NavButton, name = item.name})
+    NavButton.MouseButton1Click:Connect(function() lucky_selectNav(NavButton, item.name) end)
+    NavButton.MouseEnter:Connect(function() if NavButton ~= lucky_selectedNav then NavButton.BackgroundColor3 = Color3.fromRGB(240, 240, 240) end end)
+    NavButton.MouseLeave:Connect(function() if NavButton ~= lucky_selectedNav then NavButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end end)
+    table.insert(lucky_navButtons, {button = NavButton, name = item.name})
 end
 
-local kickToggle = false
+local lucky_kickToggle = false
 
-local announcementPage = Instance.new("ScrollingFrame")
-announcementPage.Size = UDim2.new(1, 0, 1, 0)
-announcementPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-announcementPage.BorderSizePixel = 0
-announcementPage.ScrollBarThickness = 3
-announcementPage.Visible = false
-announcementPage.ZIndex = 7
-announcementPage.Parent = ContentArea
-local announcementText = Instance.new("TextLabel")
-announcementText.Size = UDim2.new(1, -20, 0, 400)
-announcementText.Position = UDim2.new(0, 10, 0, 10)
-announcementText.Text = "📢 踢一个幸运方块\n\n本脚本由C工作室亲自制作\n非常简易黑脚本归属\n用于踢一个幸运方块\n\n感谢使用！"
-announcementText.TextColor3 = Color3.fromRGB(70, 70, 70)
-announcementText.Font = Enum.Font.Gotham
-announcementText.TextSize = 13
-announcementText.BackgroundTransparency = 1
-announcementText.TextXAlignment = Enum.TextXAlignment.Left
-announcementText.TextYAlignment = Enum.TextYAlignment.Top
-announcementText.TextWrapped = true
-announcementText.LineHeight = 1.8
-announcementText.ZIndex = 8
-announcementText.Parent = announcementPage
-contentPages["公告"] = announcementPage
+local lucky_announcementPage = Instance.new("ScrollingFrame")
+lucky_announcementPage.Size = UDim2.new(1, 0, 1, 0)
+lucky_announcementPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+lucky_announcementPage.BorderSizePixel = 0
+lucky_announcementPage.ScrollBarThickness = 3
+lucky_announcementPage.Visible = false
+lucky_announcementPage.ZIndex = 7
+lucky_announcementPage.Parent = lucky_ContentArea
+local lucky_announcementText = Instance.new("TextLabel")
+lucky_announcementText.Size = UDim2.new(1, -20, 0, 400)
+lucky_announcementText.Position = UDim2.new(0, 10, 0, 10)
+lucky_announcementText.Text = "📢 踢一个幸运方块\n\n本脚本由C工作室亲自制作\n非常简易黑脚本归属\n用于踢一个幸运方块\n\n感谢使用！"
+lucky_announcementText.TextColor3 = Color3.fromRGB(70, 70, 70)
+lucky_announcementText.Font = Enum.Font.Gotham
+lucky_announcementText.TextSize = 13
+lucky_announcementText.BackgroundTransparency = 1
+lucky_announcementText.TextXAlignment = Enum.TextXAlignment.Left
+lucky_announcementText.TextYAlignment = Enum.TextYAlignment.Top
+lucky_announcementText.TextWrapped = true
+lucky_announcementText.LineHeight = 1.8
+lucky_announcementText.ZIndex = 8
+lucky_announcementText.Parent = lucky_announcementPage
+lucky_contentPages["公告"] = lucky_announcementPage
 
-local mainPage = Instance.new("ScrollingFrame")
-mainPage.Size = UDim2.new(1, 0, 1, 0)
-mainPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-mainPage.BorderSizePixel = 0
-mainPage.ScrollBarThickness = 3
-mainPage.Visible = false
-mainPage.ZIndex = 7
-mainPage.Parent = ContentArea
-local mainPageList = Instance.new("UIListLayout")
-mainPageList.Padding = UDim.new(0, 6)
-mainPageList.Parent = mainPage
-local mainPageSpacer = Instance.new("Frame")
-mainPageSpacer.Size = UDim2.new(1, 0, 0, 6)
-mainPageSpacer.BackgroundTransparency = 1
-mainPageSpacer.Parent = mainPage
+local lucky_mainPage = Instance.new("ScrollingFrame")
+lucky_mainPage.Size = UDim2.new(1, 0, 1, 0)
+lucky_mainPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+lucky_mainPage.BorderSizePixel = 0
+lucky_mainPage.ScrollBarThickness = 3
+lucky_mainPage.Visible = false
+lucky_mainPage.ZIndex = 7
+lucky_mainPage.Parent = lucky_ContentArea
+local lucky_mainPageList = Instance.new("UIListLayout")
+lucky_mainPageList.Padding = UDim.new(0, 6)
+lucky_mainPageList.Parent = lucky_mainPage
+local lucky_mainPageSpacer = Instance.new("Frame")
+lucky_mainPageSpacer.Size = UDim2.new(1, 0, 0, 6)
+lucky_mainPageSpacer.BackgroundTransparency = 1
+lucky_mainPageSpacer.Parent = lucky_mainPage
 
-local Card = Instance.new("Frame")
-Card.Size = UDim2.new(1, -16, 0, 46)
-Card.Position = UDim2.new(0, 8, 0, 0)
-Card.BackgroundColor3 = Color3.fromRGB(252, 252, 252)
-Card.BorderSizePixel = 0
-Card.ZIndex = 7
-Card.Parent = mainPage
-local CardCorner = Instance.new("UICorner")
-CardCorner.CornerRadius = UDim.new(0, 10)
-CardCorner.Parent = Card
-local CardStroke = Instance.new("UIStroke")
-CardStroke.Color = Color3.fromRGB(230, 230, 230)
-CardStroke.Thickness = 1
-CardStroke.Parent = Card
-local IconFrame = Instance.new("Frame")
-IconFrame.Size = UDim2.new(0, 26, 0, 26)
-IconFrame.Position = UDim2.new(0, 10, 0, 10)
-IconFrame.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
-IconFrame.BorderSizePixel = 0
-IconFrame.ZIndex = 8
-IconFrame.Parent = Card
-local IconCorner = Instance.new("UICorner")
-IconCorner.CornerRadius = UDim.new(0, 6)
-IconCorner.Parent = IconFrame
-local IconText = Instance.new("TextLabel")
-IconText.Size = UDim2.new(1, 0, 1, 0)
-IconText.Text = "🦶"
-IconText.TextSize = 11
-IconText.BackgroundTransparency = 1
-IconText.ZIndex = 9
-IconText.Parent = IconFrame
-local TitleText = Instance.new("TextLabel")
-TitleText.Size = UDim2.new(0, 180, 0, 15)
-TitleText.Position = UDim2.new(0, 44, 0, 5)
-TitleText.Text = "自动踢+走回家"
-TitleText.TextColor3 = Color3.fromRGB(50, 50, 50)
-TitleText.Font = Enum.Font.GothamSemibold
-TitleText.TextSize = 11
-TitleText.BackgroundTransparency = 1
-TitleText.TextXAlignment = Enum.TextXAlignment.Left
-TitleText.ZIndex = 8
-TitleText.Parent = Card
-local DescText = Instance.new("TextLabel")
-DescText.Size = UDim2.new(1, -100, 0, 13)
-DescText.Position = UDim2.new(0, 44, 0, 22)
-DescText.Text = "自动踢和回家"
-DescText.TextColor3 = Color3.fromRGB(130, 130, 130)
-DescText.Font = Enum.Font.Gotham
-DescText.TextSize = 9
-DescText.BackgroundTransparency = 1
-DescText.TextXAlignment = Enum.TextXAlignment.Left
-DescText.ZIndex = 8
-DescText.Parent = Card
-local Btn = Instance.new("TextButton")
-Btn.Size = UDim2.new(0, 50, 0, 20)
-Btn.Position = UDim2.new(1, -58, 0, 13)
-Btn.Text = "执行"
-Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-Btn.Font = Enum.Font.GothamBold
-Btn.TextSize = 10
-Btn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-Btn.BorderSizePixel = 0
-Btn.ZIndex = 9
-Btn.AutoButtonColor = false
-Btn.Parent = Card
-local BtnCorner = Instance.new("UICorner")
-BtnCorner.CornerRadius = UDim.new(0, 5)
-BtnCorner.Parent = Btn
-local kickRunning = false
-local function walkTo(targetPos)
+local lucky_Card = Instance.new("Frame")
+lucky_Card.Size = UDim2.new(1, -16, 0, 46)
+lucky_Card.Position = UDim2.new(0, 8, 0, 0)
+lucky_Card.BackgroundColor3 = Color3.fromRGB(252, 252, 252)
+lucky_Card.BorderSizePixel = 0
+lucky_Card.ZIndex = 7
+lucky_Card.Parent = lucky_mainPage
+local lucky_CardCorner = Instance.new("UICorner")
+lucky_CardCorner.CornerRadius = UDim.new(0, 10)
+lucky_CardCorner.Parent = lucky_Card
+local lucky_CardStroke = Instance.new("UIStroke")
+lucky_CardStroke.Color = Color3.fromRGB(230, 230, 230)
+lucky_CardStroke.Thickness = 1
+lucky_CardStroke.Parent = lucky_Card
+local lucky_IconFrame = Instance.new("Frame")
+lucky_IconFrame.Size = UDim2.new(0, 26, 0, 26)
+lucky_IconFrame.Position = UDim2.new(0, 10, 0, 10)
+lucky_IconFrame.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+lucky_IconFrame.BorderSizePixel = 0
+lucky_IconFrame.ZIndex = 8
+lucky_IconFrame.Parent = lucky_Card
+local lucky_IconCorner = Instance.new("UICorner")
+lucky_IconCorner.CornerRadius = UDim.new(0, 6)
+lucky_IconCorner.Parent = lucky_IconFrame
+local lucky_IconText = Instance.new("TextLabel")
+lucky_IconText.Size = UDim2.new(1, 0, 1, 0)
+lucky_IconText.Text = "🦶"
+lucky_IconText.TextSize = 11
+lucky_IconText.BackgroundTransparency = 1
+lucky_IconText.ZIndex = 9
+lucky_IconText.Parent = lucky_IconFrame
+local lucky_TitleText = Instance.new("TextLabel")
+lucky_TitleText.Size = UDim2.new(0, 180, 0, 15)
+lucky_TitleText.Position = UDim2.new(0, 44, 0, 5)
+lucky_TitleText.Text = "自动踢+走回家"
+lucky_TitleText.TextColor3 = Color3.fromRGB(50, 50, 50)
+lucky_TitleText.Font = Enum.Font.GothamSemibold
+lucky_TitleText.TextSize = 11
+lucky_TitleText.BackgroundTransparency = 1
+lucky_TitleText.TextXAlignment = Enum.TextXAlignment.Left
+lucky_TitleText.ZIndex = 8
+lucky_TitleText.Parent = lucky_Card
+local lucky_DescText = Instance.new("TextLabel")
+lucky_DescText.Size = UDim2.new(1, -100, 0, 13)
+lucky_DescText.Position = UDim2.new(0, 44, 0, 22)
+lucky_DescText.Text = "自动踢和回家"
+lucky_DescText.TextColor3 = Color3.fromRGB(130, 130, 130)
+lucky_DescText.Font = Enum.Font.Gotham
+lucky_DescText.TextSize = 9
+lucky_DescText.BackgroundTransparency = 1
+lucky_DescText.TextXAlignment = Enum.TextXAlignment.Left
+lucky_DescText.ZIndex = 8
+lucky_DescText.Parent = lucky_Card
+local lucky_Btn = Instance.new("TextButton")
+lucky_Btn.Size = UDim2.new(0, 50, 0, 20)
+lucky_Btn.Position = UDim2.new(1, -58, 0, 13)
+lucky_Btn.Text = "执行"
+lucky_Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+lucky_Btn.Font = Enum.Font.GothamBold
+lucky_Btn.TextSize = 10
+lucky_Btn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+lucky_Btn.BorderSizePixel = 0
+lucky_Btn.ZIndex = 9
+lucky_Btn.AutoButtonColor = false
+lucky_Btn.Parent = lucky_Card
+local lucky_BtnCorner = Instance.new("UICorner")
+lucky_BtnCorner.CornerRadius = UDim.new(0, 5)
+lucky_BtnCorner.Parent = lucky_Btn
+local lucky_kickRunning = false
+local function lucky_walkTo(targetPos)
     local c = Players.LocalPlayer.Character
     if not c or not c:FindFirstChild("HumanoidRootPart") or not c:FindFirstChild("Humanoid") then return end
     local hrp = c.HumanoidRootPart
     local hum = c.Humanoid
     hum.WalkSpeed = 50
     while (targetPos - hrp.Position).Magnitude > 3 do
-        if not kickToggle then hum.WalkSpeed = 16; return end
+        if not lucky_kickToggle then hum.WalkSpeed = 16; return end
         hum:MoveTo(targetPos)
         task.wait(0.05)
     end
     hum.WalkSpeed = 16
 end
-local function kickLoop()
-    kickRunning = true
+local function lucky_kickLoop()
+    lucky_kickRunning = true
     local kickPos = Vector3.new(690, 3, 224)
     local homePos = Vector3.new(716, 3, 230)
-    while kickRunning and kickToggle do
-        walkTo(kickPos)
-        if not kickToggle then break end
+    while lucky_kickRunning and lucky_kickToggle do
+        lucky_walkTo(kickPos)
+        if not lucky_kickToggle then break end
         pcall(function()
             game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network"):WaitForChild("rev_KickEvent"):FireServer(0.9670752994716167, 1)
         end)
-        walkTo(homePos)
-        if not kickToggle then break end
+        lucky_walkTo(homePos)
+        if not lucky_kickToggle then break end
         task.wait(0)
     end
-    kickRunning = false
+    lucky_kickRunning = false
 end
-Btn.MouseButton1Click:Connect(function()
-    kickToggle = not kickToggle
-    if kickToggle then
-        Btn.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
-        Btn.Text = "停止"
-        if not kickRunning then
-            task.spawn(kickLoop)
+lucky_Btn.MouseButton1Click:Connect(function()
+    lucky_kickToggle = not lucky_kickToggle
+    if lucky_kickToggle then
+        lucky_Btn.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
+        lucky_Btn.Text = "停止"
+        if not lucky_kickRunning then
+            task.spawn(lucky_kickLoop)
         end
     else
-        Btn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-        Btn.Text = "执行"
+        lucky_Btn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+        lucky_Btn.Text = "执行"
     end
 end)
-Btn.MouseEnter:Connect(function()
-    if not kickToggle then Btn.BackgroundColor3 = Color3.fromRGB(255, 160, 20) end
+lucky_Btn.MouseEnter:Connect(function()
+    if not lucky_kickToggle then lucky_Btn.BackgroundColor3 = Color3.fromRGB(255, 160, 20) end
 end)
-Btn.MouseLeave:Connect(function()
-    if not kickToggle then Btn.BackgroundColor3 = Color3.fromRGB(255, 140, 0) end
+lucky_Btn.MouseLeave:Connect(function()
+    if not lucky_kickToggle then lucky_Btn.BackgroundColor3 = Color3.fromRGB(255, 140, 0) end
 end)
 
-mainPage.CanvasSize = UDim2.new(0, 0, 0, 60)
-contentPages["主要功能"] = mainPage
+lucky_mainPage.CanvasSize = UDim2.new(0, 0, 0, 60)
+lucky_contentPages["主要功能"] = lucky_mainPage
+-- 踢一个幸运方块 第2段：其他功能 + 打开关闭动画 + 导航初始化
 
-local otherPage = Instance.new("ScrollingFrame")
-otherPage.Size = UDim2.new(1, 0, 1, 0)
-otherPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-otherPage.BorderSizePixel = 0
-otherPage.ScrollBarThickness = 3
-otherPage.Visible = false
-otherPage.ZIndex = 7
-otherPage.Parent = ContentArea
-local otherPageList = Instance.new("UIListLayout")
-otherPageList.Padding = UDim.new(0, 6)
-otherPageList.Parent = otherPage
-local otherPageSpacer = Instance.new("Frame")
-otherPageSpacer.Size = UDim2.new(1, 0, 0, 6)
-otherPageSpacer.BackgroundTransparency = 1
-otherPageSpacer.Parent = otherPage
+local lucky_otherPage = Instance.new("ScrollingFrame")
+lucky_otherPage.Size = UDim2.new(1, 0, 1, 0)
+lucky_otherPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+lucky_otherPage.BorderSizePixel = 0
+lucky_otherPage.ScrollBarThickness = 3
+lucky_otherPage.Visible = false
+lucky_otherPage.ZIndex = 7
+lucky_otherPage.Parent = lucky_ContentArea
+local lucky_otherPageList = Instance.new("UIListLayout")
+lucky_otherPageList.Padding = UDim.new(0, 6)
+lucky_otherPageList.Parent = lucky_otherPage
+local lucky_otherPageSpacer = Instance.new("Frame")
+lucky_otherPageSpacer.Size = UDim2.new(1, 0, 0, 6)
+lucky_otherPageSpacer.BackgroundTransparency = 1
+lucky_otherPageSpacer.Parent = lucky_otherPage
 
-local Card2 = Instance.new("Frame")
-Card2.Size = UDim2.new(1, -16, 0, 46)
-Card2.Position = UDim2.new(0, 8, 0, 0)
-Card2.BackgroundColor3 = Color3.fromRGB(252, 252, 252)
-Card2.BorderSizePixel = 0
-Card2.ZIndex = 7
-Card2.Parent = otherPage
-local CardCorner2 = Instance.new("UICorner")
-CardCorner2.CornerRadius = UDim.new(0, 10)
-CardCorner2.Parent = Card2
-local CardStroke2 = Instance.new("UIStroke")
-CardStroke2.Color = Color3.fromRGB(230, 230, 230)
-CardStroke2.Thickness = 1
-CardStroke2.Parent = Card2
-local IconFrame2 = Instance.new("Frame")
-IconFrame2.Size = UDim2.new(0, 26, 0, 26)
-IconFrame2.Position = UDim2.new(0, 10, 0, 10)
-IconFrame2.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
-IconFrame2.BorderSizePixel = 0
-IconFrame2.ZIndex = 8
-IconFrame2.Parent = Card2
-local IconCorner2 = Instance.new("UICorner")
-IconCorner2.CornerRadius = UDim.new(0, 6)
-IconCorner2.Parent = IconFrame2
-local IconText2 = Instance.new("TextLabel")
-IconText2.Size = UDim2.new(1, 0, 1, 0)
-IconText2.Text = "💰"
-IconText2.TextSize = 11
-IconText2.BackgroundTransparency = 1
-IconText2.ZIndex = 9
-IconText2.Parent = IconFrame2
-local TitleText2 = Instance.new("TextLabel")
-TitleText2.Size = UDim2.new(0, 180, 0, 15)
-TitleText2.Position = UDim2.new(0, 44, 0, 5)
-TitleText2.Text = "自动收集钱"
-TitleText2.TextColor3 = Color3.fromRGB(50, 50, 50)
-TitleText2.Font = Enum.Font.GothamSemibold
-TitleText2.TextSize = 11
-TitleText2.BackgroundTransparency = 1
-TitleText2.TextXAlignment = Enum.TextXAlignment.Left
-TitleText2.ZIndex = 8
-TitleText2.Parent = Card2
-local DescText2 = Instance.new("TextLabel")
-DescText2.Size = UDim2.new(1, -100, 0, 13)
-DescText2.Position = UDim2.new(0, 44, 0, 22)
-DescText2.Text = "循环收集可能会被踢出"
-DescText2.TextColor3 = Color3.fromRGB(130, 130, 130)
-DescText2.Font = Enum.Font.Gotham
-DescText2.TextSize = 9
-DescText2.BackgroundTransparency = 1
-DescText2.TextXAlignment = Enum.TextXAlignment.Left
-DescText2.ZIndex = 8
-DescText2.Parent = Card2
-local Btn2 = Instance.new("TextButton")
-Btn2.Size = UDim2.new(0, 50, 0, 20)
-Btn2.Position = UDim2.new(1, -58, 0, 13)
-Btn2.Text = "执行"
-Btn2.TextColor3 = Color3.fromRGB(255, 255, 255)
-Btn2.Font = Enum.Font.GothamBold
-Btn2.TextSize = 10
-Btn2.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-Btn2.BorderSizePixel = 0
-Btn2.ZIndex = 9
-Btn2.AutoButtonColor = false
-Btn2.Parent = Card2
-local BtnCorner2 = Instance.new("UICorner")
-BtnCorner2.CornerRadius = UDim.new(0, 5)
-BtnCorner2.Parent = Btn2
-local collectToggle = false
-local collectRunning = false
-local function collectLoop()
-    collectRunning = true
-    while collectRunning and collectToggle do
+local lucky_Card2 = Instance.new("Frame")
+lucky_Card2.Size = UDim2.new(1, -16, 0, 46)
+lucky_Card2.Position = UDim2.new(0, 8, 0, 0)
+lucky_Card2.BackgroundColor3 = Color3.fromRGB(252, 252, 252)
+lucky_Card2.BorderSizePixel = 0
+lucky_Card2.ZIndex = 7
+lucky_Card2.Parent = lucky_otherPage
+local lucky_CardCorner2 = Instance.new("UICorner")
+lucky_CardCorner2.CornerRadius = UDim.new(0, 10)
+lucky_CardCorner2.Parent = lucky_Card2
+local lucky_CardStroke2 = Instance.new("UIStroke")
+lucky_CardStroke2.Color = Color3.fromRGB(230, 230, 230)
+lucky_CardStroke2.Thickness = 1
+lucky_CardStroke2.Parent = lucky_Card2
+local lucky_IconFrame2 = Instance.new("Frame")
+lucky_IconFrame2.Size = UDim2.new(0, 26, 0, 26)
+lucky_IconFrame2.Position = UDim2.new(0, 10, 0, 10)
+lucky_IconFrame2.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+lucky_IconFrame2.BorderSizePixel = 0
+lucky_IconFrame2.ZIndex = 8
+lucky_IconFrame2.Parent = lucky_Card2
+local lucky_IconCorner2 = Instance.new("UICorner")
+lucky_IconCorner2.CornerRadius = UDim.new(0, 6)
+lucky_IconCorner2.Parent = lucky_IconFrame2
+local lucky_IconText2 = Instance.new("TextLabel")
+lucky_IconText2.Size = UDim2.new(1, 0, 1, 0)
+lucky_IconText2.Text = "💰"
+lucky_IconText2.TextSize = 11
+lucky_IconText2.BackgroundTransparency = 1
+lucky_IconText2.ZIndex = 9
+lucky_IconText2.Parent = lucky_IconFrame2
+local lucky_TitleText2 = Instance.new("TextLabel")
+lucky_TitleText2.Size = UDim2.new(0, 180, 0, 15)
+lucky_TitleText2.Position = UDim2.new(0, 44, 0, 5)
+lucky_TitleText2.Text = "自动收集钱"
+lucky_TitleText2.TextColor3 = Color3.fromRGB(50, 50, 50)
+lucky_TitleText2.Font = Enum.Font.GothamSemibold
+lucky_TitleText2.TextSize = 11
+lucky_TitleText2.BackgroundTransparency = 1
+lucky_TitleText2.TextXAlignment = Enum.TextXAlignment.Left
+lucky_TitleText2.ZIndex = 8
+lucky_TitleText2.Parent = lucky_Card2
+local lucky_DescText2 = Instance.new("TextLabel")
+lucky_DescText2.Size = UDim2.new(1, -100, 0, 13)
+lucky_DescText2.Position = UDim2.new(0, 44, 0, 22)
+lucky_DescText2.Text = "循环收集可能会被踢出"
+lucky_DescText2.TextColor3 = Color3.fromRGB(130, 130, 130)
+lucky_DescText2.Font = Enum.Font.Gotham
+lucky_DescText2.TextSize = 9
+lucky_DescText2.BackgroundTransparency = 1
+lucky_DescText2.TextXAlignment = Enum.TextXAlignment.Left
+lucky_DescText2.ZIndex = 8
+lucky_DescText2.Parent = lucky_Card2
+local lucky_Btn2 = Instance.new("TextButton")
+lucky_Btn2.Size = UDim2.new(0, 50, 0, 20)
+lucky_Btn2.Position = UDim2.new(1, -58, 0, 13)
+lucky_Btn2.Text = "执行"
+lucky_Btn2.TextColor3 = Color3.fromRGB(255, 255, 255)
+lucky_Btn2.Font = Enum.Font.GothamBold
+lucky_Btn2.TextSize = 10
+lucky_Btn2.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+lucky_Btn2.BorderSizePixel = 0
+lucky_Btn2.ZIndex = 9
+lucky_Btn2.AutoButtonColor = false
+lucky_Btn2.Parent = lucky_Card2
+local lucky_BtnCorner2 = Instance.new("UICorner")
+lucky_BtnCorner2.CornerRadius = UDim.new(0, 5)
+lucky_BtnCorner2.Parent = lucky_Btn2
+local lucky_collectToggle = false
+local lucky_collectRunning = false
+local function lucky_collectLoop()
+    lucky_collectRunning = true
+    while lucky_collectRunning and lucky_collectToggle do
         for i = 1, 10 do
-            if not collectToggle then break end
+            if not lucky_collectToggle then break end
             pcall(function()
                 game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Packages"):WaitForChild("Network"):WaitForChild("rev_B_Collect"):FireServer(i)
             end)
         end
         task.wait(0)
     end
-    collectRunning = false
+    lucky_collectRunning = false
 end
-Btn2.MouseButton1Click:Connect(function()
-    collectToggle = not collectToggle
-    if collectToggle then
-        Btn2.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
-        Btn2.Text = "停止"
-        if not collectRunning then
-            task.spawn(collectLoop)
+lucky_Btn2.MouseButton1Click:Connect(function()
+    lucky_collectToggle = not lucky_collectToggle
+    if lucky_collectToggle then
+        lucky_Btn2.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
+        lucky_Btn2.Text = "停止"
+        if not lucky_collectRunning then
+            task.spawn(lucky_collectLoop)
         end
     else
-        Btn2.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-        Btn2.Text = "执行"
+        lucky_Btn2.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+        lucky_Btn2.Text = "执行"
     end
 end)
-Btn2.MouseEnter:Connect(function()
-    if not collectToggle then Btn2.BackgroundColor3 = Color3.fromRGB(255, 160, 20) end
+lucky_Btn2.MouseEnter:Connect(function()
+    if not lucky_collectToggle then lucky_Btn2.BackgroundColor3 = Color3.fromRGB(255, 160, 20) end
 end)
-Btn2.MouseLeave:Connect(function()
-    if not collectToggle then Btn2.BackgroundColor3 = Color3.fromRGB(255, 140, 0) end
+lucky_Btn2.MouseLeave:Connect(function()
+    if not lucky_collectToggle then lucky_Btn2.BackgroundColor3 = Color3.fromRGB(255, 140, 0) end
 end)
 
-otherPage.CanvasSize = UDim2.new(0, 0, 0, 60)
-contentPages["其他功能"] = otherPage
+lucky_otherPage.CanvasSize = UDim2.new(0, 0, 0, 60)
+lucky_contentPages["其他功能"] = lucky_otherPage
 
-contentPages["公告"].Visible = true
+lucky_contentPages["公告"].Visible = true
 
-local isOpen = false
-local function openPanel()
-    isOpen = true
-    MainFrame.Size = UDim2.new(0, 0, 0, 0); MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-    MainFrame.Visible = true
-    TweenService:Create(MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 580, 0, 440), Position = UDim2.new(0.5, -290, 0.5, -220)}):Play()
+local lucky_isOpen = false
+local function lucky_openPanel()
+    lucky_isOpen = true
+    lucky_MainFrame.Size = UDim2.new(0, 0, 0, 0); lucky_MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    lucky_MainFrame.Visible = true
+    TweenService:Create(lucky_MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 580, 0, 440), Position = UDim2.new(0.5, -290, 0.5, -220)}):Play()
 end
-local function closePanel()
-    isOpen = false
-    TweenService:Create(MainFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0)}):Play()
-    wait(0.15); MainFrame.Visible = false
+local function lucky_closePanel()
+    lucky_isOpen = false
+    TweenService:Create(lucky_MainFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0)}):Play()
+    wait(0.15); lucky_MainFrame.Visible = false
 end
-OpenBtn.MouseButton1Click:Connect(function()
-    if isOpen then closePanel() else openPanel() end
+lucky_OpenBtn.MouseButton1Click:Connect(function()
+    if lucky_isOpen then lucky_closePanel() else lucky_openPanel() end
 end)
-CloseButton.MouseButton1Click:Connect(function() closePanel() end)
-selectNav(navButtons[1].button, "公告")
+lucky_CloseButton.MouseButton1Click:Connect(function() lucky_closePanel() end)
+lucky_selectNav(lucky_navButtons[1].button, "公告")
