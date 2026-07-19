@@ -415,16 +415,18 @@ local function doors_createMainCard(name, desc, icon, onExecute, btnText)
     BtnCorner.CornerRadius = UDim.new(0, 5)
     BtnCorner.Parent = Btn
     local toggleState = false
+    local conn = nil
     Btn.MouseButton1Click:Connect(function()
         toggleState = not toggleState
         if toggleState then
             Btn.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
             Btn.Text = "停止"
-            onExecute(true)
+            conn = onExecute(true)
         else
             Btn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
             Btn.Text = btnText or "执行"
             onExecute(false)
+            if conn then conn:Disconnect(); conn = nil end
         end
     end)
     Btn.MouseEnter:Connect(function()
@@ -435,10 +437,20 @@ local function doors_createMainCard(name, desc, icon, onExecute, btnText)
     end)
 end
 
-doors_createMainCard("增速模式", "将WalkSpeed设为20", "⚡", function(state)
-    local c = LocalPlayer.Character
-    if c and c:FindFirstChild("Humanoid") then
-        c.Humanoid.WalkSpeed = state and 20 or 16
+doors_createMainCard("增速模式", "循环将WalkSpeed设为20", "⚡", function(state)
+    if state then
+        local conn = RunService.RenderStepped:Connect(function()
+            local c = LocalPlayer.Character
+            if c and c:FindFirstChild("Humanoid") then
+                c.Humanoid.WalkSpeed = 20
+            end
+        end)
+        return conn
+    else
+        local c = LocalPlayer.Character
+        if c and c:FindFirstChild("Humanoid") then
+            c.Humanoid.WalkSpeed = 16
+        end
     end
 end, "加速")
 
