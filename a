@@ -270,7 +270,10 @@ end, "开启")
 
 doors_mainPage.CanvasSize = UDim2.new(0, 0, 0, 5 * 52 + 12)
 doors_contentPages["主要功能"] = doors_mainPage
--- Doors ESP 独立脚本 第3段：ESP核心函数（优化版 + 门编号）
+-- Doors ESP 独立脚本 第3段：ESP核心函数（修复门编号和状态）
+
+local doorCount = 0
+local countedDoors = {}
 
 function doors_clearAll()
     for _, d in pairs(doors_highlights) do pcall(function() if d.hl then d.hl:Destroy() end if d.bb then d.bb:Destroy() end if d.conn then d.conn:Disconnect() end end) end
@@ -286,9 +289,6 @@ function doors_getPos(o)
     return nil
 end
 
-local doorCount = 0
-local countedDoors = {}
-
 function doors_getDoorNumber(doorModel)
     if countedDoors[doorModel] then return countedDoors[doorModel] end
     doorCount = doorCount + 1
@@ -299,7 +299,12 @@ end
 function doors_isDoorOpened(doorModel)
     local doorPart = doorModel:FindFirstChild("Door")
     if not doorPart or not doorPart:IsA("BasePart") then return false end
-    return doorPart.Transparency > 0.5
+    local originalPos = doorPart:GetAttribute("OriginalPosition")
+    if not originalPos then
+        originalPos = doorPart.Position
+        doorPart:SetAttribute("OriginalPosition", originalPos)
+    end
+    return (doorPart.Position - originalPos).Magnitude > 2
 end
 
 function doors_addESP(o, c, n, extra)
@@ -322,13 +327,14 @@ function doors_addESP(o, c, n, extra)
 end
 
 function doors_updateESP()
-    doors_clearAll(); doorCount = 0; countedDoors = {}
+    doors_clearAll()
     if not doors_espEnabled then return end
     for _, o in ipairs(workspace:GetDescendants()) do
         if doors_showDoors and o:IsA("Model") and o.Name == "Door" then
             local doorNum = doors_getDoorNumber(o)
-            local status = doors_isDoorOpened(o) and "已打开" or "关闭"
-            local color = doors_isDoorOpened(o) and Color3.fromRGB(100,100,100) or Color3.fromRGB(50,150,255)
+            local isOpened = doors_isDoorOpened(o)
+            local status = isOpened and "已打开" or "关闭"
+            local color = isOpened and Color3.fromRGB(100,100,100) or Color3.fromRGB(50,150,255)
             doors_addESP(o, color, "门#" .. doorNum, status)
         elseif doors_showBook and o.Name == "LiveHintBook" then
             if o.Parent and o.Parent.Name ~= "LibraryBooks" then
@@ -482,3 +488,6 @@ end
 doors_OpenBtn.MouseButton1Click:Connect(function() if doors_isOpen then doors_closePanel() else doors_openPanel() end end)
 doors_CloseButton.MouseButton1Click:Connect(function() doors_closePanel() end)
 doors_selectNav(doors_navButtons[1].button, "公告")
+
+
+
