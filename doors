@@ -1,4 +1,4 @@
--- Doors ESP 独立脚本 第1段：UI框架 + 灵动岛 + 主面板 + 导航 + 公告
+-- Doors ESP 独立脚本 第1段：变量 + 灵动岛 + 主面板 + 导航 + 公告
 
 local Players = game:GetService("Players")
 local doors_PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
@@ -20,10 +20,9 @@ local doors_showBook = true
 local doors_showBattery = true
 local doors_nightVision = false
 local doors_rayEnabled = false
-local doors_alertEnabled = true
-local doors_lastAlert = {}
-local doors_alertCooldown = 10
 local doors_monsterAlertEnabled = false
+local doors_antiSlipEnabled = false
+local doors_autoInteractEnabled = false
 
 local doors_ScreenGui = Instance.new("ScreenGui")
 doors_ScreenGui.Name = "DoorsESPUI"
@@ -38,267 +37,118 @@ doors_Bar.BackgroundTransparency = 0.25
 doors_Bar.BorderSizePixel = 0
 doors_Bar.ZIndex = 20
 doors_Bar.Parent = doors_ScreenGui
-local doors_BarCorner = Instance.new("UICorner")
-doors_BarCorner.CornerRadius = UDim.new(0, 14)
-doors_BarCorner.Parent = doors_Bar
+local doors_BarCorner = Instance.new("UICorner"); doors_BarCorner.CornerRadius = UDim.new(0, 14); doors_BarCorner.Parent = doors_Bar
 local doors_RGBOutline = Instance.new("Frame")
-doors_RGBOutline.Size = UDim2.new(1, 3, 1, 3)
-doors_RGBOutline.Position = UDim2.new(0, -1.5, 0, -1.5)
-doors_RGBOutline.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-doors_RGBOutline.ZIndex = 19
-doors_RGBOutline.Parent = doors_Bar
-local doors_RGBOutlineCorner = Instance.new("UICorner")
-doors_RGBOutlineCorner.CornerRadius = UDim.new(0, 15)
-doors_RGBOutlineCorner.Parent = doors_RGBOutline
+doors_RGBOutline.Size = UDim2.new(1, 3, 1, 3); doors_RGBOutline.Position = UDim2.new(0, -1.5, 0, -1.5)
+doors_RGBOutline.BackgroundColor3 = Color3.fromRGB(255, 255, 255); doors_RGBOutline.ZIndex = 19; doors_RGBOutline.Parent = doors_Bar
+local doors_RGBOutlineCorner = Instance.new("UICorner"); doors_RGBOutlineCorner.CornerRadius = UDim.new(0, 15); doors_RGBOutlineCorner.Parent = doors_RGBOutline
 local doors_barHue = 0
-RunService.RenderStepped:Connect(function(delta)
-    doors_barHue = (doors_barHue + delta * 0.3) % 1
-    doors_RGBOutline.BackgroundColor3 = Color3.fromHSV(doors_barHue, 0.7, 1)
-end)
+RunService.RenderStepped:Connect(function(delta) doors_barHue = (doors_barHue + delta * 0.3) % 1; doors_RGBOutline.BackgroundColor3 = Color3.fromHSV(doors_barHue, 0.7, 1) end)
 local doors_DragBtn = Instance.new("TextButton")
-doors_DragBtn.Size = UDim2.new(0, 60, 1, 0)
-doors_DragBtn.Position = UDim2.new(0, 0, 0, 0)
-doors_DragBtn.Text = "+"
-doors_DragBtn.TextColor3 = Color3.fromRGB(80, 80, 80)
-doors_DragBtn.Font = Enum.Font.GothamBold
-doors_DragBtn.TextSize = 22
-doors_DragBtn.BackgroundTransparency = 1
-doors_DragBtn.BorderSizePixel = 0
-doors_DragBtn.ZIndex = 21
-doors_DragBtn.AutoButtonColor = false
-doors_DragBtn.Parent = doors_Bar
+doors_DragBtn.Size = UDim2.new(0, 60, 1, 0); doors_DragBtn.Position = UDim2.new(0, 0, 0, 0); doors_DragBtn.Text = "+"
+doors_DragBtn.TextColor3 = Color3.fromRGB(80, 80, 80); doors_DragBtn.Font = Enum.Font.GothamBold; doors_DragBtn.TextSize = 22
+doors_DragBtn.BackgroundTransparency = 1; doors_DragBtn.BorderSizePixel = 0; doors_DragBtn.ZIndex = 21; doors_DragBtn.AutoButtonColor = false; doors_DragBtn.Parent = doors_Bar
 local doors_Divider = Instance.new("Frame")
-doors_Divider.Size = UDim2.new(0, 1, 0.6, 0)
-doors_Divider.Position = UDim2.new(0, 60, 0.2, 0)
-doors_Divider.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
-doors_Divider.BorderSizePixel = 0
-doors_Divider.ZIndex = 22
-doors_Divider.Parent = doors_Bar
+doors_Divider.Size = UDim2.new(0, 1, 0.6, 0); doors_Divider.Position = UDim2.new(0, 60, 0.2, 0)
+doors_Divider.BackgroundColor3 = Color3.fromRGB(180, 180, 180); doors_Divider.BorderSizePixel = 0; doors_Divider.ZIndex = 22; doors_Divider.Parent = doors_Bar
 local doors_OpenBtn = Instance.new("TextButton")
-doors_OpenBtn.Size = UDim2.new(1, -64, 1, -6)
-doors_OpenBtn.Position = UDim2.new(0, 62, 0, 3)
-doors_OpenBtn.Text = "Doors ESP"
-doors_OpenBtn.TextColor3 = Color3.fromRGB(40, 40, 40)
-doors_OpenBtn.Font = Enum.Font.GothamBold
-doors_OpenBtn.TextSize = 14
-doors_OpenBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-doors_OpenBtn.BackgroundTransparency = 0.15
-doors_OpenBtn.BorderSizePixel = 0
-doors_OpenBtn.ZIndex = 21
-doors_OpenBtn.AutoButtonColor = false
-doors_OpenBtn.Parent = doors_Bar
-local doors_OpenCorner = Instance.new("UICorner")
-doors_OpenCorner.CornerRadius = UDim.new(0, 10)
-doors_OpenCorner.Parent = doors_OpenBtn
+doors_OpenBtn.Size = UDim2.new(1, -64, 1, -6); doors_OpenBtn.Position = UDim2.new(0, 62, 0, 3); doors_OpenBtn.Text = "Doors(黑脚本)"
+doors_OpenBtn.TextColor3 = Color3.fromRGB(40, 40, 40); doors_OpenBtn.Font = Enum.Font.GothamBold; doors_OpenBtn.TextSize = 14
+doors_OpenBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255); doors_OpenBtn.BackgroundTransparency = 0.15
+doors_OpenBtn.BorderSizePixel = 0; doors_OpenBtn.ZIndex = 21; doors_OpenBtn.AutoButtonColor = false; doors_OpenBtn.Parent = doors_Bar
+local doors_OpenCorner = Instance.new("UICorner"); doors_OpenCorner.CornerRadius = UDim.new(0, 10); doors_OpenCorner.Parent = doors_OpenBtn
 doors_OpenBtn.MouseEnter:Connect(function() doors_OpenBtn.BackgroundColor3 = Color3.fromRGB(240, 240, 240) end)
 doors_OpenBtn.MouseLeave:Connect(function() doors_OpenBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end)
-local doors_dragging = false
-local doors_dragStart = nil
-local doors_startPos = nil
-doors_DragBtn.MouseButton1Down:Connect(function()
-    doors_dragging = true
-    doors_dragStart = UserInputService:GetMouseLocation()
-    doors_startPos = doors_Bar.Position
-end)
+local doors_dragging = false; local doors_dragStart = nil; local doors_startPos = nil
+doors_DragBtn.MouseButton1Down:Connect(function() doors_dragging = true; doors_dragStart = UserInputService:GetMouseLocation(); doors_startPos = doors_Bar.Position end)
 doors_DragBtn.MouseMoved:Connect(function()
-    if doors_dragging then
-        local delta = UserInputService:GetMouseLocation() - doors_dragStart
-        doors_Bar.Position = UDim2.new(doors_startPos.X.Scale, doors_startPos.X.Offset + delta.X, doors_startPos.Y.Scale, doors_startPos.Y.Offset + delta.Y)
-    end
+    if doors_dragging then local delta = UserInputService:GetMouseLocation() - doors_dragStart
+        doors_Bar.Position = UDim2.new(doors_startPos.X.Scale, doors_startPos.X.Offset + delta.X, doors_startPos.Y.Scale, doors_startPos.Y.Offset + delta.Y) end
 end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then doors_dragging = false end
-end)
+UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then doors_dragging = false end end)
 
 local doors_MainFrame = Instance.new("Frame")
-doors_MainFrame.Size = UDim2.new(0, 580, 0, 440)
-doors_MainFrame.Position = UDim2.new(0.5, -290, 0.5, -220)
-doors_MainFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-doors_MainFrame.BackgroundTransparency = 0.06
-doors_MainFrame.Visible = false
-doors_MainFrame.ZIndex = 2
-doors_MainFrame.Parent = doors_ScreenGui
-local doors_MainCorner = Instance.new("UICorner")
-doors_MainCorner.CornerRadius = UDim.new(0, 14)
-doors_MainCorner.Parent = doors_MainFrame
+doors_MainFrame.Size = UDim2.new(0, 580, 0, 440); doors_MainFrame.Position = UDim2.new(0.5, -290, 0.5, -220)
+doors_MainFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255); doors_MainFrame.BackgroundTransparency = 0.06
+doors_MainFrame.Visible = false; doors_MainFrame.ZIndex = 2; doors_MainFrame.Parent = doors_ScreenGui
+local doors_MainCorner = Instance.new("UICorner"); doors_MainCorner.CornerRadius = UDim.new(0, 14); doors_MainCorner.Parent = doors_MainFrame
 local doors_RGBBorder = Instance.new("Frame")
-doors_RGBBorder.Size = UDim2.new(1, 5, 1, 5)
-doors_RGBBorder.Position = UDim2.new(0, -2.5, 0, -2.5)
-doors_RGBBorder.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-doors_RGBBorder.ZIndex = 1
-doors_RGBBorder.Parent = doors_MainFrame
-local doors_RGBBorderCorner = Instance.new("UICorner")
-doors_RGBBorderCorner.CornerRadius = UDim.new(0, 16)
-doors_RGBBorderCorner.Parent = doors_RGBBorder
+doors_RGBBorder.Size = UDim2.new(1, 5, 1, 5); doors_RGBBorder.Position = UDim2.new(0, -2.5, 0, -2.5)
+doors_RGBBorder.BackgroundColor3 = Color3.fromRGB(255, 255, 255); doors_RGBBorder.ZIndex = 1; doors_RGBBorder.Parent = doors_MainFrame
+local doors_RGBBorderCorner = Instance.new("UICorner"); doors_RGBBorderCorner.CornerRadius = UDim.new(0, 16); doors_RGBBorderCorner.Parent = doors_RGBBorder
 local doors_hue = 0
-RunService.RenderStepped:Connect(function(delta)
-    if doors_MainFrame.Visible then doors_hue = (doors_hue + delta * 0.3) % 1; doors_RGBBorder.BackgroundColor3 = Color3.fromHSV(doors_hue, 0.7, 1) end
-end)
+RunService.RenderStepped:Connect(function(delta) if doors_MainFrame.Visible then doors_hue = (doors_hue + delta * 0.3) % 1; doors_RGBBorder.BackgroundColor3 = Color3.fromHSV(doors_hue, 0.7, 1) end end)
 local doors_InnerPanel = Instance.new("Frame")
-doors_InnerPanel.Size = UDim2.new(1, -6, 1, -6)
-doors_InnerPanel.Position = UDim2.new(0, 3, 0, 3)
-doors_InnerPanel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-doors_InnerPanel.ClipsDescendants = true
-doors_InnerPanel.ZIndex = 3
-doors_InnerPanel.Parent = doors_MainFrame
-local doors_InnerCorner = Instance.new("UICorner")
-doors_InnerCorner.CornerRadius = UDim.new(0, 12)
-doors_InnerCorner.Parent = doors_InnerPanel
+doors_InnerPanel.Size = UDim2.new(1, -6, 1, -6); doors_InnerPanel.Position = UDim2.new(0, 3, 0, 3)
+doors_InnerPanel.BackgroundColor3 = Color3.fromRGB(255, 255, 255); doors_InnerPanel.ClipsDescendants = true; doors_InnerPanel.ZIndex = 3; doors_InnerPanel.Parent = doors_MainFrame
+local doors_InnerCorner = Instance.new("UICorner"); doors_InnerCorner.CornerRadius = UDim.new(0, 12); doors_InnerCorner.Parent = doors_InnerPanel
 local doors_TopBar = Instance.new("Frame")
-doors_TopBar.Size = UDim2.new(1, 0, 0, 36)
-doors_TopBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-doors_TopBar.BorderSizePixel = 0
-doors_TopBar.ZIndex = 10
-doors_TopBar.Parent = doors_InnerPanel
-local doors_TopBarCorner = Instance.new("UICorner")
-doors_TopBarCorner.CornerRadius = UDim.new(0, 12)
-doors_TopBarCorner.Parent = doors_TopBar
+doors_TopBar.Size = UDim2.new(1, 0, 0, 36); doors_TopBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255); doors_TopBar.BorderSizePixel = 0; doors_TopBar.ZIndex = 10; doors_TopBar.Parent = doors_InnerPanel
+local doors_TopBarCorner = Instance.new("UICorner"); doors_TopBarCorner.CornerRadius = UDim.new(0, 12); doors_TopBarCorner.Parent = doors_TopBar
 local doors_TitleLabel = Instance.new("TextLabel")
-doors_TitleLabel.Size = UDim2.new(0, 90, 1, 0)
-doors_TitleLabel.Position = UDim2.new(0, 12, 0, 0)
-doors_TitleLabel.Text = "Doors"
-doors_TitleLabel.TextColor3 = Color3.fromRGB(50, 50, 50)
-doors_TitleLabel.Font = Enum.Font.GothamBold
-doors_TitleLabel.TextSize = 15
-doors_TitleLabel.BackgroundTransparency = 1
-doors_TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-doors_TitleLabel.ZIndex = 11
-doors_TitleLabel.Parent = doors_TopBar
+doors_TitleLabel.Size = UDim2.new(0, 90, 1, 0); doors_TitleLabel.Position = UDim2.new(0, 12, 0, 0); doors_TitleLabel.Text = "Doors"
+doors_TitleLabel.TextColor3 = Color3.fromRGB(50, 50, 50); doors_TitleLabel.Font = Enum.Font.GothamBold; doors_TitleLabel.TextSize = 15
+doors_TitleLabel.BackgroundTransparency = 1; doors_TitleLabel.TextXAlignment = Enum.TextXAlignment.Left; doors_TitleLabel.ZIndex = 11; doors_TitleLabel.Parent = doors_TopBar
 local doors_InfoBox = Instance.new("Frame")
-doors_InfoBox.Size = UDim2.new(0, 200, 0, 26)
-doors_InfoBox.Position = UDim2.new(0, 104, 0, 5)
-doors_InfoBox.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
-doors_InfoBox.BorderSizePixel = 0
-doors_InfoBox.ZIndex = 12
-doors_InfoBox.Parent = doors_TopBar
-local doors_InfoCorner = Instance.new("UICorner")
-doors_InfoCorner.CornerRadius = UDim.new(0, 6)
-doors_InfoCorner.Parent = doors_InfoBox
+doors_InfoBox.Size = UDim2.new(0, 200, 0, 26); doors_InfoBox.Position = UDim2.new(0, 104, 0, 5)
+doors_InfoBox.BackgroundColor3 = Color3.fromRGB(76, 175, 80); doors_InfoBox.BorderSizePixel = 0; doors_InfoBox.ZIndex = 12; doors_InfoBox.Parent = doors_TopBar
+local doors_InfoCorner = Instance.new("UICorner"); doors_InfoCorner.CornerRadius = UDim.new(0, 6); doors_InfoCorner.Parent = doors_InfoBox
 local doors_InfoRGBOutline = Instance.new("Frame")
-doors_InfoRGBOutline.Size = UDim2.new(1, 2, 1, 2)
-doors_InfoRGBOutline.Position = UDim2.new(0, -1, 0, -1)
-doors_InfoRGBOutline.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-doors_InfoRGBOutline.ZIndex = 11
-doors_InfoRGBOutline.Parent = doors_InfoBox
-local doors_InfoRGBCorner = Instance.new("UICorner")
-doors_InfoRGBCorner.CornerRadius = UDim.new(0, 7)
-doors_InfoRGBCorner.Parent = doors_InfoRGBOutline
+doors_InfoRGBOutline.Size = UDim2.new(1, 2, 1, 2); doors_InfoRGBOutline.Position = UDim2.new(0, -1, 0, -1)
+doors_InfoRGBOutline.BackgroundColor3 = Color3.fromRGB(255, 255, 255); doors_InfoRGBOutline.ZIndex = 11; doors_InfoRGBOutline.Parent = doors_InfoBox
+local doors_InfoRGBCorner = Instance.new("UICorner"); doors_InfoRGBCorner.CornerRadius = UDim.new(0, 7); doors_InfoRGBCorner.Parent = doors_InfoRGBOutline
 local doors_infoHue = 0
-RunService.RenderStepped:Connect(function(delta)
-    doors_infoHue = (doors_infoHue + delta * 0.5) % 1
-    doors_InfoRGBOutline.BackgroundColor3 = Color3.fromHSV(doors_infoHue, 0.7, 1)
-end)
+RunService.RenderStepped:Connect(function(delta) doors_infoHue = (doors_infoHue + delta * 0.5) % 1; doors_InfoRGBOutline.BackgroundColor3 = Color3.fromHSV(doors_infoHue, 0.7, 1) end)
 local doors_InfoLabel = Instance.new("TextLabel")
-doors_InfoLabel.Size = UDim2.new(1, 0, 1, 0)
-doors_InfoLabel.Text = "Doors ESP V1.0 | " .. os.date("%m月%d日 %H:%M:%S")
-doors_InfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-doors_InfoLabel.Font = Enum.Font.GothamBold
-doors_InfoLabel.TextSize = 10
-doors_InfoLabel.BackgroundTransparency = 1
-doors_InfoLabel.ZIndex = 13
-doors_InfoLabel.Parent = doors_InfoBox
-spawn(function()
-    while true do
-        doors_InfoLabel.Text = "Doors ESP V1.0 | " .. os.date("%m月%d日 %H:%M:%S")
-        wait(1)
-    end
-end)
+doors_InfoLabel.Size = UDim2.new(1, 0, 1, 0); doors_InfoLabel.Text = "Doors ESP V1.0 | " .. os.date("%m月%d日 %H:%M:%S")
+doors_InfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255); doors_InfoLabel.Font = Enum.Font.GothamBold; doors_InfoLabel.TextSize = 10
+doors_InfoLabel.BackgroundTransparency = 1; doors_InfoLabel.ZIndex = 13; doors_InfoLabel.Parent = doors_InfoBox
+spawn(function() while true do doors_InfoLabel.Text = "Doors V1.0 | " .. os.date("%m月%d日 %H:%M:%S"); wait(1) end end)
 local doors_CloseButton = Instance.new("TextButton")
-doors_CloseButton.Size = UDim2.new(0, 28, 0, 28)
-doors_CloseButton.Position = UDim2.new(1, -34, 0, 4)
-doors_CloseButton.Text = "×"
-doors_CloseButton.TextColor3 = Color3.fromRGB(100, 100, 100)
-doors_CloseButton.Font = Enum.Font.GothamBold
-doors_CloseButton.TextSize = 18
-doors_CloseButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-doors_CloseButton.BorderSizePixel = 0
-doors_CloseButton.ZIndex = 11
-doors_CloseButton.Parent = doors_TopBar
-local doors_CloseCorner = Instance.new("UICorner")
-doors_CloseCorner.CornerRadius = UDim.new(1, 0)
-doors_CloseCorner.Parent = doors_CloseButton
+doors_CloseButton.Size = UDim2.new(0, 28, 0, 28); doors_CloseButton.Position = UDim2.new(1, -34, 0, 4); doors_CloseButton.Text = "×"
+doors_CloseButton.TextColor3 = Color3.fromRGB(100, 100, 100); doors_CloseButton.Font = Enum.Font.GothamBold; doors_CloseButton.TextSize = 18
+doors_CloseButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230); doors_CloseButton.BorderSizePixel = 0; doors_CloseButton.ZIndex = 11; doors_CloseButton.Parent = doors_TopBar
+local doors_CloseCorner = Instance.new("UICorner"); doors_CloseCorner.CornerRadius = UDim.new(1, 0); doors_CloseCorner.Parent = doors_CloseButton
 doors_CloseButton.MouseEnter:Connect(function() doors_CloseButton.BackgroundColor3 = Color3.fromRGB(200, 200, 200) end)
 doors_CloseButton.MouseLeave:Connect(function() doors_CloseButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230) end)
 local doors_TopDivider = Instance.new("Frame")
-doors_TopDivider.Size = UDim2.new(1, -24, 0, 1)
-doors_TopDivider.Position = UDim2.new(0, 12, 0, 36)
-doors_TopDivider.BackgroundColor3 = Color3.fromRGB(225, 225, 225)
-doors_TopDivider.BorderSizePixel = 0
-doors_TopDivider.ZIndex = 10
-doors_TopDivider.Parent = doors_InnerPanel
+doors_TopDivider.Size = UDim2.new(1, -24, 0, 1); doors_TopDivider.Position = UDim2.new(0, 12, 0, 36)
+doors_TopDivider.BackgroundColor3 = Color3.fromRGB(225, 225, 225); doors_TopDivider.BorderSizePixel = 0; doors_TopDivider.ZIndex = 10; doors_TopDivider.Parent = doors_InnerPanel
 local doors_MainContentContainer = Instance.new("Frame")
-doors_MainContentContainer.Size = UDim2.new(1, 0, 1, -36)
-doors_MainContentContainer.Position = UDim2.new(0, 0, 0, 36)
-doors_MainContentContainer.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-doors_MainContentContainer.BorderSizePixel = 0
-doors_MainContentContainer.ZIndex = 5
-doors_MainContentContainer.Parent = doors_InnerPanel
-
+doors_MainContentContainer.Size = UDim2.new(1, 0, 1, -36); doors_MainContentContainer.Position = UDim2.new(0, 0, 0, 36)
+doors_MainContentContainer.BackgroundColor3 = Color3.fromRGB(255, 255, 255); doors_MainContentContainer.BorderSizePixel = 0; doors_MainContentContainer.ZIndex = 5; doors_MainContentContainer.Parent = doors_InnerPanel
 local doors_NavFrame = Instance.new("Frame")
-doors_NavFrame.Size = UDim2.new(0, 135, 1, 0)
-doors_NavFrame.Position = UDim2.new(0, 0, 0, 0)
-doors_NavFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-doors_NavFrame.BackgroundTransparency = 0.03
-doors_NavFrame.BorderSizePixel = 0
-doors_NavFrame.ZIndex = 6
-doors_NavFrame.Parent = doors_MainContentContainer
+doors_NavFrame.Size = UDim2.new(0, 135, 1, 0); doors_NavFrame.Position = UDim2.new(0, 0, 0, 0)
+doors_NavFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255); doors_NavFrame.BackgroundTransparency = 0.03; doors_NavFrame.BorderSizePixel = 0; doors_NavFrame.ZIndex = 6; doors_NavFrame.Parent = doors_MainContentContainer
 local doors_NavDivider = Instance.new("Frame")
-doors_NavDivider.Size = UDim2.new(0, 1, 1, 0)
-doors_NavDivider.Position = UDim2.new(1, 0, 0, 0)
-doors_NavDivider.BackgroundColor3 = Color3.fromRGB(225, 225, 225)
-doors_NavDivider.BorderSizePixel = 0
-doors_NavDivider.ZIndex = 7
-doors_NavDivider.Parent = doors_NavFrame
+doors_NavDivider.Size = UDim2.new(0, 1, 1, 0); doors_NavDivider.Position = UDim2.new(1, 0, 0, 0)
+doors_NavDivider.BackgroundColor3 = Color3.fromRGB(225, 225, 225); doors_NavDivider.BorderSizePixel = 0; doors_NavDivider.ZIndex = 7; doors_NavDivider.Parent = doors_NavFrame
 local doors_NavScroll = Instance.new("ScrollingFrame")
-doors_NavScroll.Size = UDim2.new(1, 0, 1, 0)
-doors_NavScroll.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-doors_NavScroll.BackgroundTransparency = 0.03
-doors_NavScroll.BorderSizePixel = 0
-doors_NavScroll.ScrollBarThickness = 0
-doors_NavScroll.CanvasSize = UDim2.new(0, 0, 0, 200)
-doors_NavScroll.ZIndex = 6
-doors_NavScroll.Parent = doors_NavFrame
-local doors_NavList = Instance.new("UIListLayout")
-doors_NavList.Padding = UDim.new(0, 2)
-doors_NavList.Parent = doors_NavScroll
-local doors_NavTopPad = Instance.new("Frame")
-doors_NavTopPad.Size = UDim2.new(1, 0, 0, 5)
-doors_NavTopPad.BackgroundTransparency = 1
-doors_NavTopPad.Parent = doors_NavScroll
+doors_NavScroll.Size = UDim2.new(1, 0, 1, 0); doors_NavScroll.BackgroundColor3 = Color3.fromRGB(255, 255, 255); doors_NavScroll.BackgroundTransparency = 0.03
+doors_NavScroll.BorderSizePixel = 0; doors_NavScroll.ScrollBarThickness = 0; doors_NavScroll.CanvasSize = UDim2.new(0, 0, 0, 200); doors_NavScroll.ZIndex = 6; doors_NavScroll.Parent = doors_NavFrame
+local doors_NavList = Instance.new("UIListLayout"); doors_NavList.Padding = UDim.new(0, 2); doors_NavList.Parent = doors_NavScroll
+local doors_NavTopPad = Instance.new("Frame"); doors_NavTopPad.Size = UDim2.new(1, 0, 0, 5); doors_NavTopPad.BackgroundTransparency = 1; doors_NavTopPad.Parent = doors_NavScroll
 local doors_navItems = {{name = "公告", icon = "📢"},{name = "主要功能", icon = "⚙️"},{name = "ESP区", icon = "👁️"}}
-local doors_navButtons = {}
-local doors_selectedNav = nil
+local doors_navButtons = {}; local doors_selectedNav = nil
 local doors_ContentArea = Instance.new("Frame")
-doors_ContentArea.Size = UDim2.new(1, -136, 1, 0)
-doors_ContentArea.Position = UDim2.new(0, 136, 0, 0)
-doors_ContentArea.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-doors_ContentArea.BorderSizePixel = 0
-doors_ContentArea.ZIndex = 6
-doors_ContentArea.Parent = doors_MainContentContainer
+doors_ContentArea.Size = UDim2.new(1, -136, 1, 0); doors_ContentArea.Position = UDim2.new(0, 136, 0, 0)
+doors_ContentArea.BackgroundColor3 = Color3.fromRGB(255, 255, 255); doors_ContentArea.BorderSizePixel = 0; doors_ContentArea.ZIndex = 6; doors_ContentArea.Parent = doors_MainContentContainer
 local doors_contentPages = {}
 function doors_switchContent(n) for a, b in pairs(doors_contentPages) do b.Visible = (a == n) end end
 local function doors_selectNav(button, itemName)
     if doors_selectedNav then doors_selectedNav.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end
-    button.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-    doors_selectedNav = button
-    doors_TitleLabel.Text = itemName
-    doors_switchContent(itemName)
+    button.BackgroundColor3 = Color3.fromRGB(230, 230, 230); doors_selectedNav = button; doors_TitleLabel.Text = itemName; doors_switchContent(itemName)
 end
 for _, item in ipairs(doors_navItems) do
     local NavButton = Instance.new("TextButton")
     NavButton.Size = UDim2.new(1, -12, 0, 36); NavButton.Position = UDim2.new(0, 6, 0, 0)
-    NavButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255); NavButton.Text = ""
-    NavButton.BorderSizePixel = 0; NavButton.ZIndex = 7; NavButton.AutoButtonColor = false; NavButton.Parent = doors_NavScroll
+    NavButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255); NavButton.Text = ""; NavButton.BorderSizePixel = 0; NavButton.ZIndex = 7; NavButton.AutoButtonColor = false; NavButton.Parent = doors_NavScroll
     local NavCorner = Instance.new("UICorner"); NavCorner.CornerRadius = UDim.new(0, 8); NavCorner.Parent = NavButton
-    local NavIcon = Instance.new("TextLabel")
-    NavIcon.Size = UDim2.new(0, 14, 1, 0); NavIcon.Position = UDim2.new(0, 2, 0, 0)
-    NavIcon.Text = item.icon; NavIcon.TextSize = 10; NavIcon.BackgroundTransparency = 1
-    NavIcon.TextXAlignment = Enum.TextXAlignment.Left; NavIcon.ZIndex = 8; NavIcon.Parent = NavButton
-    local NavLabel = Instance.new("TextLabel")
-    NavLabel.Size = UDim2.new(1, -22, 1, 0); NavLabel.Position = UDim2.new(0, 26, 0, 0)
-    NavLabel.Text = "  " .. item.name; NavLabel.TextColor3 = Color3.fromRGB(60, 60, 60)
-    NavLabel.Font = Enum.Font.GothamSemibold; NavLabel.TextSize = 11; NavLabel.BackgroundTransparency = 1
-    NavLabel.TextXAlignment = Enum.TextXAlignment.Left; NavLabel.ZIndex = 8; NavLabel.Parent = NavButton
+    local NavIcon = Instance.new("TextLabel"); NavIcon.Size = UDim2.new(0, 14, 1, 0); NavIcon.Position = UDim2.new(0, 2, 0, 0)
+    NavIcon.Text = item.icon; NavIcon.TextSize = 10; NavIcon.BackgroundTransparency = 1; NavIcon.TextXAlignment = Enum.TextXAlignment.Left; NavIcon.ZIndex = 8; NavIcon.Parent = NavButton
+    local NavLabel = Instance.new("TextLabel"); NavLabel.Size = UDim2.new(1, -22, 1, 0); NavLabel.Position = UDim2.new(0, 26, 0, 0)
+    NavLabel.Text = "  " .. item.name; NavLabel.TextColor3 = Color3.fromRGB(60, 60, 60); NavLabel.Font = Enum.Font.GothamSemibold; NavLabel.TextSize = 11
+    NavLabel.BackgroundTransparency = 1; NavLabel.TextXAlignment = Enum.TextXAlignment.Left; NavLabel.ZIndex = 8; NavLabel.Parent = NavButton
     NavButton.MouseButton1Click:Connect(function() doors_selectNav(NavButton, item.name) end)
     NavButton.MouseEnter:Connect(function() if NavButton ~= doors_selectedNav then NavButton.BackgroundColor3 = Color3.fromRGB(240, 240, 240) end end)
     NavButton.MouseLeave:Connect(function() if NavButton ~= doors_selectedNav then NavButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end end)
@@ -306,192 +156,135 @@ for _, item in ipairs(doors_navItems) do
 end
 
 local doors_announcementPage = Instance.new("ScrollingFrame")
-doors_announcementPage.Size = UDim2.new(1, 0, 1, 0)
-doors_announcementPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-doors_announcementPage.BorderSizePixel = 0
-doors_announcementPage.ScrollBarThickness = 3
-doors_announcementPage.Visible = false
-doors_announcementPage.ZIndex = 7
-doors_announcementPage.Parent = doors_ContentArea
+doors_announcementPage.Size = UDim2.new(1, 0, 1, 0); doors_announcementPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+doors_announcementPage.BorderSizePixel = 0; doors_announcementPage.ScrollBarThickness = 3; doors_announcementPage.Visible = false; doors_announcementPage.ZIndex = 7; doors_announcementPage.Parent = doors_ContentArea
 local doors_announcementText = Instance.new("TextLabel")
-doors_announcementText.Size = UDim2.new(1, -20, 0, 400)
-doors_announcementText.Position = UDim2.new(0, 10, 0, 10)
-doors_announcementText.Text = "📢 Doors ESP\n\n本脚本由C工作室亲自制作\n用于Doors游戏\n\n功能：ESP透视 | 怪物提示 | 夜视 | 增速\n\n感谢使用！"
-doors_announcementText.TextColor3 = Color3.fromRGB(70, 70, 70)
-doors_announcementText.Font = Enum.Font.Gotham
-doors_announcementText.TextSize = 13
-doors_announcementText.BackgroundTransparency = 1
-doors_announcementText.TextXAlignment = Enum.TextXAlignment.Left
-doors_announcementText.TextYAlignment = Enum.TextYAlignment.Top
-doors_announcementText.TextWrapped = true
-doors_announcementText.LineHeight = 1.8
-doors_announcementText.ZIndex = 8
-doors_announcementText.Parent = doors_announcementPage
+doors_announcementText.Size = UDim2.new(1, -20, 0, 400); doors_announcementText.Position = UDim2.new(0, 10, 0, 10)
+doors_announcementText.Text = "📢 Doors ESP\n\n本脚本由C工作室亲自制作\n用于Doors游戏\n\n功能：ESP透视 | 怪物提示 | 夜视 | 增速 | 防滑 | 自动互动\n\n感谢使用！"
+doors_announcementText.TextColor3 = Color3.fromRGB(70, 70, 70); doors_announcementText.Font = Enum.Font.Gotham; doors_announcementText.TextSize = 13
+doors_announcementText.BackgroundTransparency = 1; doors_announcementText.TextXAlignment = Enum.TextXAlignment.Left; doors_announcementText.TextYAlignment = Enum.TextYAlignment.Top
+doors_announcementText.TextWrapped = true; doors_announcementText.LineHeight = 1.8; doors_announcementText.ZIndex = 8; doors_announcementText.Parent = doors_announcementPage
 doors_contentPages["公告"] = doors_announcementPage
--- Doors ESP 独立脚本 第2段：主要功能（增速 + 夜视 + 怪物提示）+ ESP核心函数 + 射线（200米限制）
+-- Doors ESP 独立脚本 第2段：主要功能（增速22 + 夜视 + 怪物提示 + 防滑 + 自动互动）
 
 local doors_mainPage = Instance.new("ScrollingFrame")
-doors_mainPage.Size = UDim2.new(1, 0, 1, 0)
-doors_mainPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-doors_mainPage.BorderSizePixel = 0
-doors_mainPage.ScrollBarThickness = 3
-doors_mainPage.Visible = false
-doors_mainPage.ZIndex = 7
-doors_mainPage.Parent = doors_ContentArea
-local doors_mainPageList = Instance.new("UIListLayout")
-doors_mainPageList.Padding = UDim.new(0, 6)
-doors_mainPageList.Parent = doors_mainPage
-local doors_mainPageSpacer = Instance.new("Frame")
-doors_mainPageSpacer.Size = UDim2.new(1, 0, 0, 6)
-doors_mainPageSpacer.BackgroundTransparency = 1
-doors_mainPageSpacer.Parent = doors_mainPage
+doors_mainPage.Size = UDim2.new(1, 0, 1, 0); doors_mainPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+doors_mainPage.BorderSizePixel = 0; doors_mainPage.ScrollBarThickness = 3; doors_mainPage.Visible = false; doors_mainPage.ZIndex = 7; doors_mainPage.Parent = doors_ContentArea
+local doors_mainList = Instance.new("UIListLayout"); doors_mainList.Padding = UDim.new(0, 6); doors_mainList.Parent = doors_mainPage
+local doors_mainSpacer = Instance.new("Frame"); doors_mainSpacer.Size = UDim2.new(1, 0, 0, 6); doors_mainSpacer.BackgroundTransparency = 1; doors_mainSpacer.Parent = doors_mainPage
 
-local function doors_createMainCard(name, desc, icon, onExecute, btnText)
-    local Card = Instance.new("Frame")
-    Card.Size = UDim2.new(1, -16, 0, 46)
-    Card.BackgroundColor3 = Color3.fromRGB(252, 252, 252)
-    Card.BorderSizePixel = 0
-    Card.ZIndex = 7
-    Card.Parent = doors_mainPage
-    local CardCorner = Instance.new("UICorner")
-    CardCorner.CornerRadius = UDim.new(0, 10)
-    CardCorner.Parent = Card
-    local CardStroke = Instance.new("UIStroke")
-    CardStroke.Color = Color3.fromRGB(230, 230, 230)
-    CardStroke.Thickness = 1
-    CardStroke.Parent = Card
-    local IconFrame = Instance.new("Frame")
-    IconFrame.Size = UDim2.new(0, 26, 0, 26)
-    IconFrame.Position = UDim2.new(0, 10, 0, 10)
-    IconFrame.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
-    IconFrame.BorderSizePixel = 0
-    IconFrame.ZIndex = 8
-    IconFrame.Parent = Card
-    local IconCorner = Instance.new("UICorner")
-    IconCorner.CornerRadius = UDim.new(0, 6)
-    IconCorner.Parent = IconFrame
-    local IconText = Instance.new("TextLabel")
-    IconText.Size = UDim2.new(1, 0, 1, 0)
-    IconText.Text = icon
-    IconText.TextSize = 11
-    IconText.BackgroundTransparency = 1
-    IconText.ZIndex = 9
-    IconText.Parent = IconFrame
-    local TitleText = Instance.new("TextLabel")
-    TitleText.Size = UDim2.new(0, 180, 0, 15)
-    TitleText.Position = UDim2.new(0, 44, 0, 5)
-    TitleText.Text = name
-    TitleText.TextColor3 = Color3.fromRGB(50, 50, 50)
-    TitleText.Font = Enum.Font.GothamSemibold
-    TitleText.TextSize = 11
-    TitleText.BackgroundTransparency = 1
-    TitleText.TextXAlignment = Enum.TextXAlignment.Left
-    TitleText.ZIndex = 8
-    TitleText.Parent = Card
-    local DescText = Instance.new("TextLabel")
-    DescText.Size = UDim2.new(1, -100, 0, 13)
-    DescText.Position = UDim2.new(0, 44, 0, 22)
-    DescText.Text = desc
-    DescText.TextColor3 = Color3.fromRGB(130, 130, 130)
-    DescText.Font = Enum.Font.Gotham
-    DescText.TextSize = 9
-    DescText.BackgroundTransparency = 1
-    DescText.TextXAlignment = Enum.TextXAlignment.Left
-    DescText.ZIndex = 8
-    DescText.Parent = Card
-    local Btn = Instance.new("TextButton")
-    Btn.Size = UDim2.new(0, 50, 0, 20)
-    Btn.Position = UDim2.new(1, -58, 0, 13)
-    Btn.Text = btnText or "执行"
-    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Btn.Font = Enum.Font.GothamBold
-    Btn.TextSize = 10
-    Btn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-    Btn.BorderSizePixel = 0
-    Btn.ZIndex = 9
-    Btn.AutoButtonColor = false
-    Btn.Parent = Card
-    local BtnCorner = Instance.new("UICorner")
-    BtnCorner.CornerRadius = UDim.new(0, 5)
-    BtnCorner.Parent = Btn
-    local toggleState = false
-    local conn = nil
-    Btn.MouseButton1Click:Connect(function()
-        toggleState = not toggleState
-        if toggleState then
-            Btn.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
-            Btn.Text = "停止"
-            conn = onExecute(true)
-        else
-            Btn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-            Btn.Text = btnText or "执行"
-            onExecute(false)
-            if conn then conn:Disconnect(); conn = nil end
-        end
-    end)
-    Btn.MouseEnter:Connect(function()
-        if not toggleState then Btn.BackgroundColor3 = Color3.fromRGB(255, 160, 20) end
-    end)
-    Btn.MouseLeave:Connect(function()
-        if not toggleState then Btn.BackgroundColor3 = Color3.fromRGB(255, 140, 0) end
-    end)
+local function doors_createCard(parent, name, desc, icon, onExecute, btnText)
+    local C = Instance.new("Frame"); C.Size = UDim2.new(1, -16, 0, 46); C.BackgroundColor3 = Color3.fromRGB(252, 252, 252); C.BorderSizePixel = 0; C.ZIndex = 7; C.Parent = parent
+    Instance.new("UICorner", C).CornerRadius = UDim.new(0, 10); local S = Instance.new("UIStroke", C); S.Color = Color3.fromRGB(230, 230, 230); S.Thickness = 1
+    local I = Instance.new("Frame"); I.Size = UDim2.new(0, 26, 0, 26); I.Position = UDim2.new(0, 10, 0, 10); I.BackgroundColor3 = Color3.fromRGB(240, 240, 240); I.ZIndex = 8; I.Parent = C; Instance.new("UICorner", I).CornerRadius = UDim.new(0, 6)
+    local IT = Instance.new("TextLabel"); IT.Size = UDim2.new(1, 0, 1, 0); IT.Text = icon; IT.TextSize = 11; IT.BackgroundTransparency = 1; IT.ZIndex = 9; IT.Parent = I
+    local T = Instance.new("TextLabel"); T.Size = UDim2.new(0, 180, 0, 15); T.Position = UDim2.new(0, 44, 0, 5); T.Text = name; T.TextColor3 = Color3.fromRGB(50, 50, 50); T.Font = Enum.Font.GothamSemibold; T.TextSize = 11; T.BackgroundTransparency = 1; T.TextXAlignment = Enum.TextXAlignment.Left; T.ZIndex = 8; T.Parent = C
+    local D = Instance.new("TextLabel"); D.Size = UDim2.new(1, -100, 0, 13); D.Position = UDim2.new(0, 44, 0, 22); D.Text = desc; D.TextColor3 = Color3.fromRGB(130, 130, 130); D.Font = Enum.Font.Gotham; D.TextSize = 9; D.BackgroundTransparency = 1; D.TextXAlignment = Enum.TextXAlignment.Left; D.ZIndex = 8; D.Parent = C
+    local B = Instance.new("TextButton"); B.Size = UDim2.new(0, 50, 0, 20); B.Position = UDim2.new(1, -58, 0, 13); B.Text = btnText or "执行"; B.TextColor3 = Color3.fromRGB(255, 255, 255); B.Font = Enum.Font.GothamBold; B.TextSize = 10; B.BackgroundColor3 = Color3.fromRGB(255, 140, 0); B.BorderSizePixel = 0; B.ZIndex = 9; B.AutoButtonColor = false; B.Parent = C
+    Instance.new("UICorner", B).CornerRadius = UDim.new(0, 5)
+    local ts, cn = false, nil
+    B.MouseButton1Click:Connect(function() ts = not ts; if ts then B.BackgroundColor3 = Color3.fromRGB(76, 175, 80); B.Text = "停止"; cn = onExecute(true) else B.BackgroundColor3 = Color3.fromRGB(255, 140, 0); B.Text = btnText or "执行"; onExecute(false); if cn then pcall(function() cn:Disconnect() end); cn = nil end end end)
+    B.MouseEnter:Connect(function() if not ts then B.BackgroundColor3 = Color3.fromRGB(255, 160, 20) end end)
+    B.MouseLeave:Connect(function() if not ts then B.BackgroundColor3 = Color3.fromRGB(255, 140, 0) end end)
 end
 
-doors_createMainCard("增速模式", "循环将WalkSpeed设为20", "⚡", function(state)
-    if state then
-        local conn = RunService.RenderStepped:Connect(function()
-            local c = LocalPlayer.Character
-            if c and c:FindFirstChild("Humanoid") then
-                c.Humanoid.WalkSpeed = 20
-            end
-        end)
-        return conn
-    else
-        local c = LocalPlayer.Character
-        if c and c:FindFirstChild("Humanoid") then
-            c.Humanoid.WalkSpeed = 16
-        end
-    end
+doors_createCard(doors_mainPage, "增速模式", "循环将WalkSpeed设为22", "⚡", function(s)
+    if s then local cn = RunService.RenderStepped:Connect(function() pcall(function() local p = LocalPlayer.Character; if p and p:FindFirstChild("Humanoid") then p.Humanoid.WalkSpeed = 22 end end) end); return cn
+    else pcall(function() local p = LocalPlayer.Character; if p and p:FindFirstChild("Humanoid") then p.Humanoid.WalkSpeed = 16 end end) end
 end, "加速")
 
-doors_createMainCard("夜视模式", "消除黑暗，不太亮", "🔦", function(state)
-    doors_nightVision = state
-    if state then
-        Lighting.Brightness = 2
-        Lighting.ClockTime = 14
-        Lighting.FogEnd = 100000
-        Lighting.GlobalShadows = false
-    else
-        Lighting.Brightness = 1
-        Lighting.ClockTime = 14
-        Lighting.FogEnd = 500
-        Lighting.GlobalShadows = true
+doors_createCard(doors_mainPage, "夜视模式", "消除黑暗，不太亮", "🔦", function(s)
+    doors_nightVision = s
+    if s then Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.FogEnd = 100000; Lighting.GlobalShadows = false
+    else Lighting.Brightness = 1; Lighting.ClockTime = 14; Lighting.FogEnd = 500; Lighting.GlobalShadows = true end
+end, "开启")
+
+doors_createCard(doors_mainPage, "怪物提示", "怪物来了弹窗+音效", "👹", function(s) doors_monsterAlertEnabled = s end, "开启")
+
+doors_createCard(doors_mainPage, "防滑模式", "松开按键刹停0.15秒", "🧊", function(s)
+    doors_antiSlipEnabled = s
+    if s then
+        local brakeTime = 0
+        local cn = RunService.RenderStepped:Connect(function()
+            if not doors_antiSlipEnabled then return end
+            pcall(function()
+                local p = LocalPlayer.Character
+                if p and p:FindFirstChild("HumanoidRootPart") and p:FindFirstChild("Humanoid") then
+                    local hum = p.Humanoid; local hrp = p.HumanoidRootPart
+                    if hum.MoveDirection.Magnitude == 0 then
+                        if brakeTime == 0 then brakeTime = tick() end
+                        if tick() - brakeTime < 0.15 then hrp.Velocity = Vector3.new(0, hrp.Velocity.Y, 0) end
+                    else brakeTime = 0 end
+                end
+            end)
+        end)
+        return cn
     end
 end, "开启")
 
-doors_createMainCard("怪物提示", "怪物来了弹窗+音效提示", "👹", function(state)
-    doors_monsterAlertEnabled = state
+doors_createCard(doors_mainPage, "自动互动", "附近有画不互动，Door长按E", "🤖", function(s)
+    doors_autoInteractEnabled = s
+    if s then
+        local lastInteract = 0
+        local cn = RunService.RenderStepped:Connect(function()
+            if not doors_autoInteractEnabled then return end
+            local now = tick(); if now - lastInteract < 0.2 then return end; lastInteract = now
+            pcall(function()
+                local p = LocalPlayer.Character
+                if not p or not p:FindFirstChild("HumanoidRootPart") then return end
+                local hrp = p.HumanoidRootPart
+                local nearPainting = false
+                for _, o in ipairs(workspace:GetDescendants()) do
+                    if o.Name:lower():find("painting") or o.Name:lower():find("画") then
+                        local po = doors_getPos(o)
+                        if po and (po - hrp.Position).Magnitude < 10 then nearPainting = true; break end
+                    end
+                end
+                if nearPainting then return end
+                for _, o in ipairs(workspace:GetDescendants()) do
+                    if o:IsA("ProximityPrompt") and o.Enabled then
+                        local pp = o.Parent
+                        if pp then
+                            local po = nil
+                            if pp:IsA("BasePart") then po = pp.Position
+                            elseif pp:IsA("Model") then local bp = pp:FindFirstChildWhichIsA("BasePart"); if bp then po = bp.Position end end
+                            if po and (po - hrp.Position).Magnitude < 10 then
+                                local pn = pp.Name:lower()
+                                if pn == "door" or (pp.Parent and pp.Parent.Name:lower() == "door") then fireproximityprompt(o, 1)
+                                elseif not doors_allowCabinets then
+                                    local cabinetNames = {"wardrobe", "cabinet", "closet", "bed", "衣柜", "柜子", "床", "hide", "hiding"}
+                                    local isCabinet = false
+                                    for _, kw in ipairs(cabinetNames) do if pn:find(kw) then isCabinet = true; break end end
+                                    if not isCabinet then fireproximityprompt(o) end
+                                else fireproximityprompt(o) end
+                                break
+                            end
+                        end
+                    end
+                end
+            end)
+        end)
+        return cn
+    end
 end, "开启")
 
-doors_mainPage.CanvasSize = UDim2.new(0, 0, 0, 3 * 52 + 12)
+doors_mainPage.CanvasSize = UDim2.new(0, 0, 0, 5 * 52 + 12)
 doors_contentPages["主要功能"] = doors_mainPage
+-- Doors ESP 独立脚本 第3段：ESP核心函数
 
 function doors_clearAll()
     for _, d in pairs(doors_highlights) do pcall(function() if d.hl then d.hl:Destroy() end if d.bb then d.bb:Destroy() end if d.conn then d.conn:Disconnect() end end) end
     doors_highlights = {}; doors_clearBeams()
 end
-
 function doors_clearBeams()
     for _, b in pairs(doors_beamData) do pcall(function() if b.beam then b.beam:Destroy() end if b.a0 then b.a0:Destroy() end if b.a1 then b.a1:Destroy() end end) end
     doors_beamData = {}
 end
-
 function doors_getPos(obj)
     if obj:IsA("BasePart") then return obj.Position end
     if obj:IsA("Model") then local p = obj:FindFirstChildWhichIsA("BasePart"); if p then return p.Position end end
     return nil
 end
-
 function doors_addESP(obj, color, name)
     pcall(function()
         local hl = Instance.new("Highlight"); hl.FillColor = color; hl.FillTransparency = 0.3; hl.OutlineColor = Color3.fromRGB(255,255,255); hl.OutlineTransparency = 0; hl.Adornee = obj; hl.Parent = obj; hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
@@ -499,589 +292,186 @@ function doors_addESP(obj, color, name)
         local lb = Instance.new("TextLabel"); lb.Size = UDim2.new(1,0,1,0); lb.BackgroundTransparency = 1; lb.TextColor3 = Color3.fromRGB(255,255,255); lb.Font = Enum.Font.SourceSansBold; lb.TextSize = 16; lb.Parent = bb
         local conn = RunService.Heartbeat:Connect(function()
             if not obj or not obj.Parent then conn:Disconnect(); hl:Destroy(); bb:Destroy(); return end
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then local pos = doors_getPos(obj); if pos then lb.Text = string.format("%s %.1fm", name, (char.HumanoidRootPart.Position - pos).Magnitude) end end
+            local char = LocalPlayer.Character; if char and char:FindFirstChild("HumanoidRootPart") then local pos = doors_getPos(obj); if pos then lb.Text = string.format("%s %.1fm", name, (char.HumanoidRootPart.Position - pos).Magnitude) end end
         end)
         table.insert(doors_highlights, {hl=hl, bb=bb, conn=conn})
     end)
 end
-
 function doors_addScreenBeam(targetObj, color)
     pcall(function()
-        local char = LocalPlayer.Character
-        if not char or not char:FindFirstChild("Head") then return end
-        local tp = doors_getPos(targetObj)
-        if not tp then return end
-        
-        local a0 = Instance.new("Attachment")
-        a0.Parent = char.Head
-        local a1 = Instance.new("Attachment")
-        a1.Parent = targetObj
-        a1.WorldPosition = tp
-        
-        local beam = Instance.new("Beam")
-        beam.Attachment0 = a0
-        beam.Attachment1 = a1
-        beam.Color = ColorSequence.new(color)
-        beam.Width0 = 0.03
-        beam.Width1 = 0.03
-        beam.Transparency = NumberSequence.new(0.3)
-        beam.FaceCamera = true
-        beam.Parent = a0
-        
+        local char = LocalPlayer.Character; if not char or not char:FindFirstChild("Head") then return end
+        local tp = doors_getPos(targetObj); if not tp then return end
+        local a0 = Instance.new("Attachment"); a0.Parent = char.Head
+        local a1 = Instance.new("Attachment"); a1.Parent = targetObj; a1.WorldPosition = tp
+        local beam = Instance.new("Beam"); beam.Attachment0 = a0; beam.Attachment1 = a1; beam.Color = ColorSequence.new(color); beam.Width0 = 0.03; beam.Width1 = 0.03; beam.Transparency = NumberSequence.new(0.3); beam.FaceCamera = true; beam.Parent = a0
         table.insert(doors_beamData, {beam=beam, a0=a0, a1=a1})
     end)
 end
-
 function doors_updateBeams()
-    doors_clearBeams()
-    if not doors_rayEnabled then return end
-    if not doors_espEnabled then return end
-    
-    local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("Head") then return end
-    local hp = char.Head.Position
-    
+    doors_clearBeams(); if not doors_rayEnabled or not doors_espEnabled then return end
+    local char = LocalPlayer.Character; if not char or not char:FindFirstChild("Head") then return end; local hp = char.Head.Position
     for _, obj in ipairs(workspace:GetDescendants()) do
-        local pos = doors_getPos(obj)
-        if not pos then continue end
-        if (hp - pos).Magnitude > 200 then continue end
-        
+        local pos = doors_getPos(obj); if not pos or (hp - pos).Magnitude > 200 then continue end
         local color = nil
-        if doors_showDoors and obj:IsA("Model") and obj.Name == "Door" then
-            color = Color3.fromRGB(50,150,255)
-        elseif doors_showBook and obj.Name == "LiveHintBook" then
-            color = Color3.fromRGB(255,150,50)
-        elseif doors_showBattery and obj.Name:lower():find("stuff") then
-            color = Color3.fromRGB(255,255,0)
-        elseif doors_showKeys and obj.Name == "KeyObtain" then
-            color = Color3.fromRGB(255,200,0)
-        elseif doors_showLevers and obj.Name:lower():find("lever") then
-            color = Color3.fromRGB(255,100,255)
+        if doors_showDoors and obj:IsA("Model") and obj.Name == "Door" then color = Color3.fromRGB(50,150,255)
+        elseif doors_showBook and obj.Name == "LiveHintBook" then color = Color3.fromRGB(255,150,50)
+        elseif doors_showBattery and obj.Name:lower():find("stuff") then color = Color3.fromRGB(255,255,0)
+        elseif doors_showKeys and obj.Name == "KeyObtain" then color = Color3.fromRGB(255,200,0)
+        elseif doors_showLevers and obj.Name:lower():find("lever") then color = Color3.fromRGB(255,100,255)
         elseif doors_showItems then
             if obj:IsA("Tool") then color = Color3.fromRGB(50,255,50)
-            elseif obj:IsA("Model") then
-                local n = obj.Name:lower()
-                if n:find("gold") or n:find("coin") or n:find("flashlight") or n:find("lighter") or n:find("vitamin") or n:find("lockpick") or n:find("bandage") or n:find("crucifix") or n:find("revolver") or n:find("shotgun") or n:find("rifle") or n:find("skeletonkey") or n:find("pills") then
-                    color = Color3.fromRGB(50,255,50)
-                end
-            end
-        elseif doors_showMonsters and obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
-            local n = obj.Name:lower()
-            if n:find("rush") or n:find("ambush") or n:find("screech") or n:find("figure") or n:find("seek") or n:find("halt") or n:find("eyes") or n:find("hide") or n:find("dupe") or n:find("shadow") or n:find("granny") or obj:FindFirstChild("Humanoid") then
-                color = Color3.fromRGB(255,50,50)
-            end
+            elseif obj:IsA("Model") then local n = obj.Name:lower()
+                if n:find("gold") or n:find("coin") or n:find("flashlight") or n:find("lighter") or n:find("vitamin") or n:find("lockpick") or n:find("bandage") or n:find("crucifix") or n:find("revolver") or n:find("shotgun") or n:find("rifle") or n:find("skeletonkey") or n:find("pills") then color = Color3.fromRGB(50,255,50) end end
+        elseif doors_showMonsters and obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then local n = obj.Name:lower()
+            if n:find("rush") or n:find("ambush") or n:find("screech") or n:find("figure") or n:find("seek") or n:find("halt") or n:find("eyes") or n:find("hide") or n:find("dupe") or n:find("shadow") or n:find("granny") or obj:FindFirstChild("Humanoid") then color = Color3.fromRGB(255,50,50) end
         end
         if color then doors_addScreenBeam(obj, color) end
     end
 end
-
 function doors_getMonsterName(obj)
     local n = obj.Name:lower()
     if n:find("ambush") then return "Ambush" elseif n:find("rush") then return "Rush" elseif n:find("screech") then return "Screech" elseif n:find("figure") then return "Figure" elseif n:find("seek") then return "Seek" elseif n:find("halt") then return "Halt" elseif n:find("eyes") then return "Eyes" elseif n:find("hide") then return "Hide" elseif n:find("dupe") then return "Dupe" elseif n:find("shadow") then return "Shadow" elseif n:find("granny") or n:find("blind") or n:find("library") then return "Figure" elseif obj:FindFirstChild("Humanoid") then return "怪物" end
     return nil
 end
-
 function doors_updateESP()
-    doors_clearAll()
-    if not doors_espEnabled then return end
-    
+    doors_clearAll(); if not doors_espEnabled then return end
     for _, obj in ipairs(workspace:GetDescendants()) do
-        if doors_showDoors and obj:IsA("Model") and obj.Name == "Door" then
-            doors_addESP(obj, Color3.fromRGB(50,150,255), "门")
-        end
-        if doors_showBook and obj.Name == "LiveHintBook" then
-            doors_addESP(obj, Color3.fromRGB(255,150,50), "书")
-        end
-        if doors_showBattery and obj:IsA("Model") and obj.Name:lower():find("stuff") then
-            doors_addESP(obj, Color3.fromRGB(255,255,0), "电池")
-        end
-        if doors_showKeys and obj.Name == "KeyObtain" then
-            doors_addESP(obj, Color3.fromRGB(255,200,0), "钥匙")
-        end
-        if doors_showLevers and obj.Name:lower():find("lever") then
-            doors_addESP(obj, Color3.fromRGB(255,100,255), "拉杆")
-        end
+        if doors_showDoors and obj:IsA("Model") and obj.Name == "Door" then doors_addESP(obj, Color3.fromRGB(50,150,255), "门") end
+        if doors_showBook and obj.Name == "LiveHintBook" then doors_addESP(obj, Color3.fromRGB(255,150,50), "书") end
+        if doors_showBattery and obj:IsA("Model") and obj.Name:lower():find("stuff") then doors_addESP(obj, Color3.fromRGB(255,255,0), "电池") end
+        if doors_showKeys and obj.Name == "KeyObtain" then doors_addESP(obj, Color3.fromRGB(255,200,0), "钥匙") end
+        if doors_showLevers and obj.Name:lower():find("lever") then doors_addESP(obj, Color3.fromRGB(255,100,255), "拉杆") end
         if doors_showItems then
-            if obj:IsA("Tool") then
-                doors_addESP(obj, Color3.fromRGB(50,255,50), "道具")
-            elseif obj:IsA("Model") then
-                local n = obj.Name:lower()
-                if not n:find("book") and (n:find("gold") or n:find("coin") or n:find("flashlight") or n:find("lighter") or n:find("vitamin") or n:find("lockpick") or n:find("bandage") or n:find("crucifix") or n:find("revolver") or n:find("shotgun") or n:find("rifle") or n:find("skeletonkey") or n:find("pills")) then
-                    doors_addESP(obj, Color3.fromRGB(50,255,50), "道具")
-                end
-            end
+            if obj:IsA("Tool") then doors_addESP(obj, Color3.fromRGB(50,255,50), "道具")
+            elseif obj:IsA("Model") then local n = obj.Name:lower()
+                if not n:find("book") and (n:find("gold") or n:find("coin") or n:find("flashlight") or n:find("lighter") or n:find("vitamin") or n:find("lockpick") or n:find("bandage") or n:find("crucifix") or n:find("revolver") or n:find("shotgun") or n:find("rifle") or n:find("skeletonkey") or n:find("pills")) then doors_addESP(obj, Color3.fromRGB(50,255,50), "道具") end end
         end
-        if doors_showMonsters and obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
-            local mn = doors_getMonsterName(obj)
-            if mn then
-                local pos = obj:FindFirstChildWhichIsA("BasePart")
-                if pos then
-                    local char = LocalPlayer.Character
-                    if char and char:FindFirstChild("HumanoidRootPart") then
-                        local dist = (char.HumanoidRootPart.Position - pos.Position).Magnitude
-                        local maxD = (mn=="Rush" or mn=="Ambush") and 500 or 60
-                        if dist < maxD then
-                            doors_addESP(obj, Color3.fromRGB(255,50,50), mn)
-                        end
-                    end
-                end
-            end
+        if doors_showMonsters and obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then local mn = doors_getMonsterName(obj)
+            if mn then local pos = obj:FindFirstChildWhichIsA("BasePart")
+                if pos then local char = LocalPlayer.Character; if char and char:FindFirstChild("HumanoidRootPart") then local dist = (char.HumanoidRootPart.Position - pos.Position).Magnitude; local maxD = (mn=="Rush" or mn=="Ambush") and 500 or 60
+                    if dist < maxD then doors_addESP(obj, Color3.fromRGB(255,50,50), mn) end end end end
         end
     end
 end
-
-spawn(function()
-    while true do
-        if doors_espEnabled then 
-            doors_updateESP()
-            if doors_rayEnabled then doors_updateBeams() end
-        end
-        task.wait(0.5)
-    end
-end)
--- Doors ESP 独立脚本 第3段：ESP区（总开关 + 下拉菜单 + 透视开关 + 射线）
+spawn(function() while true do if doors_espEnabled then doors_updateESP(); if doors_rayEnabled then doors_updateBeams() end end; task.wait(0.5) end end)
+-- Doors ESP 独立脚本 第4段：ESP区（总开关 + 下拉菜单 + 射线）
 
 local doors_espPage = Instance.new("ScrollingFrame")
-doors_espPage.Size = UDim2.new(1, 0, 1, 0)
-doors_espPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-doors_espPage.BorderSizePixel = 0
-doors_espPage.ScrollBarThickness = 3
-doors_espPage.Visible = false
-doors_espPage.ZIndex = 7
-doors_espPage.Parent = doors_ContentArea
-local doors_espPageList = Instance.new("UIListLayout")
-doors_espPageList.Padding = UDim.new(0, 6)
-doors_espPageList.Parent = doors_espPage
-local doors_espPageSpacer = Instance.new("Frame")
-doors_espPageSpacer.Size = UDim2.new(1, 0, 0, 6)
-doors_espPageSpacer.BackgroundTransparency = 1
-doors_espPageSpacer.Parent = doors_espPage
+doors_espPage.Size = UDim2.new(1, 0, 1, 0); doors_espPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+doors_espPage.BorderSizePixel = 0; doors_espPage.ScrollBarThickness = 3; doors_espPage.Visible = false; doors_espPage.ZIndex = 7; doors_espPage.Parent = doors_ContentArea
+local doors_espPageList = Instance.new("UIListLayout"); doors_espPageList.Padding = UDim.new(0, 6); doors_espPageList.Parent = doors_espPage
+local doors_espPageSpacer = Instance.new("Frame"); doors_espPageSpacer.Size = UDim2.new(1, 0, 0, 6); doors_espPageSpacer.BackgroundTransparency = 1; doors_espPageSpacer.Parent = doors_espPage
 
--- ESP总开关卡片
-local doors_espMainCard = Instance.new("Frame")
-doors_espMainCard.Size = UDim2.new(1, -16, 0, 46)
-doors_espMainCard.BackgroundColor3 = Color3.fromRGB(252, 252, 252)
-doors_espMainCard.BorderSizePixel = 0
-doors_espMainCard.ZIndex = 7
-doors_espMainCard.Parent = doors_espPage
-local doors_espMainCorner = Instance.new("UICorner")
-doors_espMainCorner.CornerRadius = UDim.new(0, 10)
-doors_espMainCorner.Parent = doors_espMainCard
-local doors_espMainStroke = Instance.new("UIStroke")
-doors_espMainStroke.Color = Color3.fromRGB(230, 230, 230)
-doors_espMainStroke.Thickness = 1
-doors_espMainStroke.Parent = doors_espMainCard
-local doors_espIconFrame = Instance.new("Frame")
-doors_espIconFrame.Size = UDim2.new(0, 26, 0, 26)
-doors_espIconFrame.Position = UDim2.new(0, 10, 0, 10)
-doors_espIconFrame.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
-doors_espIconFrame.BorderSizePixel = 0
-doors_espIconFrame.ZIndex = 8
-doors_espIconFrame.Parent = doors_espMainCard
-local doors_espIconCorner = Instance.new("UICorner")
-doors_espIconCorner.CornerRadius = UDim.new(0, 6)
-doors_espIconCorner.Parent = doors_espIconFrame
-local doors_espIconText = Instance.new("TextLabel")
-doors_espIconText.Size = UDim2.new(1, 0, 1, 0)
-doors_espIconText.Text = "⚡"
-doors_espIconText.TextSize = 11
-doors_espIconText.BackgroundTransparency = 1
-doors_espIconText.ZIndex = 9
-doors_espIconText.Parent = doors_espIconFrame
-local doors_espTitleText = Instance.new("TextLabel")
-doors_espTitleText.Size = UDim2.new(0, 120, 0, 15)
-doors_espTitleText.Position = UDim2.new(0, 44, 0, 5)
-doors_espTitleText.Text = "ESP总开关"
-doors_espTitleText.TextColor3 = Color3.fromRGB(50, 50, 50)
-doors_espTitleText.Font = Enum.Font.GothamSemibold
-doors_espTitleText.TextSize = 11
-doors_espTitleText.BackgroundTransparency = 1
-doors_espTitleText.TextXAlignment = Enum.TextXAlignment.Left
-doors_espTitleText.ZIndex = 8
-doors_espTitleText.Parent = doors_espMainCard
-local doors_espDescText = Instance.new("TextLabel")
-doors_espDescText.Size = UDim2.new(1, -170, 0, 13)
-doors_espDescText.Position = UDim2.new(0, 44, 0, 22)
-doors_espDescText.Text = "开启透视 + 展开选项"
-doors_espDescText.TextColor3 = Color3.fromRGB(130, 130, 130)
-doors_espDescText.Font = Enum.Font.Gotham
-doors_espDescText.TextSize = 9
-doors_espDescText.BackgroundTransparency = 1
-doors_espDescText.TextXAlignment = Enum.TextXAlignment.Left
-doors_espDescText.ZIndex = 8
-doors_espDescText.Parent = doors_espMainCard
-
--- 开启透视按钮（左边）
-local doors_espEnableBtn = Instance.new("TextButton")
-doors_espEnableBtn.Size = UDim2.new(0, 55, 0, 20)
-doors_espEnableBtn.Position = UDim2.new(1, -120, 0, 13)
-doors_espEnableBtn.Text = "开启透视"
-doors_espEnableBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-doors_espEnableBtn.Font = Enum.Font.GothamBold
-doors_espEnableBtn.TextSize = 9
-doors_espEnableBtn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-doors_espEnableBtn.BorderSizePixel = 0
-doors_espEnableBtn.ZIndex = 9
-doors_espEnableBtn.AutoButtonColor = false
-doors_espEnableBtn.Parent = doors_espMainCard
-local doors_espEnableBtnCorner = Instance.new("UICorner")
-doors_espEnableBtnCorner.CornerRadius = UDim.new(0, 5)
-doors_espEnableBtnCorner.Parent = doors_espEnableBtn
+local doors_espMainCard = Instance.new("Frame"); doors_espMainCard.Size = UDim2.new(1, -16, 0, 46); doors_espMainCard.BackgroundColor3 = Color3.fromRGB(252, 252, 252); doors_espMainCard.BorderSizePixel = 0; doors_espMainCard.ZIndex = 7; doors_espMainCard.Parent = doors_espPage
+local doors_espMainCorner = Instance.new("UICorner"); doors_espMainCorner.CornerRadius = UDim.new(0, 10); doors_espMainCorner.Parent = doors_espMainCard
+local doors_espMainStroke = Instance.new("UIStroke"); doors_espMainStroke.Color = Color3.fromRGB(230, 230, 230); doors_espMainStroke.Thickness = 1; doors_espMainStroke.Parent = doors_espMainCard
+local doors_espIconFrame = Instance.new("Frame"); doors_espIconFrame.Size = UDim2.new(0, 26, 0, 26); doors_espIconFrame.Position = UDim2.new(0, 10, 0, 10)
+doors_espIconFrame.BackgroundColor3 = Color3.fromRGB(240, 240, 240); doors_espIconFrame.BorderSizePixel = 0; doors_espIconFrame.ZIndex = 8; doors_espIconFrame.Parent = doors_espMainCard
+local doors_espIconCorner = Instance.new("UICorner"); doors_espIconCorner.CornerRadius = UDim.new(0, 6); doors_espIconCorner.Parent = doors_espIconFrame
+local doors_espIconText = Instance.new("TextLabel"); doors_espIconText.Size = UDim2.new(1, 0, 1, 0); doors_espIconText.Text = "⚡"; doors_espIconText.TextSize = 11; doors_espIconText.BackgroundTransparency = 1; doors_espIconText.ZIndex = 9; doors_espIconText.Parent = doors_espIconFrame
+local doors_espTitleText = Instance.new("TextLabel"); doors_espTitleText.Size = UDim2.new(0, 120, 0, 15); doors_espTitleText.Position = UDim2.new(0, 44, 0, 5); doors_espTitleText.Text = "ESP总开关"; doors_espTitleText.TextColor3 = Color3.fromRGB(50, 50, 50); doors_espTitleText.Font = Enum.Font.GothamSemibold; doors_espTitleText.TextSize = 11; doors_espTitleText.BackgroundTransparency = 1; doors_espTitleText.TextXAlignment = Enum.TextXAlignment.Left; doors_espTitleText.ZIndex = 8; doors_espTitleText.Parent = doors_espMainCard
+local doors_espDescText = Instance.new("TextLabel"); doors_espDescText.Size = UDim2.new(1, -170, 0, 13); doors_espDescText.Position = UDim2.new(0, 44, 0, 22); doors_espDescText.Text = "开启透视 + 展开选项"; doors_espDescText.TextColor3 = Color3.fromRGB(130, 130, 130); doors_espDescText.Font = Enum.Font.Gotham; doors_espDescText.TextSize = 9; doors_espDescText.BackgroundTransparency = 1; doors_espDescText.TextXAlignment = Enum.TextXAlignment.Left; doors_espDescText.ZIndex = 8; doors_espDescText.Parent = doors_espMainCard
+local doors_espEnableBtn = Instance.new("TextButton"); doors_espEnableBtn.Size = UDim2.new(0, 55, 0, 20); doors_espEnableBtn.Position = UDim2.new(1, -120, 0, 13); doors_espEnableBtn.Text = "开启透视"; doors_espEnableBtn.TextColor3 = Color3.fromRGB(255, 255, 255); doors_espEnableBtn.Font = Enum.Font.GothamBold; doors_espEnableBtn.TextSize = 9; doors_espEnableBtn.BackgroundColor3 = Color3.fromRGB(255, 140, 0); doors_espEnableBtn.BorderSizePixel = 0; doors_espEnableBtn.ZIndex = 9; doors_espEnableBtn.AutoButtonColor = false; doors_espEnableBtn.Parent = doors_espMainCard
+local doors_espEnableBtnCorner = Instance.new("UICorner"); doors_espEnableBtnCorner.CornerRadius = UDim.new(0, 5); doors_espEnableBtnCorner.Parent = doors_espEnableBtn
 local doors_espEnableToggle = false
-
--- 展开/收起按钮（右边）
-local doors_espDropdownBtn = Instance.new("TextButton")
-doors_espDropdownBtn.Size = UDim2.new(0, 50, 0, 20)
-doors_espDropdownBtn.Position = UDim2.new(1, -58, 0, 13)
-doors_espDropdownBtn.Text = "展开"
-doors_espDropdownBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-doors_espDropdownBtn.Font = Enum.Font.GothamBold
-doors_espDropdownBtn.TextSize = 10
-doors_espDropdownBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 180)
-doors_espDropdownBtn.BorderSizePixel = 0
-doors_espDropdownBtn.ZIndex = 9
-doors_espDropdownBtn.AutoButtonColor = false
-doors_espDropdownBtn.Parent = doors_espMainCard
-local doors_espDropdownBtnCorner = Instance.new("UICorner")
-doors_espDropdownBtnCorner.CornerRadius = UDim.new(0, 5)
-doors_espDropdownBtnCorner.Parent = doors_espDropdownBtn
-
--- 下拉菜单容器
-local doors_espDropdownContainer = Instance.new("Frame")
-doors_espDropdownContainer.Size = UDim2.new(1, -16, 0, 0)
-doors_espDropdownContainer.BackgroundTransparency = 1
-doors_espDropdownContainer.ClipsDescendants = true
-doors_espDropdownContainer.ZIndex = 7
-doors_espDropdownContainer.Parent = doors_espPage
-
-local doors_espDropdown = Instance.new("Frame")
-doors_espDropdown.Size = UDim2.new(1, -10, 0, 0)
-doors_espDropdown.Position = UDim2.new(0, 5, 0, 5)
-doors_espDropdown.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-doors_espDropdown.BorderSizePixel = 0
-doors_espDropdown.ClipsDescendants = true
-doors_espDropdown.ZIndex = 50
-doors_espDropdown.Parent = doors_espDropdownContainer
-local doors_espDropdownCorner = Instance.new("UICorner")
-doors_espDropdownCorner.CornerRadius = UDim.new(0, 8)
-doors_espDropdownCorner.Parent = doors_espDropdown
-local doors_espDropdownList = Instance.new("UIListLayout")
-doors_espDropdownList.Padding = UDim.new(0, 2)
-doors_espDropdownList.Parent = doors_espDropdown
-local doors_espDropdownSpacer = Instance.new("Frame")
-doors_espDropdownSpacer.Size = UDim2.new(1, 0, 0, 4)
-doors_espDropdownSpacer.BackgroundTransparency = 1
-doors_espDropdownSpacer.Parent = doors_espDropdown
-
+local doors_espDropdownBtn = Instance.new("TextButton"); doors_espDropdownBtn.Size = UDim2.new(0, 50, 0, 20); doors_espDropdownBtn.Position = UDim2.new(1, -58, 0, 13); doors_espDropdownBtn.Text = "展开"; doors_espDropdownBtn.TextColor3 = Color3.fromRGB(255, 255, 255); doors_espDropdownBtn.Font = Enum.Font.GothamBold; doors_espDropdownBtn.TextSize = 10; doors_espDropdownBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 180); doors_espDropdownBtn.BorderSizePixel = 0; doors_espDropdownBtn.ZIndex = 9; doors_espDropdownBtn.AutoButtonColor = false; doors_espDropdownBtn.Parent = doors_espMainCard
+local doors_espDropdownBtnCorner = Instance.new("UICorner"); doors_espDropdownBtnCorner.CornerRadius = UDim.new(0, 5); doors_espDropdownBtnCorner.Parent = doors_espDropdownBtn
+local doors_espDropdownContainer = Instance.new("Frame"); doors_espDropdownContainer.Size = UDim2.new(1, -16, 0, 0); doors_espDropdownContainer.BackgroundTransparency = 1; doors_espDropdownContainer.ClipsDescendants = true; doors_espDropdownContainer.ZIndex = 7; doors_espDropdownContainer.Parent = doors_espPage
+local doors_espDropdown = Instance.new("Frame"); doors_espDropdown.Size = UDim2.new(1, -10, 0, 0); doors_espDropdown.Position = UDim2.new(0, 5, 0, 5); doors_espDropdown.BackgroundColor3 = Color3.fromRGB(40, 40, 50); doors_espDropdown.BorderSizePixel = 0; doors_espDropdown.ClipsDescendants = true; doors_espDropdown.ZIndex = 50; doors_espDropdown.Parent = doors_espDropdownContainer
+local doors_espDropdownCorner = Instance.new("UICorner"); doors_espDropdownCorner.CornerRadius = UDim.new(0, 8); doors_espDropdownCorner.Parent = doors_espDropdown
+local doors_espDropdownList = Instance.new("UIListLayout"); doors_espDropdownList.Padding = UDim.new(0, 2); doors_espDropdownList.Parent = doors_espDropdown
+local doors_espDropdownSpacer = Instance.new("Frame"); doors_espDropdownSpacer.Size = UDim2.new(1, 0, 0, 4); doors_espDropdownSpacer.BackgroundTransparency = 1; doors_espDropdownSpacer.Parent = doors_espDropdown
 local doors_espDropdownVisible = false
-
 doors_espEnableBtn.MouseButton1Click:Connect(function()
     doors_espEnableToggle = not doors_espEnableToggle
-    if doors_espEnableToggle then
-        doors_espEnableBtn.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
-        doors_espEnableBtn.Text = "关闭透视"
-        doors_espEnabled = true
-    else
-        doors_espEnableBtn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-        doors_espEnableBtn.Text = "开启透视"
-        doors_espEnabled = false
-        doors_clearAll()
-    end
+    if doors_espEnableToggle then doors_espEnableBtn.BackgroundColor3 = Color3.fromRGB(76, 175, 80); doors_espEnableBtn.Text = "关闭透视"; doors_espEnabled = true
+    else doors_espEnableBtn.BackgroundColor3 = Color3.fromRGB(255, 140, 0); doors_espEnableBtn.Text = "开启透视"; doors_espEnabled = false; doors_clearAll() end
 end)
-
 doors_espDropdownBtn.MouseButton1Click:Connect(function()
     doors_espDropdownVisible = not doors_espDropdownVisible
-    if doors_espDropdownVisible then
-        doors_espDropdownBtn.Text = "收起"
-        doors_espDropdownContainer:TweenSize(UDim2.new(1, -16, 0, 7 * 36 + 16), "Out", "Quad", 0.2)
-        doors_espDropdown:TweenSize(UDim2.new(1, -10, 0, 7 * 36 + 8), "Out", "Quad", 0.2)
-    else
-        doors_espDropdownBtn.Text = "展开"
-        doors_espDropdownContainer:TweenSize(UDim2.new(1, -16, 0, 0), "Out", "Quad", 0.2)
-        doors_espDropdown:TweenSize(UDim2.new(1, -10, 0, 0), "Out", "Quad", 0.2)
-    end
+    if doors_espDropdownVisible then doors_espDropdownBtn.Text = "收起"; doors_espDropdownContainer:TweenSize(UDim2.new(1, -16, 0, 7 * 36 + 16), "Out", "Quad", 0.2); doors_espDropdown:TweenSize(UDim2.new(1, -10, 0, 7 * 36 + 8), "Out", "Quad", 0.2)
+    else doors_espDropdownBtn.Text = "展开"; doors_espDropdownContainer:TweenSize(UDim2.new(1, -16, 0, 0), "Out", "Quad", 0.2); doors_espDropdown:TweenSize(UDim2.new(1, -10, 0, 0), "Out", "Quad", 0.2) end
 end)
-
 local function doors_createDropdownItem(name, code, defaultState)
-    local itemBtn = Instance.new("TextButton")
-    itemBtn.Size = UDim2.new(1, -10, 0, 30)
-    itemBtn.Text = ""
-    itemBtn.BackgroundColor3 = defaultState and Color3.fromRGB(60, 60, 80) or Color3.fromRGB(50, 50, 65)
-    itemBtn.BorderSizePixel = 0
-    itemBtn.ZIndex = 51
-    itemBtn.AutoButtonColor = false
-    itemBtn.Parent = doors_espDropdown
-    local itemCorner = Instance.new("UICorner")
-    itemCorner.CornerRadius = UDim.new(0, 6)
-    itemCorner.Parent = itemBtn
-    local itemLabel = Instance.new("TextLabel")
-    itemLabel.Size = UDim2.new(1, -40, 1, 0)
-    itemLabel.Position = UDim2.new(0, 8, 0, 0)
-    itemLabel.Text = name
-    itemLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    itemLabel.Font = Enum.Font.Gotham
-    itemLabel.TextSize = 11
-    itemLabel.BackgroundTransparency = 1
-    itemLabel.TextXAlignment = Enum.TextXAlignment.Left
-    itemLabel.ZIndex = 52
-    itemLabel.Parent = itemBtn
-    local dot = Instance.new("Frame")
-    dot.Size = UDim2.new(0, 8, 0, 8)
-    dot.Position = UDim2.new(1, -20, 0.5, -4)
-    dot.BackgroundColor3 = defaultState and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(80, 80, 80)
-    dot.BorderSizePixel = 0
-    dot.ZIndex = 52
-    dot.Parent = itemBtn
-    local dotCorner = Instance.new("UICorner")
-    dotCorner.CornerRadius = UDim.new(1, 0)
-    dotCorner.Parent = dot
+    local itemBtn = Instance.new("TextButton"); itemBtn.Size = UDim2.new(1, -10, 0, 30); itemBtn.Text = ""; itemBtn.BackgroundColor3 = defaultState and Color3.fromRGB(60, 60, 80) or Color3.fromRGB(50, 50, 65); itemBtn.BorderSizePixel = 0; itemBtn.ZIndex = 51; itemBtn.AutoButtonColor = false; itemBtn.Parent = doors_espDropdown
+    local itemCorner = Instance.new("UICorner"); itemCorner.CornerRadius = UDim.new(0, 6); itemCorner.Parent = itemBtn
+    local itemLabel = Instance.new("TextLabel"); itemLabel.Size = UDim2.new(1, -40, 1, 0); itemLabel.Position = UDim2.new(0, 8, 0, 0); itemLabel.Text = name; itemLabel.TextColor3 = Color3.fromRGB(255, 255, 255); itemLabel.Font = Enum.Font.Gotham; itemLabel.TextSize = 11; itemLabel.BackgroundTransparency = 1; itemLabel.TextXAlignment = Enum.TextXAlignment.Left; itemLabel.ZIndex = 52; itemLabel.Parent = itemBtn
+    local dot = Instance.new("Frame"); dot.Size = UDim2.new(0, 8, 0, 8); dot.Position = UDim2.new(1, -20, 0.5, -4); dot.BackgroundColor3 = defaultState and Color3.fromRGB(100, 255, 100) or Color3.fromRGB(80, 80, 80); dot.BorderSizePixel = 0; dot.ZIndex = 52; dot.Parent = itemBtn
+    local dotCorner = Instance.new("UICorner"); dotCorner.CornerRadius = UDim.new(1, 0); dotCorner.Parent = dot
     local itemState = defaultState
     itemBtn.MouseButton1Click:Connect(function()
         itemState = not itemState
-        if itemState then
-            itemBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-            dot.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
-        else
-            itemBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
-            dot.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-        end
-        if code == "doors" then doors_showDoors = itemState
-        elseif code == "keys" then doors_showKeys = itemState
-        elseif code == "items" then doors_showItems = itemState
-        elseif code == "monsters" then doors_showMonsters = itemState
-        elseif code == "levers" then doors_showLevers = itemState
-        elseif code == "book" then doors_showBook = itemState
-        elseif code == "battery" then doors_showBattery = itemState
-        end
+        if itemState then itemBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80); dot.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+        else itemBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 65); dot.BackgroundColor3 = Color3.fromRGB(80, 80, 80) end
+        if code == "doors" then doors_showDoors = itemState elseif code == "keys" then doors_showKeys = itemState elseif code == "items" then doors_showItems = itemState
+        elseif code == "monsters" then doors_showMonsters = itemState elseif code == "levers" then doors_showLevers = itemState elseif code == "book" then doors_showBook = itemState
+        elseif code == "battery" then doors_showBattery = itemState end
     end)
 end
+doors_createDropdownItem("透视门", "doors", true); doors_createDropdownItem("透视钥匙", "keys", true); doors_createDropdownItem("透视道具", "items", true); doors_createDropdownItem("透视怪物", "monsters", true); doors_createDropdownItem("透视拉杆", "levers", true); doors_createDropdownItem("透视书", "book", true); doors_createDropdownItem("透视电池", "battery", true)
 
-doors_createDropdownItem("透视门", "doors", true)
-doors_createDropdownItem("透视钥匙", "keys", true)
-doors_createDropdownItem("透视道具", "items", true)
-doors_createDropdownItem("透视怪物", "monsters", true)
-doors_createDropdownItem("透视拉杆", "levers", true)
-doors_createDropdownItem("透视书", "book", true)
-doors_createDropdownItem("透视电池", "battery", true)
-
--- 射线功能卡片
-local doors_rayCard = Instance.new("Frame")
-doors_rayCard.Size = UDim2.new(1, -16, 0, 46)
-doors_rayCard.BackgroundColor3 = Color3.fromRGB(252, 252, 252)
-doors_rayCard.BorderSizePixel = 0
-doors_rayCard.ZIndex = 7
-doors_rayCard.Parent = doors_espPage
-local doors_rayCardCorner = Instance.new("UICorner")
-doors_rayCardCorner.CornerRadius = UDim.new(0, 10)
-doors_rayCardCorner.Parent = doors_rayCard
-local doors_rayCardStroke = Instance.new("UIStroke")
-doors_rayCardStroke.Color = Color3.fromRGB(230, 230, 230)
-doors_rayCardStroke.Thickness = 1
-doors_rayCardStroke.Parent = doors_rayCard
-local doors_rayIconFrame = Instance.new("Frame")
-doors_rayIconFrame.Size = UDim2.new(0, 26, 0, 26)
-doors_rayIconFrame.Position = UDim2.new(0, 10, 0, 10)
-doors_rayIconFrame.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
-doors_rayIconFrame.BorderSizePixel = 0
-doors_rayIconFrame.ZIndex = 8
-doors_rayIconFrame.Parent = doors_rayCard
-local doors_rayIconCorner = Instance.new("UICorner")
-doors_rayIconCorner.CornerRadius = UDim.new(0, 6)
-doors_rayIconCorner.Parent = doors_rayIconFrame
-local doors_rayIconText = Instance.new("TextLabel")
-doors_rayIconText.Size = UDim2.new(1, 0, 1, 0)
-doors_rayIconText.Text = "📡"
-doors_rayIconText.TextSize = 11
-doors_rayIconText.BackgroundTransparency = 1
-doors_rayIconText.ZIndex = 9
-doors_rayIconText.Parent = doors_rayIconFrame
-local doors_rayTitleText = Instance.new("TextLabel")
-doors_rayTitleText.Size = UDim2.new(0, 180, 0, 15)
-doors_rayTitleText.Position = UDim2.new(0, 44, 0, 5)
-doors_rayTitleText.Text = "射线连线"
-doors_rayTitleText.TextColor3 = Color3.fromRGB(50, 50, 50)
-doors_rayTitleText.Font = Enum.Font.GothamSemibold
-doors_rayTitleText.TextSize = 11
-doors_rayTitleText.BackgroundTransparency = 1
-doors_rayTitleText.TextXAlignment = Enum.TextXAlignment.Left
-doors_rayTitleText.ZIndex = 8
-doors_rayTitleText.Parent = doors_rayCard
-local doors_rayDescText = Instance.new("TextLabel")
-doors_rayDescText.Size = UDim2.new(1, -80, 0, 13)
-doors_rayDescText.Position = UDim2.new(0, 44, 0, 22)
-doors_rayDescText.Text = "从头部连线到目标"
-doors_rayDescText.TextColor3 = Color3.fromRGB(130, 130, 130)
-doors_rayDescText.Font = Enum.Font.Gotham
-doors_rayDescText.TextSize = 9
-doors_rayDescText.BackgroundTransparency = 1
-doors_rayDescText.TextXAlignment = Enum.TextXAlignment.Left
-doors_rayDescText.ZIndex = 8
-doors_rayDescText.Parent = doors_rayCard
-local doors_rayToggle = Instance.new("TextButton")
-doors_rayToggle.Size = UDim2.new(0, 36, 0, 20)
-doors_rayToggle.Position = UDim2.new(1, -46, 0, 13)
-doors_rayToggle.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-doors_rayToggle.Text = ""
-doors_rayToggle.BorderSizePixel = 0
-doors_rayToggle.ZIndex = 8
-doors_rayToggle.AutoButtonColor = false
-doors_rayToggle.Parent = doors_rayCard
-local doors_rayToggleCorner = Instance.new("UICorner")
-doors_rayToggleCorner.CornerRadius = UDim.new(1, 0)
-doors_rayToggleCorner.Parent = doors_rayToggle
-local doors_rayToggleKnob = Instance.new("Frame")
-doors_rayToggleKnob.Size = UDim2.new(0, 16, 0, 16)
-doors_rayToggleKnob.Position = UDim2.new(0, 2, 0, 2)
-doors_rayToggleKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-doors_rayToggleKnob.BorderSizePixel = 0
-doors_rayToggleKnob.ZIndex = 9
-doors_rayToggleKnob.Parent = doors_rayToggle
-local doors_rayKnobCorner = Instance.new("UICorner")
-doors_rayKnobCorner.CornerRadius = UDim.new(1, 0)
-doors_rayKnobCorner.Parent = doors_rayToggleKnob
+local doors_rayCard = Instance.new("Frame"); doors_rayCard.Size = UDim2.new(1, -16, 0, 46); doors_rayCard.BackgroundColor3 = Color3.fromRGB(252, 252, 252); doors_rayCard.BorderSizePixel = 0; doors_rayCard.ZIndex = 7; doors_rayCard.Parent = doors_espPage
+local doors_rayCardCorner = Instance.new("UICorner"); doors_rayCardCorner.CornerRadius = UDim.new(0, 10); doors_rayCardCorner.Parent = doors_rayCard
+local doors_rayCardStroke = Instance.new("UIStroke"); doors_rayCardStroke.Color = Color3.fromRGB(230, 230, 230); doors_rayCardStroke.Thickness = 1; doors_rayCardStroke.Parent = doors_rayCard
+local doors_rayIconFrame = Instance.new("Frame"); doors_rayIconFrame.Size = UDim2.new(0, 26, 0, 26); doors_rayIconFrame.Position = UDim2.new(0, 10, 0, 10); doors_rayIconFrame.BackgroundColor3 = Color3.fromRGB(240, 240, 240); doors_rayIconFrame.BorderSizePixel = 0; doors_rayIconFrame.ZIndex = 8; doors_rayIconFrame.Parent = doors_rayCard
+local doors_rayIconCorner = Instance.new("UICorner"); doors_rayIconCorner.CornerRadius = UDim.new(0, 6); doors_rayIconCorner.Parent = doors_rayIconFrame
+local doors_rayIconText = Instance.new("TextLabel"); doors_rayIconText.Size = UDim2.new(1, 0, 1, 0); doors_rayIconText.Text = "📡"; doors_rayIconText.TextSize = 11; doors_rayIconText.BackgroundTransparency = 1; doors_rayIconText.ZIndex = 9; doors_rayIconText.Parent = doors_rayIconFrame
+local doors_rayTitleText = Instance.new("TextLabel"); doors_rayTitleText.Size = UDim2.new(0, 180, 0, 15); doors_rayTitleText.Position = UDim2.new(0, 44, 0, 5); doors_rayTitleText.Text = "射线连线"; doors_rayTitleText.TextColor3 = Color3.fromRGB(50, 50, 50); doors_rayTitleText.Font = Enum.Font.GothamSemibold; doors_rayTitleText.TextSize = 11; doors_rayTitleText.BackgroundTransparency = 1; doors_rayTitleText.TextXAlignment = Enum.TextXAlignment.Left; doors_rayTitleText.ZIndex = 8; doors_rayTitleText.Parent = doors_rayCard
+local doors_rayDescText = Instance.new("TextLabel"); doors_rayDescText.Size = UDim2.new(1, -80, 0, 13); doors_rayDescText.Position = UDim2.new(0, 44, 0, 22); doors_rayDescText.Text = "从头部连线到目标"; doors_rayDescText.TextColor3 = Color3.fromRGB(130, 130, 130); doors_rayDescText.Font = Enum.Font.Gotham; doors_rayDescText.TextSize = 9; doors_rayDescText.BackgroundTransparency = 1; doors_rayDescText.TextXAlignment = Enum.TextXAlignment.Left; doors_rayDescText.ZIndex = 8; doors_rayDescText.Parent = doors_rayCard
+local doors_rayToggle = Instance.new("TextButton"); doors_rayToggle.Size = UDim2.new(0, 36, 0, 20); doors_rayToggle.Position = UDim2.new(1, -46, 0, 13); doors_rayToggle.BackgroundColor3 = Color3.fromRGB(200, 200, 200); doors_rayToggle.Text = ""; doors_rayToggle.BorderSizePixel = 0; doors_rayToggle.ZIndex = 8; doors_rayToggle.AutoButtonColor = false; doors_rayToggle.Parent = doors_rayCard
+local doors_rayToggleCorner = Instance.new("UICorner"); doors_rayToggleCorner.CornerRadius = UDim.new(1, 0); doors_rayToggleCorner.Parent = doors_rayToggle
+local doors_rayToggleKnob = Instance.new("Frame"); doors_rayToggleKnob.Size = UDim2.new(0, 16, 0, 16); doors_rayToggleKnob.Position = UDim2.new(0, 2, 0, 2); doors_rayToggleKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); doors_rayToggleKnob.BorderSizePixel = 0; doors_rayToggleKnob.ZIndex = 9; doors_rayToggleKnob.Parent = doors_rayToggle
+local doors_rayKnobCorner = Instance.new("UICorner"); doors_rayKnobCorner.CornerRadius = UDim.new(1, 0); doors_rayKnobCorner.Parent = doors_rayToggleKnob
 doors_rayToggle.MouseButton1Click:Connect(function()
     doors_rayEnabled = not doors_rayEnabled
-    if doors_rayEnabled then
-        doors_rayToggle.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-        doors_rayToggleKnob:TweenPosition(UDim2.new(1, -18, 0, 2), "Out", "Quad", 0.15)
-    else
-        doors_rayToggle.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-        doors_rayToggleKnob:TweenPosition(UDim2.new(0, 2, 0, 2), "Out", "Quad", 0.15)
-        doors_clearBeams()
-    end
+    if doors_rayEnabled then doors_rayToggle.BackgroundColor3 = Color3.fromRGB(255, 140, 0); doors_rayToggleKnob:TweenPosition(UDim2.new(1, -18, 0, 2), "Out", "Quad", 0.15)
+        if not doors_espEnabled then doors_espEnabled = true; doors_espEnableToggle = true; doors_espEnableBtn.BackgroundColor3 = Color3.fromRGB(76, 175, 80); doors_espEnableBtn.Text = "关闭透视" end
+    else doors_rayToggle.BackgroundColor3 = Color3.fromRGB(200, 200, 200); doors_rayToggleKnob:TweenPosition(UDim2.new(0, 2, 0, 2), "Out", "Quad", 0.15); doors_clearBeams() end
 end)
-
 doors_espPage.CanvasSize = UDim2.new(0, 0, 0, 160)
 doors_contentPages["ESP区"] = doors_espPage
--- Doors ESP 独立脚本 第4段：怪物提示弹窗 + 音效 + 打开关闭动画 + 导航初始化
+-- Doors ESP 独立脚本 第5段：怪物提示弹窗 + 音效 + 打开关闭动画 + 导航初始化
 
 local doors_popupContainer = Instance.new("Frame")
-doors_popupContainer.Size = UDim2.new(0, 300, 0, 500)
-doors_popupContainer.Position = UDim2.new(1, -310, 0, 80)
-doors_popupContainer.BackgroundTransparency = 1
-doors_popupContainer.ZIndex = 200
-doors_popupContainer.Parent = doors_ScreenGui
-
+doors_popupContainer.Size = UDim2.new(0, 300, 0, 500); doors_popupContainer.Position = UDim2.new(1, -310, 0, 80); doors_popupContainer.BackgroundTransparency = 1; doors_popupContainer.ZIndex = 200; doors_popupContainer.Parent = doors_ScreenGui
 local doors_activePopups = {}
-
 function doors_showPopup(name)
-    while #doors_activePopups >= 5 do
-        table.remove(doors_activePopups, 1):Destroy()
-    end
-    for _, p in ipairs(doors_activePopups) do
-        TweenService:Create(p, TweenInfo.new(0.25), {Position = UDim2.new(0, 0, 0, p.Position.Y.Offset + 72)}):Play()
-    end
-    
-    local popup = Instance.new("Frame")
-    popup.Size = UDim2.new(0, 280, 0, 60)
-    popup.Position = UDim2.new(0, -300, 0, 0)
-    popup.BackgroundColor3 = Color3.fromRGB(200, 10, 10)
-    popup.BorderSizePixel = 2
-    popup.BorderColor3 = Color3.fromRGB(255, 80, 80)
-    popup.ZIndex = 200
-    popup.Parent = doors_popupContainer
+    while #doors_activePopups >= 5 do table.remove(doors_activePopups, 1):Destroy() end
+    for _, p in ipairs(doors_activePopups) do TweenService:Create(p, TweenInfo.new(0.25), {Position = UDim2.new(0, 0, 0, p.Position.Y.Offset + 72)}):Play() end
+    local popup = Instance.new("Frame"); popup.Size = UDim2.new(0, 280, 0, 60); popup.Position = UDim2.new(0, -300, 0, 0); popup.BackgroundColor3 = Color3.fromRGB(200, 10, 10); popup.BorderSizePixel = 2; popup.BorderColor3 = Color3.fromRGB(255, 80, 80); popup.ZIndex = 200; popup.Parent = doors_popupContainer
     Instance.new("UICorner", popup).CornerRadius = UDim.new(0, 10)
-    
-    local icon = Instance.new("TextLabel")
-    icon.Size = UDim2.new(0, 40, 0, 40)
-    icon.Position = UDim2.new(0, 8, 0, 10)
-    icon.BackgroundTransparency = 1
-    icon.Text = "⚠"
-    icon.Font = Enum.Font.SourceSansBold
-    icon.TextSize = 28
-    icon.ZIndex = 201
-    icon.Parent = popup
-    
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, -60, 0, 28)
-    title.Position = UDim2.new(0, 50, 0, 5)
-    title.BackgroundTransparency = 1
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.Text = name .. " 来了！"
-    title.Font = Enum.Font.SourceSansBold
-    title.TextSize = 16
-    title.ZIndex = 201
-    title.TextXAlignment = Enum.TextXAlignment.Left
-    title.Parent = popup
-    
-    local desc = Instance.new("TextLabel")
-    desc.Size = UDim2.new(1, -60, 0, 22)
-    desc.Position = UDim2.new(0, 50, 0, 33)
-    desc.BackgroundTransparency = 1
-    desc.TextColor3 = Color3.fromRGB(255, 200, 200)
-    desc.Text = "🏃 找个地方躲起来！"
-    desc.Font = Enum.Font.SourceSans
-    desc.TextSize = 12
-    desc.ZIndex = 201
-    desc.TextXAlignment = Enum.TextXAlignment.Left
-    desc.Parent = popup
-    
+    local icon = Instance.new("TextLabel"); icon.Size = UDim2.new(0, 40, 0, 40); icon.Position = UDim2.new(0, 8, 0, 10); icon.BackgroundTransparency = 1; icon.Text = "⚠"; icon.Font = Enum.Font.SourceSansBold; icon.TextSize = 28; icon.ZIndex = 201; icon.Parent = popup
+    local title = Instance.new("TextLabel"); title.Size = UDim2.new(1, -60, 0, 28); title.Position = UDim2.new(0, 50, 0, 5); title.BackgroundTransparency = 1; title.TextColor3 = Color3.fromRGB(255, 255, 255); title.Text = name .. " 来了！"; title.Font = Enum.Font.SourceSansBold; title.TextSize = 16; title.ZIndex = 201; title.TextXAlignment = Enum.TextXAlignment.Left; title.Parent = popup
+    local desc = Instance.new("TextLabel"); desc.Size = UDim2.new(1, -60, 0, 22); desc.Position = UDim2.new(0, 50, 0, 33); desc.BackgroundTransparency = 1; desc.TextColor3 = Color3.fromRGB(255, 200, 200); desc.Text = "🏃 找个地方躲起来！"; desc.Font = Enum.Font.SourceSans; desc.TextSize = 12; desc.ZIndex = 201; desc.TextXAlignment = Enum.TextXAlignment.Left; desc.Parent = popup
     table.insert(doors_activePopups, popup)
     TweenService:Create(popup, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {Position = UDim2.new(0, 0, 0, 0)}):Play()
-    
-    pcall(function()
-        local sound = Instance.new("Sound", popup)
-        sound.SoundId = "rbxassetid://9116729822"
-        sound.Volume = 1.5
-        sound:Play()
-    end)
-    
+    pcall(function() local sound = Instance.new("Sound", popup); sound.SoundId = "rbxassetid://9116729822"; sound.Volume = 1.5; sound:Play() end)
     task.delay(5, function()
-        pcall(function()
-            TweenService:Create(popup, TweenInfo.new(0.4), {Position = UDim2.new(0, -300, 0, popup.Position.Y.Offset)}):Play()
-            task.wait(0.4)
-            for i, p in ipairs(doors_activePopups) do if p == popup then table.remove(doors_activePopups, i); break end end
-            popup:Destroy()
-            for _, p in ipairs(doors_activePopups) do
-                TweenService:Create(p, TweenInfo.new(0.25), {Position = UDim2.new(0, 0, 0, p.Position.Y.Offset - 72)}):Play()
-            end
+        pcall(function() TweenService:Create(popup, TweenInfo.new(0.4), {Position = UDim2.new(0, -300, 0, popup.Position.Y.Offset)}):Play(); task.wait(0.4)
+            for i, p in ipairs(doors_activePopups) do if p == popup then table.remove(doors_activePopups, i); break end end; popup:Destroy()
+            for _, p in ipairs(doors_activePopups) do TweenService:Create(p, TweenInfo.new(0.25), {Position = UDim2.new(0, 0, 0, p.Position.Y.Offset - 72)}):Play() end
         end)
     end)
 end
-
 local doors_popupCooldown = {}
-
 function doors_checkMonsters()
     if not doors_monsterAlertEnabled then return end
     for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then
-            local mn = doors_getMonsterName(obj)
-            if mn then
-                local pos = obj:FindFirstChildWhichIsA("BasePart")
-                if pos then
-                    local char = LocalPlayer.Character
-                    if char and char:FindFirstChild("HumanoidRootPart") then
-                        local dist = (char.HumanoidRootPart.Position - pos.Position).Magnitude
-                        local maxD = (mn=="Rush" or mn=="Ambush") and 500 or 60
-                        if dist < maxD then
-                            local now = tick()
-                            if not doors_popupCooldown[mn] or (now - doors_popupCooldown[mn]) > 10 then
-                                doors_popupCooldown[mn] = now
-                                doors_showPopup(mn)
-                            end
-                        end
+        if obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then local mn = doors_getMonsterName(obj)
+            if mn then local pos = obj:FindFirstChildWhichIsA("BasePart")
+                if pos then local char = LocalPlayer.Character; if char and char:FindFirstChild("HumanoidRootPart") then local dist = (char.HumanoidRootPart.Position - pos.Position).Magnitude; local maxD = (mn=="Rush" or mn=="Ambush") and 500 or 60
+                    if dist < maxD then local now = tick()
+                        if not doors_popupCooldown[mn] or (now - doors_popupCooldown[mn]) > 30 then doors_popupCooldown[mn] = now; doors_showPopup(mn) end
                     end
-                end
-            end
+                end end end
         end
     end
 end
-
-spawn(function()
-    while true do
-        doors_checkMonsters()
-        task.wait(2)
-    end
-end)
-
+spawn(function() while true do doors_checkMonsters(); task.wait(2) end end)
 doors_contentPages["公告"].Visible = true
-
 local doors_isOpen = false
 local function doors_openPanel()
-    doors_isOpen = true
-    doors_MainFrame.Size = UDim2.new(0, 0, 0, 0); doors_MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-    doors_MainFrame.Visible = true
+    doors_isOpen = true; doors_MainFrame.Size = UDim2.new(0, 0, 0, 0); doors_MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0); doors_MainFrame.Visible = true
     TweenService:Create(doors_MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 580, 0, 440), Position = UDim2.new(0.5, -290, 0.5, -220)}):Play()
 end
 local function doors_closePanel()
@@ -1089,10 +479,9 @@ local function doors_closePanel()
     TweenService:Create(doors_MainFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0)}):Play()
     wait(0.15); doors_MainFrame.Visible = false
 end
-doors_OpenBtn.MouseButton1Click:Connect(function()
-    if doors_isOpen then doors_closePanel() else doors_openPanel() end
-end)
+doors_OpenBtn.MouseButton1Click:Connect(function() if doors_isOpen then doors_closePanel() else doors_openPanel() end end)
 doors_CloseButton.MouseButton1Click:Connect(function() doors_closePanel() end)
 doors_selectNav(doors_navButtons[1].button, "公告")
+
 
 
