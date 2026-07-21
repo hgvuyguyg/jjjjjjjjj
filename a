@@ -165,7 +165,7 @@ doors_announcementText.TextColor3 = Color3.fromRGB(70, 70, 70); doors_announceme
 doors_announcementText.BackgroundTransparency = 1; doors_announcementText.TextXAlignment = Enum.TextXAlignment.Left; doors_announcementText.TextYAlignment = Enum.TextYAlignment.Top
 doors_announcementText.TextWrapped = true; doors_announcementText.LineHeight = 1.8; doors_announcementText.ZIndex = 8; doors_announcementText.Parent = doors_announcementPage
 doors_contentPages["公告"] = doors_announcementPage
--- Doors ESP 独立脚本 第2段：主要功能（增速 + 夜视 + 怪物提示 + 防滑 + 速度滑块 + 自动互动）
+-- Doors ESP 独立脚本 第2段：主要功能（增速22 + 夜视 + 怪物提示 + 防滑 + 自动互动）
 
 local doors_mainPage = Instance.new("ScrollingFrame")
 doors_mainPage.Size = UDim2.new(1, 0, 1, 0); doors_mainPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -188,8 +188,8 @@ local function doors_createCard(parent, name, desc, icon, onExecute, btnText)
     B.MouseLeave:Connect(function() if not ts then B.BackgroundColor3 = Color3.fromRGB(255, 140, 0) end end)
 end
 
-doors_createCard(doors_mainPage, "增速模式", "循环将WalkSpeed设为20", "⚡", function(s)
-    if s then local cn = RunService.RenderStepped:Connect(function() pcall(function() local p = LocalPlayer.Character; if p and p:FindFirstChild("Humanoid") then p.Humanoid.WalkSpeed = 20 end end) end); return cn
+doors_createCard(doors_mainPage, "增速模式", "循环将WalkSpeed设为22", "⚡", function(s)
+    if s then local cn = RunService.RenderStepped:Connect(function() pcall(function() local p = LocalPlayer.Character; if p and p:FindFirstChild("Humanoid") then p.Humanoid.WalkSpeed = 22 end end) end); return cn
     else pcall(function() local p = LocalPlayer.Character; if p and p:FindFirstChild("Humanoid") then p.Humanoid.WalkSpeed = 16 end end) end
 end, "加速")
 
@@ -201,23 +201,20 @@ end, "开启")
 
 doors_createCard(doors_mainPage, "怪物提示", "怪物来了弹窗+音效", "👹", function(s) doors_monsterAlertEnabled = s end, "开启")
 
-doors_createCard(doors_mainPage, "防滑模式", "松开按键刹停一次", "🧊", function(s)
+doors_createCard(doors_mainPage, "防滑模式", "松开按键刹停0.15秒", "🧊", function(s)
     doors_antiSlipEnabled = s
     if s then
-        local wasMoving = false
+        local brakeTime = 0
         local cn = RunService.RenderStepped:Connect(function()
             if not doors_antiSlipEnabled then return end
             pcall(function()
                 local p = LocalPlayer.Character
                 if p and p:FindFirstChild("HumanoidRootPart") and p:FindFirstChild("Humanoid") then
-                    local vel = p.HumanoidRootPart.Velocity
-                    local speedXZ = Vector3.new(vel.X, 0, vel.Z).Magnitude
-                    if speedXZ > 0.5 then
-                        wasMoving = true
-                    elseif wasMoving and speedXZ < 0.5 then
-                        p.HumanoidRootPart.Velocity = Vector3.new(0, vel.Y, 0)
-                        wasMoving = false
-                    end
+                    local hum = p.Humanoid; local hrp = p.HumanoidRootPart
+                    if hum.MoveDirection.Magnitude == 0 then
+                        if brakeTime == 0 then brakeTime = tick() end
+                        if tick() - brakeTime < 0.15 then hrp.Velocity = Vector3.new(0, hrp.Velocity.Y, 0) end
+                    else brakeTime = 0 end
                 end
             end)
         end)
@@ -225,73 +222,25 @@ doors_createCard(doors_mainPage, "防滑模式", "松开按键刹停一次", "�
     end
 end, "开启")
 
-local sliderCard = Instance.new("Frame")
-sliderCard.Size = UDim2.new(1, -16, 0, 70); sliderCard.BackgroundColor3 = Color3.fromRGB(252, 252, 252); sliderCard.BorderSizePixel = 0; sliderCard.ZIndex = 7; sliderCard.Parent = doors_mainPage
-Instance.new("UICorner", sliderCard).CornerRadius = UDim.new(0, 10); Instance.new("UIStroke", sliderCard).Color = Color3.fromRGB(230, 230, 230); Instance.new("UIStroke", sliderCard).Thickness = 1
-local sliderIcon = Instance.new("Frame"); sliderIcon.Size = UDim2.new(0, 26, 0, 26); sliderIcon.Position = UDim2.new(0, 10, 0, 12); sliderIcon.BackgroundColor3 = Color3.fromRGB(240, 240, 240); sliderIcon.ZIndex = 8; sliderIcon.Parent = sliderCard; Instance.new("UICorner", sliderIcon).CornerRadius = UDim.new(0, 6)
-local sliderIconText = Instance.new("TextLabel"); sliderIconText.Size = UDim2.new(1, 0, 1, 0); sliderIconText.Text = "🏃"; sliderIconText.TextSize = 11; sliderIconText.BackgroundTransparency = 1; sliderIconText.ZIndex = 9; sliderIconText.Parent = sliderIcon
-local sliderTitle = Instance.new("TextLabel"); sliderTitle.Size = UDim2.new(0, 180, 0, 15); sliderTitle.Position = UDim2.new(0, 44, 0, 5); sliderTitle.Text = "速度调节"; sliderTitle.TextColor3 = Color3.fromRGB(50, 50, 50); sliderTitle.Font = Enum.Font.GothamSemibold; sliderTitle.TextSize = 11; sliderTitle.BackgroundTransparency = 1; sliderTitle.TextXAlignment = Enum.TextXAlignment.Left; sliderTitle.ZIndex = 8; sliderTitle.Parent = sliderCard
-local sliderValueLabel = Instance.new("TextLabel"); sliderValueLabel.Size = UDim2.new(0, 50, 0, 15); sliderValueLabel.Position = UDim2.new(1, -58, 0, 5); sliderValueLabel.Text = "16"; sliderValueLabel.TextColor3 = Color3.fromRGB(255, 140, 0); sliderValueLabel.Font = Enum.Font.GothamBold; sliderValueLabel.TextSize = 11; sliderValueLabel.BackgroundTransparency = 1; sliderValueLabel.TextXAlignment = Enum.TextXAlignment.Right; sliderValueLabel.ZIndex = 8; sliderValueLabel.Parent = sliderCard
-
-local sliderBar = Instance.new("TextButton")
-sliderBar.Size = UDim2.new(1, -68, 0, 18); sliderBar.Position = UDim2.new(0, 54, 0, 45); sliderBar.BackgroundColor3 = Color3.fromRGB(200, 200, 200); sliderBar.BorderSizePixel = 0; sliderBar.Text = ""; sliderBar.AutoButtonColor = false; sliderBar.ZIndex = 8; sliderBar.Parent = sliderCard
-Instance.new("UICorner", sliderBar).CornerRadius = UDim.new(0, 9)
-local sliderFill = Instance.new("Frame"); sliderFill.Size = UDim2.new(0, 0, 1, 0); sliderFill.BackgroundColor3 = Color3.fromRGB(255, 140, 0); sliderFill.BorderSizePixel = 0; sliderFill.ZIndex = 9; sliderFill.Parent = sliderBar
-Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(0, 9)
-
-local sliderSpeed = 16
-local sliderConn = nil
-
-local function updateSlider(val)
-    sliderFill.Size = UDim2.new(val / 100, 0, 1, 0)
-    sliderValueLabel.Text = tostring(val)
-    sliderSpeed = val
-    if sliderConn then pcall(function() sliderConn:Disconnect() end) end
-    sliderConn = RunService.RenderStepped:Connect(function()
-        pcall(function() local p = LocalPlayer.Character; if p and p:FindFirstChild("Humanoid") then p.Humanoid.WalkSpeed = val end end)
-    end)
-end
-
-local sliderDragging = false
-sliderBar.MouseButton1Down:Connect(function()
-    sliderDragging = true
-    local barAbsSize = sliderBar.AbsoluteSize
-    local barAbsPos = sliderBar.AbsolutePosition
-    local mousePos = UserInputService:GetMouseLocation()
-    local relativeX = (mousePos.X - barAbsPos.X) / barAbsSize.X
-    relativeX = math.clamp(relativeX, 0, 1)
-    updateSlider(math.floor(relativeX * 100))
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if sliderDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local barAbsSize = sliderBar.AbsoluteSize
-        local barAbsPos = sliderBar.AbsolutePosition
-        local mousePos = UserInputService:GetMouseLocation()
-        local relativeX = (mousePos.X - barAbsPos.X) / barAbsSize.X
-        relativeX = math.clamp(relativeX, 0, 1)
-        updateSlider(math.floor(relativeX * 100))
-    end
-end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        sliderDragging = false
-    end
-end)
-updateSlider(16)
-
-doors_createCard(doors_mainPage, "自动互动", "10米Door长按E，其他点按", "🤖", function(s)
+doors_createCard(doors_mainPage, "自动互动", "附近有画不互动，Door长按E", "🤖", function(s)
     doors_autoInteractEnabled = s
     if s then
         local lastInteract = 0
         local cn = RunService.RenderStepped:Connect(function()
             if not doors_autoInteractEnabled then return end
-            local now = tick()
-            if now - lastInteract < 0.2 then return end
-            lastInteract = now
+            local now = tick(); if now - lastInteract < 0.2 then return end; lastInteract = now
             pcall(function()
                 local p = LocalPlayer.Character
                 if not p or not p:FindFirstChild("HumanoidRootPart") then return end
                 local hrp = p.HumanoidRootPart
+                local nearPainting = false
+                for _, o in ipairs(workspace:GetDescendants()) do
+                    if o.Name:lower():find("painting") or o.Name:lower():find("画") then
+                        local po = doors_getPos(o)
+                        if po and (po - hrp.Position).Magnitude < 10 then nearPainting = true; break end
+                    end
+                end
+                if nearPainting then return end
                 for _, o in ipairs(workspace:GetDescendants()) do
                     if o:IsA("ProximityPrompt") and o.Enabled then
                         local pp = o.Parent
@@ -301,8 +250,7 @@ doors_createCard(doors_mainPage, "自动互动", "10米Door长按E，其他点�
                             elseif pp:IsA("Model") then local bp = pp:FindFirstChildWhichIsA("BasePart"); if bp then po = bp.Position end end
                             if po and (po - hrp.Position).Magnitude < 10 then
                                 local pn = pp.Name:lower()
-                                if pn == "door" or (pp.Parent and pp.Parent.Name:lower() == "door") then
-                                    fireproximityprompt(o, 1)
+                                if pn == "door" or (pp.Parent and pp.Parent.Name:lower() == "door") then fireproximityprompt(o, 1)
                                 elseif not doors_allowCabinets then
                                     local cabinetNames = {"wardrobe", "cabinet", "closet", "bed", "衣柜", "柜子", "床", "hide", "hiding"}
                                     local isCabinet = false
@@ -320,91 +268,91 @@ doors_createCard(doors_mainPage, "自动互动", "10米Door长按E，其他点�
     end
 end, "开启")
 
-doors_mainPage.CanvasSize = UDim2.new(0, 0, 0, 6 * 52 + 40)
+doors_mainPage.CanvasSize = UDim2.new(0, 0, 0, 5 * 52 + 12)
 doors_contentPages["主要功能"] = doors_mainPage
--- Doors ESP 独立脚本 第3段：ESP核心函数
+-- Doors ESP 独立脚本 第3段：ESP核心函数（优化版 + 门编号）
 
 function doors_clearAll()
     for _, d in pairs(doors_highlights) do pcall(function() if d.hl then d.hl:Destroy() end if d.bb then d.bb:Destroy() end if d.conn then d.conn:Disconnect() end end) end
-    doors_highlights = {}; doors_clearBeams()
+    doors_highlights = {}
 end
 function doors_clearBeams()
     for _, b in pairs(doors_beamData) do pcall(function() if b.beam then b.beam:Destroy() end if b.a0 then b.a0:Destroy() end if b.a1 then b.a1:Destroy() end end) end
     doors_beamData = {}
 end
-function doors_getPos(obj)
-    if obj:IsA("BasePart") then return obj.Position end
-    if obj:IsA("Model") then local p = obj:FindFirstChildWhichIsA("BasePart"); if p then return p.Position end end
+function doors_getPos(o)
+    if o:IsA("BasePart") then return o.Position end
+    if o:IsA("Model") then local p = o:FindFirstChildWhichIsA("BasePart"); if p then return p.Position end end
     return nil
 end
-function doors_addESP(obj, color, name)
+
+local doorCount = 0
+local countedDoors = {}
+
+function doors_getDoorNumber(doorModel)
+    if countedDoors[doorModel] then return countedDoors[doorModel] end
+    doorCount = doorCount + 1
+    countedDoors[doorModel] = doorCount
+    return doorCount
+end
+
+function doors_isDoorOpened(doorModel)
+    local doorPart = doorModel:FindFirstChild("Door")
+    if not doorPart or not doorPart:IsA("BasePart") then return false end
+    return doorPart.Transparency > 0.5
+end
+
+function doors_addESP(o, c, n, extra)
     pcall(function()
-        local hl = Instance.new("Highlight"); hl.FillColor = color; hl.FillTransparency = 0.3; hl.OutlineColor = Color3.fromRGB(255,255,255); hl.OutlineTransparency = 0; hl.Adornee = obj; hl.Parent = obj; hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        local bb = Instance.new("BillboardGui"); bb.Size = UDim2.new(0,200,0,30); bb.AlwaysOnTop = true; bb.Parent = obj
+        local hl = Instance.new("Highlight"); hl.FillColor = c; hl.FillTransparency = 0.3; hl.OutlineColor = Color3.fromRGB(255,255,255); hl.OutlineTransparency = 0; hl.Adornee = o; hl.Parent = o; hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        local bb = Instance.new("BillboardGui"); bb.Size = UDim2.new(0,200,0,30); bb.AlwaysOnTop = true; bb.Parent = o
         local lb = Instance.new("TextLabel"); lb.Size = UDim2.new(1,0,1,0); lb.BackgroundTransparency = 1; lb.TextColor3 = Color3.fromRGB(255,255,255); lb.Font = Enum.Font.SourceSansBold; lb.TextSize = 16; lb.Parent = bb
         local conn = RunService.Heartbeat:Connect(function()
-            if not obj or not obj.Parent then conn:Disconnect(); hl:Destroy(); bb:Destroy(); return end
-            local char = LocalPlayer.Character; if char and char:FindFirstChild("HumanoidRootPart") then local pos = doors_getPos(obj); if pos then lb.Text = string.format("%s %.1fm", name, (char.HumanoidRootPart.Position - pos).Magnitude) end end
+            if not o or not o.Parent then conn:Disconnect(); pcall(function() hl:Destroy() bb:Destroy() end); return end
+            local ch = LocalPlayer.Character; if ch and ch:FindFirstChild("HumanoidRootPart") then local po = doors_getPos(o)
+                if po then
+                    local txt = string.format("%s %.1fm", n, (ch.HumanoidRootPart.Position - po).Magnitude)
+                    if extra then txt = txt .. " | " .. extra end
+                    pcall(function() lb.Text = txt end)
+                end
+            end
         end)
         table.insert(doors_highlights, {hl=hl, bb=bb, conn=conn})
     end)
 end
-function doors_addScreenBeam(targetObj, color)
-    pcall(function()
-        local char = LocalPlayer.Character; if not char or not char:FindFirstChild("Head") then return end
-        local tp = doors_getPos(targetObj); if not tp then return end
-        local a0 = Instance.new("Attachment"); a0.Parent = char.Head
-        local a1 = Instance.new("Attachment"); a1.Parent = targetObj; a1.WorldPosition = tp
-        local beam = Instance.new("Beam"); beam.Attachment0 = a0; beam.Attachment1 = a1; beam.Color = ColorSequence.new(color); beam.Width0 = 0.03; beam.Width1 = 0.03; beam.Transparency = NumberSequence.new(0.3); beam.FaceCamera = true; beam.Parent = a0
-        table.insert(doors_beamData, {beam=beam, a0=a0, a1=a1})
-    end)
-end
-function doors_updateBeams()
-    doors_clearBeams(); if not doors_rayEnabled or not doors_espEnabled then return end
-    local char = LocalPlayer.Character; if not char or not char:FindFirstChild("Head") then return end; local hp = char.Head.Position
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        local pos = doors_getPos(obj); if not pos or (hp - pos).Magnitude > 200 then continue end
-        local color = nil
-        if doors_showDoors and obj:IsA("Model") and obj.Name == "Door" then color = Color3.fromRGB(50,150,255)
-        elseif doors_showBook and obj.Name == "LiveHintBook" then color = Color3.fromRGB(255,150,50)
-        elseif doors_showBattery and obj.Name:lower():find("stuff") then color = Color3.fromRGB(255,255,0)
-        elseif doors_showKeys and obj.Name == "KeyObtain" then color = Color3.fromRGB(255,200,0)
-        elseif doors_showLevers and obj.Name:lower():find("lever") then color = Color3.fromRGB(255,100,255)
-        elseif doors_showItems then
-            if obj:IsA("Tool") then color = Color3.fromRGB(50,255,50)
-            elseif obj:IsA("Model") then local n = obj.Name:lower()
-                if n:find("gold") or n:find("coin") or n:find("flashlight") or n:find("lighter") or n:find("vitamin") or n:find("lockpick") or n:find("bandage") or n:find("crucifix") or n:find("revolver") or n:find("shotgun") or n:find("rifle") or n:find("skeletonkey") or n:find("pills") then color = Color3.fromRGB(50,255,50) end end
-        elseif doors_showMonsters and obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then local n = obj.Name:lower()
-            if n:find("rush") or n:find("ambush") or n:find("screech") or n:find("figure") or n:find("seek") or n:find("halt") or n:find("eyes") or n:find("hide") or n:find("dupe") or n:find("shadow") or n:find("granny") or obj:FindFirstChild("Humanoid") then color = Color3.fromRGB(255,50,50) end
-        end
-        if color then doors_addScreenBeam(obj, color) end
-    end
-end
-function doors_getMonsterName(obj)
-    local n = obj.Name:lower()
-    if n:find("ambush") then return "Ambush" elseif n:find("rush") then return "Rush" elseif n:find("screech") then return "Screech" elseif n:find("figure") then return "Figure" elseif n:find("seek") then return "Seek" elseif n:find("halt") then return "Halt" elseif n:find("eyes") then return "Eyes" elseif n:find("hide") then return "Hide" elseif n:find("dupe") then return "Dupe" elseif n:find("shadow") then return "Shadow" elseif n:find("granny") or n:find("blind") or n:find("library") then return "Figure" elseif obj:FindFirstChild("Humanoid") then return "怪物" end
-    return nil
-end
+
 function doors_updateESP()
-    doors_clearAll(); if not doors_espEnabled then return end
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if doors_showDoors and obj:IsA("Model") and obj.Name == "Door" then doors_addESP(obj, Color3.fromRGB(50,150,255), "门") end
-        if doors_showBook and obj.Name == "LiveHintBook" then doors_addESP(obj, Color3.fromRGB(255,150,50), "书") end
-        if doors_showBattery and obj:IsA("Model") and obj.Name:lower():find("stuff") then doors_addESP(obj, Color3.fromRGB(255,255,0), "电池") end
-        if doors_showKeys and obj.Name == "KeyObtain" then doors_addESP(obj, Color3.fromRGB(255,200,0), "钥匙") end
-        if doors_showLevers and obj.Name:lower():find("lever") then doors_addESP(obj, Color3.fromRGB(255,100,255), "拉杆") end
-        if doors_showItems then
-            if obj:IsA("Tool") then doors_addESP(obj, Color3.fromRGB(50,255,50), "道具")
-            elseif obj:IsA("Model") then local n = obj.Name:lower()
-                if not n:find("book") and (n:find("gold") or n:find("coin") or n:find("flashlight") or n:find("lighter") or n:find("vitamin") or n:find("lockpick") or n:find("bandage") or n:find("crucifix") or n:find("revolver") or n:find("shotgun") or n:find("rifle") or n:find("skeletonkey") or n:find("pills")) then doors_addESP(obj, Color3.fromRGB(50,255,50), "道具") end end
-        end
-        if doors_showMonsters and obj:IsA("Model") and not Players:GetPlayerFromCharacter(obj) then local mn = doors_getMonsterName(obj)
-            if mn then local pos = obj:FindFirstChildWhichIsA("BasePart")
-                if pos then local char = LocalPlayer.Character; if char and char:FindFirstChild("HumanoidRootPart") then local dist = (char.HumanoidRootPart.Position - pos.Position).Magnitude; local maxD = (mn=="Rush" or mn=="Ambush") and 500 or 60
-                    if dist < maxD then doors_addESP(obj, Color3.fromRGB(255,50,50), mn) end end end end
+    doors_clearAll(); doorCount = 0; countedDoors = {}
+    if not doors_espEnabled then return end
+    for _, o in ipairs(workspace:GetDescendants()) do
+        if doors_showDoors and o:IsA("Model") and o.Name == "Door" then
+            local doorNum = doors_getDoorNumber(o)
+            local status = doors_isDoorOpened(o) and "已打开" or "关闭"
+            local color = doors_isDoorOpened(o) and Color3.fromRGB(100,100,100) or Color3.fromRGB(50,150,255)
+            doors_addESP(o, color, "门#" .. doorNum, status)
+        elseif doors_showBook and o.Name == "LiveHintBook" then
+            if o.Parent and o.Parent.Name ~= "LibraryBooks" then
+                doors_addESP(o, Color3.fromRGB(255,150,50), "书")
+            end
+        elseif doors_showBattery and o:IsA("Model") and o.Name:lower():find("stuff") then
+            doors_addESP(o, Color3.fromRGB(255,255,0), "电池")
+        elseif doors_showKeys and o.Name == "KeyObtain" then
+            doors_addESP(o, Color3.fromRGB(255,200,0), "钥匙")
+        elseif doors_showLevers and o.Name:lower():find("lever") then
+            doors_addESP(o, Color3.fromRGB(255,100,255), "拉杆")
+        elseif doors_showItems then
+            if o:IsA("Tool") then doors_addESP(o, Color3.fromRGB(50,255,50), "道具")
+            elseif o:IsA("Model") then local n = o.Name:lower()
+                if not n:find("book") and not n:find("library") and (n:find("gold") or n:find("coin") or n:find("flashlight") or n:find("lighter") or n:find("vitamin") or n:find("lockpick") or n:find("bandage") or n:find("crucifix") or n:find("revolver") or n:find("shotgun") or n:find("rifle") or n:find("skeletonkey") or n:find("pills")) then
+                    doors_addESP(o, Color3.fromRGB(50,255,50), "道具") end end
+        elseif doors_showMonsters and o:IsA("Model") and not Players:GetPlayerFromCharacter(o) then local mn = doors_getMonsterName(o)
+            if mn then local po = o:FindFirstChildWhichIsA("BasePart"); if po then local ch = LocalPlayer.Character
+                if ch and ch:FindFirstChild("HumanoidRootPart") then local d = (ch.HumanoidRootPart.Position - po.Position).Magnitude; local md = (mn=="Rush" or mn=="Ambush") and 500 or 60
+                    if d < md then doors_addESP(o, Color3.fromRGB(255,50,50), mn) end end end end
         end
     end
 end
+
 spawn(function() while true do if doors_espEnabled then doors_updateESP(); if doors_rayEnabled then doors_updateBeams() end end; task.wait(0.5) end end)
 -- Doors ESP 独立脚本 第4段：ESP区（总开关 + 下拉菜单 + 射线）
 
