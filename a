@@ -214,37 +214,60 @@ end, "开启")
 
 doors_createMainCard("怪物提示", "怪物来了弹窗+音效提示", "👹", function(state) doors_monsterAlertEnabled = state end, "开启")
 
-doors_createMainCard("防滑模式", "停止移动时定在原地0.01秒", "🧊", function(state)
+doors_createMainCard("防滑模式", "移动停止时立即刹停", "🧊", function(state)
     doors_antiSlipEnabled = state
     if state then
-        local wasMoving = false
+        local lastVel = 0
         local conn = RunService.RenderStepped:Connect(function()
             if not doors_antiSlipEnabled then return end
             local c = LocalPlayer.Character; if not c or not c:FindFirstChild("HumanoidRootPart") or not c:FindFirstChild("Humanoid") then return end
             local hrp = c.HumanoidRootPart; local hum = c.Humanoid
             local vel = hrp.Velocity; local speedXZ = Vector3.new(vel.X, 0, vel.Z).Magnitude
-            if speedXZ > 0.5 then wasMoving = true
-            elseif wasMoving and speedXZ < 0.5 then
+            if speedXZ < 0.3 and lastVel > 0.5 then
                 hrp.Velocity = Vector3.new(0, vel.Y, 0); hum:MoveTo(hrp.Position)
-                wasMoving = false
             end
+            lastVel = speedXZ
         end)
         return conn
     end
 end, "开启")
 
-doors_createMainCard("自动互动", "自动按E互动附近物品", "🤖", function(state)
+doors_createMainCard("自动互动", "10米内Door长按E，其他疯狂点击E", "🤖", function(state)
     doors_autoInteractEnabled = state
     if state then
+        local lastInteract = 0
         local conn = RunService.RenderStepped:Connect(function()
             if not doors_autoInteractEnabled then return end
+            local now = tick(); if now - lastInteract < 0.1 then return end; lastInteract = now
             local c = LocalPlayer.Character; if not c or not c:FindFirstChild("HumanoidRootPart") then return end
             local hrp = c.HumanoidRootPart
+            local nearDoor = false
             for _, obj in ipairs(workspace:GetDescendants()) do
                 if obj:IsA("ProximityPrompt") and obj.Enabled then
-                    local p = obj.Parent; if p and p:IsA("BasePart") or p:IsA("Model") then
-                        local pos = p:IsA("Model") and (p:FindFirstChildWhichIsA("BasePart") and p:FindFirstChildWhichIsA("BasePart").Position) or p.Position
-                        if pos and (pos - hrp.Position).Magnitude < 5 then fireproximityprompt(obj) end
+                    local p = obj.Parent
+                    if p then
+                        local pos = nil
+                        if p:IsA("BasePart") then pos = p.Position
+                        elseif p:IsA("Model") then local bp = p:FindFirstChildWhichIsA("BasePart"); if bp then pos = bp.Position end end
+                        if pos and (pos - hrp.Position).Magnitude < 10 then
+                            if p.Name == "Door" or (p.Parent and p.Parent.Name == "Door") then
+                                nearDoor = true
+                                fireproximityprompt(obj, 1)
+                            else
+                                fireproximityprompt(obj)
+                            end
+                        end
+                    end
+                end
+            end
+            if not nearDoor then
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if obj:IsA("ProximityPrompt") and obj.Enabled then
+                        local p = obj.Parent; if p then local pos = nil
+                            if p:IsA("BasePart") then pos = p.Position
+                            elseif p:IsA("Model") then local bp = p:FindFirstChildWhichIsA("BasePart"); if bp then pos = bp.Position end end
+                            if pos and (pos - hrp.Position).Magnitude < 10 then fireproximityprompt(obj) end
+                        end
                     end
                 end
             end
