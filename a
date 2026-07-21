@@ -165,7 +165,7 @@ doors_announcementText.TextColor3 = Color3.fromRGB(70, 70, 70); doors_announceme
 doors_announcementText.BackgroundTransparency = 1; doors_announcementText.TextXAlignment = Enum.TextXAlignment.Left; doors_announcementText.TextYAlignment = Enum.TextYAlignment.Top
 doors_announcementText.TextWrapped = true; doors_announcementText.LineHeight = 1.8; doors_announcementText.ZIndex = 8; doors_announcementText.Parent = doors_announcementPage
 doors_contentPages["公告"] = doors_announcementPage
--- Doors ESP 独立脚本 第2段：主要功能（增速 + 夜视 + 怪物提示 + 防滑）
+-- Doors ESP 独立脚本 第2段：主要功能（增速 + 夜视 + 怪物提示 + 防滑 + 自动互动）
 
 local doors_mainPage = Instance.new("ScrollingFrame")
 doors_mainPage.Size = UDim2.new(1, 0, 1, 0); doors_mainPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -214,18 +214,20 @@ end, "开启")
 
 doors_createMainCard("怪物提示", "怪物来了弹窗+音效提示", "👹", function(state) doors_monsterAlertEnabled = state end, "开启")
 
-doors_createMainCard("防滑模式", "停步后0.1秒强制固定在原地", "🧊", function(state)
+doors_createMainCard("防滑模式", "停止移动时定在原地0.01秒", "🧊", function(state)
     doors_antiSlipEnabled = state
     if state then
-        local lastPos = nil; local lastMoveTime = tick()
+        local wasMoving = false
         local conn = RunService.RenderStepped:Connect(function()
             if not doors_antiSlipEnabled then return end
             local c = LocalPlayer.Character; if not c or not c:FindFirstChild("HumanoidRootPart") or not c:FindFirstChild("Humanoid") then return end
-            local hrp = c.HumanoidRootPart; local hum = c.Humanoid; local currentPos = hrp.Position
-            if lastPos and (currentPos - lastPos).Magnitude < 0.05 then
-                if tick() - lastMoveTime > 0.1 then hrp.Velocity = Vector3.new(0, hrp.Velocity.Y, 0); hum:MoveTo(currentPos) end
-            else lastMoveTime = tick() end
-            lastPos = currentPos
+            local hrp = c.HumanoidRootPart; local hum = c.Humanoid
+            local vel = hrp.Velocity; local speedXZ = Vector3.new(vel.X, 0, vel.Z).Magnitude
+            if speedXZ > 0.5 then wasMoving = true
+            elseif wasMoving and speedXZ < 0.5 then
+                hrp.Velocity = Vector3.new(0, vel.Y, 0); hum:MoveTo(hrp.Position)
+                wasMoving = false
+            end
         end)
         return conn
     end
@@ -240,8 +242,10 @@ doors_createMainCard("自动互动", "自动按E互动附近物品", "🤖", fun
             local hrp = c.HumanoidRootPart
             for _, obj in ipairs(workspace:GetDescendants()) do
                 if obj:IsA("ProximityPrompt") and obj.Enabled then
-                    local dist = (obj.Parent.Position - hrp.Position).Magnitude
-                    if dist < 5 then fireproximityprompt(obj) end
+                    local p = obj.Parent; if p and p:IsA("BasePart") or p:IsA("Model") then
+                        local pos = p:IsA("Model") and (p:FindFirstChildWhichIsA("BasePart") and p:FindFirstChildWhichIsA("BasePart").Position) or p.Position
+                        if pos and (pos - hrp.Position).Magnitude < 5 then fireproximityprompt(obj) end
+                    end
                 end
             end
         end)
