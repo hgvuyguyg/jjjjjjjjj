@@ -165,7 +165,7 @@ doors_announcementText.TextColor3 = Color3.fromRGB(70, 70, 70); doors_announceme
 doors_announcementText.BackgroundTransparency = 1; doors_announcementText.TextXAlignment = Enum.TextXAlignment.Left; doors_announcementText.TextYAlignment = Enum.TextYAlignment.Top
 doors_announcementText.TextWrapped = true; doors_announcementText.LineHeight = 1.8; doors_announcementText.ZIndex = 8; doors_announcementText.Parent = doors_announcementPage
 doors_contentPages["公告"] = doors_announcementPage
--- Doors ESP 独立脚本 第2段：主要功能（修复防滑）
+-- Doors ESP 独立脚本 第2段：主要功能（增速 + 夜视 + 怪物提示 + 防滑 + 速度滑块 + 自动互动）
 
 local doors_mainPage = Instance.new("ScrollingFrame")
 doors_mainPage.Size = UDim2.new(1, 0, 1, 0); doors_mainPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -211,8 +211,9 @@ doors_createCard(doors_mainPage, "防滑模式", "松开按键立即刹停", "�
                 if p and p:FindFirstChild("HumanoidRootPart") and p:FindFirstChild("Humanoid") then
                     local vel = p.HumanoidRootPart.Velocity
                     local speedXZ = Vector3.new(vel.X, 0, vel.Z).Magnitude
-                    if speedXZ > 0.5 and p.Humanoid.MoveDirection.Magnitude == 0 then
-                        p.HumanoidRootPart.Velocity = Vector3.new(0, vel.Y, 0)
+                    if p.Humanoid.MoveDirection.Magnitude == 0 then
+                        local brakeForce = math.min(speedXZ * 3, 50)
+                        p.HumanoidRootPart.Velocity = vel * (1 - brakeForce / speedXZ)
                     end
                 end
             end)
@@ -220,6 +221,60 @@ doors_createCard(doors_mainPage, "防滑模式", "松开按键立即刹停", "�
         return cn
     end
 end, "开启")
+
+-- 速度滑块卡片
+local sliderCard = Instance.new("Frame")
+sliderCard.Size = UDim2.new(1, -16, 0, 70); sliderCard.BackgroundColor3 = Color3.fromRGB(252, 252, 252); sliderCard.BorderSizePixel = 0; sliderCard.ZIndex = 7; sliderCard.Parent = doors_mainPage
+Instance.new("UICorner", sliderCard).CornerRadius = UDim.new(0, 10); Instance.new("UIStroke", sliderCard).Color = Color3.fromRGB(230, 230, 230); Instance.new("UIStroke", sliderCard).Thickness = 1
+local sliderIcon = Instance.new("Frame"); sliderIcon.Size = UDim2.new(0, 26, 0, 26); sliderIcon.Position = UDim2.new(0, 10, 0, 12); sliderIcon.BackgroundColor3 = Color3.fromRGB(240, 240, 240); sliderIcon.ZIndex = 8; sliderIcon.Parent = sliderCard; Instance.new("UICorner", sliderIcon).CornerRadius = UDim.new(0, 6)
+local sliderIconText = Instance.new("TextLabel"); sliderIconText.Size = UDim2.new(1, 0, 1, 0); sliderIconText.Text = "🏃"; sliderIconText.TextSize = 11; sliderIconText.BackgroundTransparency = 1; sliderIconText.ZIndex = 9; sliderIconText.Parent = sliderIcon
+local sliderTitle = Instance.new("TextLabel"); sliderTitle.Size = UDim2.new(0, 180, 0, 15); sliderTitle.Position = UDim2.new(0, 44, 0, 5); sliderTitle.Text = "速度调节"; sliderTitle.TextColor3 = Color3.fromRGB(50, 50, 50); sliderTitle.Font = Enum.Font.GothamSemibold; sliderTitle.TextSize = 11; sliderTitle.BackgroundTransparency = 1; sliderTitle.TextXAlignment = Enum.TextXAlignment.Left; sliderTitle.ZIndex = 8; sliderTitle.Parent = sliderCard
+local sliderValueLabel = Instance.new("TextLabel"); sliderValueLabel.Size = UDim2.new(0, 50, 0, 15); sliderValueLabel.Position = UDim2.new(1, -58, 0, 5); sliderValueLabel.Text = "16"; sliderValueLabel.TextColor3 = Color3.fromRGB(255, 140, 0); sliderValueLabel.Font = Enum.Font.GothamBold; sliderValueLabel.TextSize = 11; sliderValueLabel.BackgroundTransparency = 1; sliderValueLabel.TextXAlignment = Enum.TextXAlignment.Right; sliderValueLabel.ZIndex = 8; sliderValueLabel.Parent = sliderCard
+
+local sliderBar = Instance.new("Frame"); sliderBar.Size = UDim2.new(1, -68, 0, 4); sliderBar.Position = UDim2.new(0, 54, 0, 52); sliderBar.BackgroundColor3 = Color3.fromRGB(200, 200, 200); sliderBar.BorderSizePixel = 0; sliderBar.ZIndex = 8; sliderBar.Parent = sliderCard
+Instance.new("UICorner", sliderBar).CornerRadius = UDim.new(0, 2)
+local sliderFill = Instance.new("Frame"); sliderFill.Size = UDim2.new(0, 0, 1, 0); sliderFill.BackgroundColor3 = Color3.fromRGB(255, 140, 0); sliderFill.BorderSizePixel = 0; sliderFill.ZIndex = 9; sliderFill.Parent = sliderBar
+Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(0, 2)
+local sliderKnob = Instance.new("Frame"); sliderKnob.Size = UDim2.new(0, 14, 0, 14); sliderKnob.Position = UDim2.new(0, 0, 0.5, -7); sliderKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); sliderKnob.BorderSizePixel = 0; sliderKnob.ZIndex = 10; sliderKnob.Parent = sliderBar
+Instance.new("UICorner", sliderKnob).CornerRadius = UDim.new(1, 0); Instance.new("UIStroke", sliderKnob).Color = Color3.fromRGB(255, 140, 0); Instance.new("UIStroke", sliderKnob).Thickness = 2
+
+local sliderSpeed = 16
+local sliderConn = nil
+local function updateSlider(val)
+    sliderSpeed = val
+    sliderFill.Size = UDim2.new((val - 0) / (100 - 0), 0, 1, 0)
+    sliderKnob.Position = UDim2.new((val - 0) / (100 - 0), -7, 0.5, -7)
+    sliderValueLabel.Text = tostring(val)
+end
+
+local sliderDragging = false
+sliderKnob.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        sliderDragging = true
+    end
+end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        sliderDragging = false
+        if sliderConn then sliderConn:Disconnect(); sliderConn = nil end
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if sliderDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local mousePos = UserInputService:GetMouseLocation()
+        local barPos = sliderBar.AbsolutePosition
+        local barSize = sliderBar.AbsoluteSize
+        local relativeX = (mousePos.X - barPos.X) / barSize.X
+        relativeX = math.clamp(relativeX, 0, 1)
+        local val = math.floor(relativeX * 100)
+        updateSlider(val)
+        if sliderConn then sliderConn:Disconnect() end
+        sliderConn = RunService.RenderStepped:Connect(function()
+            pcall(function() local p = LocalPlayer.Character; if p and p:FindFirstChild("Humanoid") then p.Humanoid.WalkSpeed = val end end)
+        end)
+    end
+end)
+updateSlider(16)
 
 doors_createCard(doors_mainPage, "自动互动", "10米Door长按E，其他点按", "🤖", function(s)
     doors_autoInteractEnabled = s
@@ -262,7 +317,7 @@ doors_createCard(doors_mainPage, "自动互动", "10米Door长按E，其他点�
     end
 end, "开启")
 
-doors_mainPage.CanvasSize = UDim2.new(0, 0, 0, 5 * 52 + 12)
+doors_mainPage.CanvasSize = UDim2.new(0, 0, 0, 6 * 52 + 40)
 doors_contentPages["主要功能"] = doors_mainPage
 -- Doors ESP 独立脚本 第3段：ESP核心函数
 
@@ -476,9 +531,3 @@ end
 doors_OpenBtn.MouseButton1Click:Connect(function() if doors_isOpen then doors_closePanel() else doors_openPanel() end end)
 doors_CloseButton.MouseButton1Click:Connect(function() doors_closePanel() end)
 doors_selectNav(doors_navButtons[1].button, "公告")
-
-
-
-
-
-
