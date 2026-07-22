@@ -410,7 +410,7 @@ doors_rayToggle.MouseButton1Click:Connect(function()
 end)
 doors_espPage.CanvasSize = UDim2.new(0, 0, 0, 160)
 doors_contentPages["ESP区"] = doors_espPage
--- Doors ESP 独立脚本 第5段：横幅系统（只提示一次）+ 导航初始化
+-- Doors ESP 独立脚本 第5段：横幅系统（所有已知怪物都提示）+ 导航初始化
 
 local doors_bannerFrame = Instance.new("Frame")
 doors_bannerFrame.Size = UDim2.new(1, -100, 0, 44)
@@ -449,7 +449,7 @@ function doors_showBanner(name, dist)
     pcall(function() local sound = Instance.new("Sound", doors_bannerFrame); sound.SoundId = "rbxassetid://9116729822"; sound.Volume = 1.5; sound:Play() end)
     task.delay(4, function()
         pcall(function()
-            doors_bannerTween = TweenService:Create(doors_bannerFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(0, 500, 0.02, 0)})
+            doors_bannerTween = TweenService:Create(doors_bannerFrame, TweenInfo.new(0.4), {Position = UDim2.new(0, 500, 0.02, 0)})
             doors_bannerTween:Play(); task.wait(0.4); doors_bannerFrame.Visible = false; doors_bannerActive = false; doors_bannerActiveMonster = nil
         end)
     end)
@@ -522,6 +522,21 @@ function doors_checkMonsters()
                         end
                     end
                 end
+            else
+                if o:FindFirstChild("Humanoid") and o.Name ~= "" and o.Name ~= "HumanoidRootPart" then
+                    local po = o:FindFirstChildWhichIsA("BasePart")
+                    if po then
+                        local d = (po.Position - hrp.Position).Magnitude
+                        if d < 80 then
+                            local name = o.Name ~= "" and o.Name or "未知怪"
+                            currentlyInRange[name] = true
+                            if not doors_monsterInRange[name] then
+                                doors_monsterInRange[name] = true
+                                doors_showSmallAlert(name, d)
+                            end
+                        end
+                    end
+                end
             end
         end
     end
@@ -542,3 +557,6 @@ local function doors_closePanel() doors_isOpen = false; TweenService:Create(door
 doors_OpenBtn.MouseButton1Click:Connect(function() if doors_isOpen then doors_closePanel() else doors_openPanel() end end)
 doors_CloseButton.MouseButton1Click:Connect(function() doors_closePanel() end)
 doors_selectNav(doors_navButtons[1].button, "公告")
+
+
+
