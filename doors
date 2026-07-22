@@ -66,7 +66,7 @@ local doors_infoHue = 0
 RunService.RenderStepped:Connect(function(d) if doors_isRunning then doors_infoHue = (doors_infoHue + d * 0.5) % 1; doors_InfoRGBOutline.BackgroundColor3 = Color3.fromHSV(doors_infoHue, 0.7, 1) end end)
 local doors_InfoLabel = Instance.new("TextLabel"); doors_InfoLabel.Size = UDim2.new(1, 0, 1, 0); doors_InfoLabel.Text = "Doors ESP V1.0 | " .. os.date("%m月%d日 %H:%M:%S")
 doors_InfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255); doors_InfoLabel.Font = Enum.Font.GothamBold; doors_InfoLabel.TextSize = 10; doors_InfoLabel.BackgroundTransparency = 1; doors_InfoLabel.ZIndex = 13; doors_InfoLabel.Parent = doors_InfoBox
-spawn(function() while doors_isRunning do doors_InfoLabel.Text = "Doors V1.0 | " .. os.date("%m月%d日 %H:%M:%S"); wait(1) end end)
+spawn(function() while doors_isRunning do doors_InfoLabel.Text = "Doors ESP V1.0 | " .. os.date("%m月%d日 %H:%M:%S"); wait(1) end end)
 local doors_CloseButton = Instance.new("TextButton"); doors_CloseButton.Size = UDim2.new(0, 28, 0, 28); doors_CloseButton.Position = UDim2.new(1, -34, 0, 4); doors_CloseButton.Text = "×"
 doors_CloseButton.TextColor3 = Color3.fromRGB(100, 100, 100); doors_CloseButton.Font = Enum.Font.GothamBold; doors_CloseButton.TextSize = 18; doors_CloseButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230); doors_CloseButton.BorderSizePixel = 0; doors_CloseButton.ZIndex = 11; doors_CloseButton.Parent = doors_TopBar
 local doors_CloseCorner = Instance.new("UICorner"); doors_CloseCorner.CornerRadius = UDim.new(1, 0); doors_CloseCorner.Parent = doors_CloseButton
@@ -219,7 +219,7 @@ end, "开启")
 
 doors_mainPage.CanvasSize = UDim2.new(0, 0, 0, 5 * 52 + 12)
 doors_contentPages["主要功能"] = doors_mainPage
--- Doors ESP 独立脚本 第3段：ESP核心函数（修复门刷新+射线）
+-- Doors ESP 独立脚本 第3段：ESP核心函数（怪物透视+门编号+图书馆优化）
 
 local doorCount = 0
 local countedDoors = {}
@@ -239,11 +239,28 @@ function doors_getPos(o)
 end
 
 function doors_getDoorNumber(doorModel)
-    if not countedDoors[doorModel] then
-        doorCount = doorCount + 1
-        countedDoors[doorModel] = doorCount
-    end
+    if not countedDoors[doorModel] then doorCount = doorCount + 1; countedDoors[doorModel] = doorCount end
     return countedDoors[doorModel]
+end
+
+function doors_getMonsterName(o)
+    local n = o.Name:lower()
+    if n:find("ambush") then return "Ambush"
+    elseif n:find("rush") then return "Rush"
+    elseif n:find("screech") or n:find("psst") or n:find("scream") then return "Screech"
+    elseif n:find("figure") or n:find("blind") or n:find("library") then return "Figure"
+    elseif n:find("seek") then return "Seek"
+    elseif n:find("halt") then return "Halt"
+    elseif n:find("eyes") then return "Eyes"
+    elseif n:find("hide") then return "Hide"
+    elseif n:find("dupe") then return "Dupe"
+    elseif n:find("shadow") then return "Shadow"
+    elseif n:find("granny") then return "Figure"
+    elseif o:FindFirstChild("Humanoid") and o:FindFirstChild("Head") then
+        if o.Head.Size.Magnitude < 3 then return "Screech" end
+        return "怪物"
+    end
+    return nil
 end
 
 function doors_addESP(o, c, n)
@@ -283,12 +300,10 @@ function doors_updateBeams()
         elseif doors_showKeys and o.Name == "KeyObtain" then c = Color3.fromRGB(255,200,0)
         elseif doors_showLevers and o.Name:lower():find("lever") then c = Color3.fromRGB(255,100,255)
         elseif doors_showItems then if o:IsA("Tool") then c = Color3.fromRGB(50,255,50) elseif o:IsA("Model") then local n = o.Name:lower(); if not n:find("book") and (n:find("gold") or n:find("coin") or n:find("flashlight") or n:find("lighter") or n:find("vitamin") or n:find("lockpick") or n:find("bandage") or n:find("crucifix") or n:find("revolver") or n:find("shotgun") or n:find("rifle") or n:find("skeletonkey") or n:find("pills")) then c = Color3.fromRGB(50,255,50) end end
-        elseif doors_showMonsters and o:IsA("Model") and not Players:GetPlayerFromCharacter(o) then local n = o.Name:lower(); if n:find("rush") or n:find("ambush") or n:find("screech") or n:find("figure") or n:find("seek") or n:find("halt") or n:find("eyes") or n:find("hide") or n:find("dupe") or n:find("shadow") or n:find("granny") or o:FindFirstChild("Humanoid") then c = Color3.fromRGB(255,50,50) end end
+        elseif doors_showMonsters and o:IsA("Model") and not Players:GetPlayerFromCharacter(o) then local mn = doors_getMonsterName(o); if mn then c = Color3.fromRGB(255,50,50) end end
         if c then doors_addScreenBeam(o, c) end end
     end
 end
-
-function doors_getMonsterName(o) local n = o.Name:lower(); if n:find("ambush") then return "Ambush" elseif n:find("rush") then return "Rush" elseif n:find("screech") then return "Screech" elseif n:find("figure") then return "Figure" elseif n:find("seek") then return "Seek" elseif n:find("halt") then return "Halt" elseif n:find("eyes") then return "Eyes" elseif n:find("hide") then return "Hide" elseif n:find("dupe") then return "Dupe" elseif n:find("shadow") then return "Shadow" elseif n:find("granny") or n:find("blind") or n:find("library") then return "Figure" elseif o:FindFirstChild("Humanoid") then return "怪物" end; return nil end
 
 function doors_updateESP()
     doors_clearAll()
@@ -297,24 +312,27 @@ function doors_updateESP()
         if doors_showDoors and o:IsA("Model") and o.Name == "Door" then
             doors_addESP(o, Color3.fromRGB(50,150,255), "门#" .. doors_getDoorNumber(o))
         elseif doors_showBook and o.Name == "LiveHintBook" then
-            if not (o.Parent and o.Parent.Name == "LibraryBooks") then
-                doors_addESP(o, Color3.fromRGB(255,150,50), "书")
-            end
-        elseif doors_showBattery and o:IsA("Model") and o.Name:lower():find("stuff") then
-            doors_addESP(o, Color3.fromRGB(255,255,0), "电池")
-        elseif doors_showKeys and o.Name == "KeyObtain" then
-            doors_addESP(o, Color3.fromRGB(255,200,0), "钥匙")
-        elseif doors_showLevers and o.Name:lower():find("lever") then
-            doors_addESP(o, Color3.fromRGB(255,100,255), "拉杆")
+            if not (o.Parent and o.Parent.Name == "LibraryBooks") then doors_addESP(o, Color3.fromRGB(255,150,50), "书") end
+        elseif doors_showBattery and o:IsA("Model") and o.Name:lower():find("stuff") then doors_addESP(o, Color3.fromRGB(255,255,0), "电池")
+        elseif doors_showKeys and o.Name == "KeyObtain" then doors_addESP(o, Color3.fromRGB(255,200,0), "钥匙")
+        elseif doors_showLevers and o.Name:lower():find("lever") then doors_addESP(o, Color3.fromRGB(255,100,255), "拉杆")
         elseif doors_showItems then
             if o:IsA("Tool") then doors_addESP(o, Color3.fromRGB(50,255,50), "道具")
             elseif o:IsA("Model") then local n = o.Name:lower()
-                if not n:find("book") and not n:find("library") and (n:find("gold") or n:find("coin") or n:find("flashlight") or n:find("lighter") or n:find("vitamin") or n:find("lockpick") or n:find("bandage") or n:find("crucifix") or n:find("revolver") or n:find("shotgun") or n:find("rifle") or n:find("skeletonkey") or n:find("pills")) then
-                    doors_addESP(o, Color3.fromRGB(50,255,50), "道具") end end
-        elseif doors_showMonsters and o:IsA("Model") and not Players:GetPlayerFromCharacter(o) then local mn = doors_getMonsterName(o)
-            if mn then local po = o:FindFirstChildWhichIsA("BasePart"); if po then local ch = LocalPlayer.Character
-                if ch and ch:FindFirstChild("HumanoidRootPart") then local d = (ch.HumanoidRootPart.Position - po.Position).Magnitude; local md = (mn=="Rush" or mn=="Ambush") and 500 or 60
-                    if d < md then doors_addESP(o, Color3.fromRGB(255,50,50), mn) end end end end
+                if not n:find("book") and not n:find("library") and (n:find("gold") or n:find("coin") or n:find("flashlight") or n:find("lighter") or n:find("vitamin") or n:find("lockpick") or n:find("bandage") or n:find("crucifix") or n:find("revolver") or n:find("shotgun") or n:find("rifle") or n:find("skeletonkey") or n:find("pills")) then doors_addESP(o, Color3.fromRGB(50,255,50), "道具") end end
+        elseif doors_showMonsters and o:IsA("Model") and not Players:GetPlayerFromCharacter(o) then
+            local mn = doors_getMonsterName(o)
+            if mn then
+                local po = o:FindFirstChildWhichIsA("BasePart")
+                if po then
+                    local ch = LocalPlayer.Character
+                    if ch and ch:FindFirstChild("HumanoidRootPart") then
+                        local d = (ch.HumanoidRootPart.Position - po.Position).Magnitude
+                        local md = (mn == "Rush" or mn == "Ambush") and 500 or (mn == "Seek") and 300 or (mn == "Screech") and 40 or 80
+                        if d < md then doors_addESP(o, Color3.fromRGB(255,50,50), mn) end
+                    end
+                end
+            end
         end
     end
 end
@@ -392,9 +410,8 @@ doors_rayToggle.MouseButton1Click:Connect(function()
 end)
 doors_espPage.CanvasSize = UDim2.new(0, 0, 0, 160)
 doors_contentPages["ESP区"] = doors_espPage
--- Doors ESP 独立脚本 第5段：横幅系统（Rush/Ambush红色横幅+小怪黄色提示）+ 导航初始化
+-- Doors ESP 独立脚本 第5段：横幅系统（只提示一次）+ 导航初始化
 
--- 红色横幅（正上方，Rush/Ambush）
 local doors_bannerFrame = Instance.new("Frame")
 doors_bannerFrame.Size = UDim2.new(1, -100, 0, 44)
 doors_bannerFrame.Position = UDim2.new(0, 50, 0.02, 0)
@@ -417,32 +434,27 @@ doors_bannerText.ZIndex = 301
 doors_bannerText.Parent = doors_bannerFrame
 
 local doors_bannerTween = nil
-local doors_bannerCooldown = {}
+local doors_bannerActive = false
+local doors_bannerActiveMonster = nil
 
 function doors_showBanner(name, dist)
+    if doors_bannerActive and doors_bannerActiveMonster == name then return end
+    doors_bannerActive = true; doors_bannerActiveMonster = name
     if doors_bannerTween then pcall(function() doors_bannerTween:Cancel() end) end
     doors_bannerFrame.Visible = true
     doors_bannerFrame.Position = UDim2.new(0, -500, 0.02, 0)
     doors_bannerText.Text = "⚠ " .. name .. " 来了! " .. string.format("%.1f", dist) .. "m | 快躲起来! ⚠"
     doors_bannerTween = TweenService:Create(doors_bannerFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0, 50, 0.02, 0)})
     doors_bannerTween:Play()
-    pcall(function()
-        local sound = Instance.new("Sound", doors_bannerFrame)
-        sound.SoundId = "rbxassetid://9116729822"
-        sound.Volume = 1.5
-        sound:Play()
-    end)
+    pcall(function() local sound = Instance.new("Sound", doors_bannerFrame); sound.SoundId = "rbxassetid://9116729822"; sound.Volume = 1.5; sound:Play() end)
     task.delay(4, function()
         pcall(function()
             doors_bannerTween = TweenService:Create(doors_bannerFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(0, 500, 0.02, 0)})
-            doors_bannerTween:Play()
-            task.wait(0.4)
-            doors_bannerFrame.Visible = false
+            doors_bannerTween:Play(); task.wait(0.4); doors_bannerFrame.Visible = false; doors_bannerActive = false; doors_bannerActiveMonster = nil
         end)
     end)
 end
 
--- 小怪黄色提示（右上角，Screech/Seek/Eyes/Halt/Hide/Dupe/Shadow）
 local doors_smallAlertFrame = Instance.new("Frame")
 doors_smallAlertFrame.Size = UDim2.new(0, 220, 0, 30)
 doors_smallAlertFrame.Position = UDim2.new(1, -10, 0.1, 0)
@@ -466,9 +478,12 @@ doors_smallAlertText.TextXAlignment = Enum.TextXAlignment.Left
 doors_smallAlertText.Parent = doors_smallAlertFrame
 
 local doors_smallAlertTween = nil
-local doors_smallAlertCooldown = {}
+local doors_smallAlertActive = false
+local doors_smallAlertActiveMonster = nil
 
 function doors_showSmallAlert(name, dist)
+    if doors_smallAlertActive and doors_smallAlertActiveMonster == name then return end
+    doors_smallAlertActive = true; doors_smallAlertActiveMonster = name
     if doors_smallAlertTween then pcall(function() doors_smallAlertTween:Cancel() end) end
     doors_smallAlertFrame.Visible = true
     doors_smallAlertFrame.Position = UDim2.new(1, 230, 0.1, 0)
@@ -478,18 +493,19 @@ function doors_showSmallAlert(name, dist)
     task.delay(3, function()
         pcall(function()
             doors_smallAlertTween = TweenService:Create(doors_smallAlertFrame, TweenInfo.new(0.3), {Position = UDim2.new(1, 230, 0.1, 0)})
-            doors_smallAlertTween:Play()
-            task.wait(0.3)
-            doors_smallAlertFrame.Visible = false
+            doors_smallAlertTween:Play(); task.wait(0.3); doors_smallAlertFrame.Visible = false; doors_smallAlertActive = false; doors_smallAlertActiveMonster = nil
         end)
     end)
 end
+
+local doors_monsterInRange = {}
 
 function doors_checkMonsters()
     if not doors_monsterAlertEnabled then return end
     local ch = LocalPlayer.Character
     if not ch or not ch:FindFirstChild("HumanoidRootPart") then return end
     local hrp = ch.HumanoidRootPart
+    local currentlyInRange = {}
     for _, o in ipairs(workspace:GetDescendants()) do
         if o:IsA("Model") and not Players:GetPlayerFromCharacter(o) then
             local mn = doors_getMonsterName(o)
@@ -497,27 +513,28 @@ function doors_checkMonsters()
                 local po = o:FindFirstChildWhichIsA("BasePart")
                 if po then
                     local d = (po.Position - hrp.Position).Magnitude
-                    local now = tick()
-                    if mn == "Rush" or mn == "Ambush" then
-                        if d < 500 and (not doors_bannerCooldown[mn] or (now - doors_bannerCooldown[mn]) > 15) then
-                            doors_bannerCooldown[mn] = now
-                            doors_showBanner(mn, d)
-                        end
-                    else
-                        local md = (mn == "Seek") and 300 or 60
-                        if d < md and (not doors_smallAlertCooldown[mn] or (now - doors_smallAlertCooldown[mn]) > 10) then
-                            doors_smallAlertCooldown[mn] = now
-                            doors_showSmallAlert(mn, d)
+                    local md = (mn == "Rush" or mn == "Ambush") and 500 or (mn == "Seek") and 300 or (mn == "Screech") and 40 or 80
+                    if d < md then
+                        currentlyInRange[mn] = true
+                        if not doors_monsterInRange[mn] then
+                            doors_monsterInRange[mn] = true
+                            if mn == "Rush" or mn == "Ambush" then doors_showBanner(mn, d) else doors_showSmallAlert(mn, d) end
                         end
                     end
                 end
             end
         end
     end
+    for mn, _ in pairs(doors_monsterInRange) do
+        if not currentlyInRange[mn] then
+            doors_monsterInRange[mn] = nil
+            if mn == "Rush" or mn == "Ambush" then doors_bannerActive = false; doors_bannerActiveMonster = nil
+            else doors_smallAlertActive = false; doors_smallAlertActiveMonster = nil end
+        end
+    end
 end
 
 spawn(function() while true do doors_checkMonsters(); task.wait(1) end end)
-
 doors_contentPages["公告"].Visible = true
 local doors_isOpen = false
 local function doors_openPanel() doors_isOpen = true; doors_MainFrame.Size = UDim2.new(0, 0, 0, 0); doors_MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0); doors_MainFrame.Visible = true; TweenService:Create(doors_MainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(0, 580, 0, 440), Position = UDim2.new(0.5, -290, 0.5, -220)}):Play() end
@@ -525,6 +542,3 @@ local function doors_closePanel() doors_isOpen = false; TweenService:Create(door
 doors_OpenBtn.MouseButton1Click:Connect(function() if doors_isOpen then doors_closePanel() else doors_openPanel() end end)
 doors_CloseButton.MouseButton1Click:Connect(function() doors_closePanel() end)
 doors_selectNav(doors_navButtons[1].button, "公告")
-
-
-
