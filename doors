@@ -64,9 +64,9 @@ doors_InfoRGBOutline.BackgroundColor3 = Color3.fromRGB(255, 255, 255); doors_Inf
 local doors_InfoRGBCorner = Instance.new("UICorner"); doors_InfoRGBCorner.CornerRadius = UDim.new(0, 7); doors_InfoRGBCorner.Parent = doors_InfoRGBOutline
 local doors_infoHue = 0
 RunService.RenderStepped:Connect(function(d) if doors_isRunning then doors_infoHue = (doors_infoHue + d * 0.5) % 1; doors_InfoRGBOutline.BackgroundColor3 = Color3.fromHSV(doors_infoHue, 0.7, 1) end end)
-local doors_InfoLabel = Instance.new("TextLabel"); doors_InfoLabel.Size = UDim2.new(1, 0, 1, 0); doors_InfoLabel.Text = "Doors V1.0 | " .. os.date("%m月%d日 %H:%M:%S")
+local doors_InfoLabel = Instance.new("TextLabel"); doors_InfoLabel.Size = UDim2.new(1, 0, 1, 0); doors_InfoLabel.Text = "Doors ESP V1.0 | " .. os.date("%m月%d日 %H:%M:%S")
 doors_InfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255); doors_InfoLabel.Font = Enum.Font.GothamBold; doors_InfoLabel.TextSize = 10; doors_InfoLabel.BackgroundTransparency = 1; doors_InfoLabel.ZIndex = 13; doors_InfoLabel.Parent = doors_InfoBox
-spawn(function() while doors_isRunning do doors_InfoLabel.Text = "Doors ESP V1.0 | " .. os.date("%m月%d日 %H:%M:%S"); wait(1) end end)
+spawn(function() while doors_isRunning do doors_InfoLabel.Text = "Doors V1.0 | " .. os.date("%m月%d日 %H:%M:%S"); wait(1) end end)
 local doors_CloseButton = Instance.new("TextButton"); doors_CloseButton.Size = UDim2.new(0, 28, 0, 28); doors_CloseButton.Position = UDim2.new(1, -34, 0, 4); doors_CloseButton.Text = "×"
 doors_CloseButton.TextColor3 = Color3.fromRGB(100, 100, 100); doors_CloseButton.Font = Enum.Font.GothamBold; doors_CloseButton.TextSize = 18; doors_CloseButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230); doors_CloseButton.BorderSizePixel = 0; doors_CloseButton.ZIndex = 11; doors_CloseButton.Parent = doors_TopBar
 local doors_CloseCorner = Instance.new("UICorner"); doors_CloseCorner.CornerRadius = UDim.new(1, 0); doors_CloseCorner.Parent = doors_CloseButton
@@ -320,7 +320,7 @@ function doors_updateESP()
 end
 
 spawn(function() while true do if doors_espEnabled then doors_updateESP(); if doors_rayEnabled then doors_updateBeams() end end; task.wait(0.5) end end)
--- Doors ESP 独立脚本 第4段：怪物横幅警告 + ESP区下拉白色
+-- Doors ESP 独立脚本 第4段：ESP区白色下拉 + 射线
 
 local doors_espPage = Instance.new("ScrollingFrame")
 doors_espPage.Size = UDim2.new(1, 0, 1, 0); doors_espPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -392,81 +392,98 @@ doors_rayToggle.MouseButton1Click:Connect(function()
 end)
 doors_espPage.CanvasSize = UDim2.new(0, 0, 0, 160)
 doors_contentPages["ESP区"] = doors_espPage
--- Doors ESP 独立脚本 第5段：怪物横幅飘过 + 音效 + 打开关闭 + 导航初始化
+-- Doors ESP 独立脚本 第5段：横幅系统（Rush/Ambush红色横幅+小怪黄色提示）+ 导航初始化
 
-local doors_bannerContainer = Instance.new("Frame")
-doors_bannerContainer.Size = UDim2.new(0, 300, 0, 500)
-doors_bannerContainer.Position = UDim2.new(1, -310, 0, 80)
-doors_bannerContainer.BackgroundTransparency = 1
-doors_bannerContainer.ZIndex = 200
-doors_bannerContainer.Parent = doors_ScreenGui
+-- 红色横幅（正上方，Rush/Ambush）
+local doors_bannerFrame = Instance.new("Frame")
+doors_bannerFrame.Size = UDim2.new(1, -100, 0, 44)
+doors_bannerFrame.Position = UDim2.new(0, 50, 0.02, 0)
+doors_bannerFrame.BackgroundColor3 = Color3.fromRGB(160, 10, 10)
+doors_bannerFrame.BorderSizePixel = 0
+doors_bannerFrame.Visible = false
+doors_bannerFrame.ZIndex = 300
+doors_bannerFrame.Parent = doors_ScreenGui
+Instance.new("UICorner", doors_bannerFrame).CornerRadius = UDim.new(0, 8)
 
-local doors_activeBanners = {}
+local doors_bannerText = Instance.new("TextLabel")
+doors_bannerText.Size = UDim2.new(1, -20, 1, 0)
+doors_bannerText.Position = UDim2.new(0, 10, 0, 0)
+doors_bannerText.BackgroundTransparency = 1
+doors_bannerText.Text = ""
+doors_bannerText.TextColor3 = Color3.fromRGB(255, 255, 255)
+doors_bannerText.Font = Enum.Font.GothamBold
+doors_bannerText.TextSize = 16
+doors_bannerText.ZIndex = 301
+doors_bannerText.Parent = doors_bannerFrame
+
+local doors_bannerTween = nil
+local doors_bannerCooldown = {}
 
 function doors_showBanner(name, dist)
-    local banner = Instance.new("Frame")
-    banner.Size = UDim2.new(0, 350, 0, 40)
-    banner.Position = UDim2.new(0, -360, 0.35, 0)
-    banner.BackgroundColor3 = Color3.fromRGB(180, 10, 10)
-    banner.BorderSizePixel = 0
-    banner.ZIndex = 200
-    banner.Parent = doors_ScreenGui
-    Instance.new("UICorner", banner).CornerRadius = UDim.new(0, 8)
-
-    local icon = Instance.new("TextLabel")
-    icon.Size = UDim2.new(0, 30, 1, 0)
-    icon.Position = UDim2.new(0, 8, 0, 0)
-    icon.BackgroundTransparency = 1
-    icon.Text = "⚠"
-    icon.TextColor3 = Color3.fromRGB(255, 255, 255)
-    icon.Font = Enum.Font.SourceSansBold
-    icon.TextSize = 18
-    icon.ZIndex = 201
-    icon.Parent = banner
-
-    local text = Instance.new("TextLabel")
-    text.Size = UDim2.new(1, -50, 1, 0)
-    text.Position = UDim2.new(0, 40, 0, 0)
-    text.BackgroundTransparency = 1
-    text.Text = name .. " 来了! " .. string.format("%.1f", dist) .. "m | 快躲起来!"
-    text.TextColor3 = Color3.fromRGB(255, 255, 255)
-    text.Font = Enum.Font.GothamBold
-    text.TextSize = 14
-    text.ZIndex = 201
-    text.TextXAlignment = Enum.TextXAlignment.Left
-    text.Parent = banner
-
+    if doors_bannerTween then pcall(function() doors_bannerTween:Cancel() end) end
+    doors_bannerFrame.Visible = true
+    doors_bannerFrame.Position = UDim2.new(0, -500, 0.02, 0)
+    doors_bannerText.Text = "⚠ " .. name .. " 来了! " .. string.format("%.1f", dist) .. "m | 快躲起来! ⚠"
+    doors_bannerTween = TweenService:Create(doors_bannerFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0, 50, 0.02, 0)})
+    doors_bannerTween:Play()
     pcall(function()
-        local sound = Instance.new("Sound", banner)
+        local sound = Instance.new("Sound", doors_bannerFrame)
         sound.SoundId = "rbxassetid://9116729822"
         sound.Volume = 1.5
         sound:Play()
     end)
-
-    table.insert(doors_activeBanners, banner)
-
-    TweenService:Create(banner, TweenInfo.new(0.5, Enum.EasingStyle.Quad), {Position = UDim2.new(0, 10, 0.35, 0)}):Play()
-
-    for i = #doors_activeBanners, 1, -1 do
-        if doors_activeBanners[i] ~= banner then
-            TweenService:Create(doors_activeBanners[i], TweenInfo.new(0.3), {Position = UDim2.new(0, 10, 0.35, doors_activeBanners[i].Position.Y.Offset + 48)}):Play()
-        end
-    end
-
     task.delay(4, function()
         pcall(function()
-            TweenService:Create(banner, TweenInfo.new(0.5), {Position = UDim2.new(0, -360, 0.35, banner.Position.Y.Offset)}):Play()
-            task.wait(0.5)
-            for i, b in ipairs(doors_activeBanners) do if b == banner then table.remove(doors_activeBanners, i); break end end
-            banner:Destroy()
-            for _, b in ipairs(doors_activeBanners) do
-                TweenService:Create(b, TweenInfo.new(0.3), {Position = UDim2.new(0, 10, 0.35, b.Position.Y.Offset - 48)}):Play()
-            end
+            doors_bannerTween = TweenService:Create(doors_bannerFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Position = UDim2.new(0, 500, 0.02, 0)})
+            doors_bannerTween:Play()
+            task.wait(0.4)
+            doors_bannerFrame.Visible = false
         end)
     end)
 end
 
-local doors_bannerCooldown = {}
+-- 小怪黄色提示（右上角，Screech/Seek/Eyes/Halt/Hide/Dupe/Shadow）
+local doors_smallAlertFrame = Instance.new("Frame")
+doors_smallAlertFrame.Size = UDim2.new(0, 220, 0, 30)
+doors_smallAlertFrame.Position = UDim2.new(1, -10, 0.1, 0)
+doors_smallAlertFrame.BackgroundColor3 = Color3.fromRGB(180, 150, 0)
+doors_smallAlertFrame.BorderSizePixel = 0
+doors_smallAlertFrame.Visible = false
+doors_smallAlertFrame.ZIndex = 300
+doors_smallAlertFrame.Parent = doors_ScreenGui
+Instance.new("UICorner", doors_smallAlertFrame).CornerRadius = UDim.new(0, 6)
+
+local doors_smallAlertText = Instance.new("TextLabel")
+doors_smallAlertText.Size = UDim2.new(1, -10, 1, 0)
+doors_smallAlertText.Position = UDim2.new(0, 5, 0, 0)
+doors_smallAlertText.BackgroundTransparency = 1
+doors_smallAlertText.Text = ""
+doors_smallAlertText.TextColor3 = Color3.fromRGB(255, 255, 255)
+doors_smallAlertText.Font = Enum.Font.GothamBold
+doors_smallAlertText.TextSize = 12
+doors_smallAlertText.ZIndex = 301
+doors_smallAlertText.TextXAlignment = Enum.TextXAlignment.Left
+doors_smallAlertText.Parent = doors_smallAlertFrame
+
+local doors_smallAlertTween = nil
+local doors_smallAlertCooldown = {}
+
+function doors_showSmallAlert(name, dist)
+    if doors_smallAlertTween then pcall(function() doors_smallAlertTween:Cancel() end) end
+    doors_smallAlertFrame.Visible = true
+    doors_smallAlertFrame.Position = UDim2.new(1, 230, 0.1, 0)
+    doors_smallAlertText.Text = "⚠ " .. name .. " " .. string.format("%.1f", dist) .. "m"
+    doors_smallAlertTween = TweenService:Create(doors_smallAlertFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(1, -10, 0.1, 0)})
+    doors_smallAlertTween:Play()
+    task.delay(3, function()
+        pcall(function()
+            doors_smallAlertTween = TweenService:Create(doors_smallAlertFrame, TweenInfo.new(0.3), {Position = UDim2.new(1, 230, 0.1, 0)})
+            doors_smallAlertTween:Play()
+            task.wait(0.3)
+            doors_smallAlertFrame.Visible = false
+        end)
+    end)
+end
 
 function doors_checkMonsters()
     if not doors_monsterAlertEnabled then return end
@@ -475,17 +492,22 @@ function doors_checkMonsters()
     local hrp = ch.HumanoidRootPart
     for _, o in ipairs(workspace:GetDescendants()) do
         if o:IsA("Model") and not Players:GetPlayerFromCharacter(o) then
-            local n = o.Name:lower()
-            if n:find("rush") or n:find("ambush") then
-                local mn = n:find("ambush") and "Ambush" or "Rush"
+            local mn = doors_getMonsterName(o)
+            if mn then
                 local po = o:FindFirstChildWhichIsA("BasePart")
                 if po then
                     local d = (po.Position - hrp.Position).Magnitude
-                    if d < 500 then
-                        local now = tick()
-                        if not doors_bannerCooldown[mn] or (now - doors_bannerCooldown[mn]) > 15 then
+                    local now = tick()
+                    if mn == "Rush" or mn == "Ambush" then
+                        if d < 500 and (not doors_bannerCooldown[mn] or (now - doors_bannerCooldown[mn]) > 15) then
                             doors_bannerCooldown[mn] = now
                             doors_showBanner(mn, d)
+                        end
+                    else
+                        local md = (mn == "Seek") and 300 or 60
+                        if d < md and (not doors_smallAlertCooldown[mn] or (now - doors_smallAlertCooldown[mn]) > 10) then
+                            doors_smallAlertCooldown[mn] = now
+                            doors_showSmallAlert(mn, d)
                         end
                     end
                 end
