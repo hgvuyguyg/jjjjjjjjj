@@ -509,17 +509,15 @@ WI:Popup({
         Variant="Primary",
         Callback=function() end
     }}
-})
+)
 
 print("第1段 OK")
 
--- ==================== Rush测试触发器（按K键） ====================
-local testRushActive = false
-
-function triggerRushTest()
-    if testRushActive then return end
-    testRushActive = true
-    print("🔴 触发Rush测试！")
+-- 测试触发器（按K键）
+local testActive = false
+function triggerTest()
+    if testActive then return end
+    testActive = true
     showPopup("Rush")
     pcall(function()
         local sound = Instance.new("Sound")
@@ -531,209 +529,452 @@ function triggerRushTest()
         sound:Destroy()
     end)
     task.wait(2)
-    testRushActive = false
-    print("✅ Rush测试完成")
+    testActive = false
 end
 
 game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.K then
-        triggerRushTest()
+        triggerTest()
+    end
+end)
+-- 黑脚本 - Doors | Wind UI 第2段（完整版）
+
+function clearHighlights()
+    for _, d in pairs(highlights) do
+        pcall(function()
+            if d.hl then d.hl:Destroy() end
+            if d.bb then d.bb:Destroy() end
+            if d.conn then d.conn:Disconnect() end
+        end)
+    end
+    highlights = {}
+end
+
+function clearBeams()
+    for _, b in pairs(beamData) do
+        pcall(function()
+            if b.beam then b.beam:Destroy() end
+            if b.a0 then b.a0:Destroy() end
+            if b.a1 then b.a1:Destroy() end
+        end)
+    end
+    beamData = {}
+end
+
+function clearAll()
+    clearHighlights()
+    clearBeams()
+end
+
+function getPos(o)
+    if o:IsA("BasePart") then
+        return o.Position
+    end
+    if o:IsA("Model") then
+        local p = o:FindFirstChildWhichIsA("BasePart")
+        if p then
+            return p.Position
+        end
+    end
+    return nil
+end
+
+function getDoorNumber(dm)
+    if not countedDoors[dm] then
+        doorCount = doorCount + 1
+        countedDoors[dm] = doorCount
+    end
+    return countedDoors[dm]
+end
+
+function addHighlight(o, c, n)
+    pcall(function()
+        local hl = Instance.new("Highlight")
+        hl.FillColor = c
+        hl.FillTransparency = 0.3
+        hl.OutlineColor = Color3.new(1, 1, 1)
+        hl.OutlineTransparency = 0
+        hl.Adornee = o
+        hl.Parent = o
+        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+
+        local bb = Instance.new("BillboardGui")
+        bb.Size = UDim2.new(0, 200, 0, 40)
+        bb.AlwaysOnTop = true
+        bb.Parent = o
+
+        local nl = Instance.new("TextLabel")
+        nl.Size = UDim2.new(1, 0, 0.5, 0)
+        nl.BackgroundTransparency = 1
+        nl.TextColor3 = Color3.new(1, 1, 1)
+        nl.Text = n
+        nl.Font = Enum.Font.SourceSansBold
+        nl.TextSize = 15
+        nl.Parent = bb
+
+        local dl = Instance.new("TextLabel")
+        dl.Size = UDim2.new(1, 0, 0.5, 0)
+        dl.Position = UDim2.new(0, 0, 0.5, 0)
+        dl.BackgroundTransparency = 1
+        dl.TextColor3 = Color3.new(0.8, 0.8, 0.8)
+        dl.Text = "0m"
+        dl.Font = Enum.Font.SourceSans
+        dl.TextSize = 12
+        dl.Parent = bb
+
+        local cn = RunService.Heartbeat:Connect(function()
+            if not o or not o.Parent then
+                cn:Disconnect()
+                pcall(function()
+                    hl:Destroy()
+                    bb:Destroy()
+                end)
+                return
+            end
+            local ch = LocalPlayer.Character
+            if ch and ch:FindFirstChild("HumanoidRootPart") then
+                local po = getPos(o)
+                if po then
+                    pcall(function()
+                        dl.Text = string.format("%.1fm", (ch.HumanoidRootPart.Position - po).Magnitude)
+                    end)
+                end
+            end
+        end)
+
+        table.insert(highlights, {hl = hl, bb = bb, conn = cn})
+    end)
+end
+
+function addScreenBeam(o, c)
+    pcall(function()
+        local ch = LocalPlayer.Character
+        if not ch or not ch:FindFirstChild("Head") then
+            return
+        end
+        local tp = getPos(o)
+        if not tp then
+            return
+        end
+        local a0 = Instance.new("Attachment", ch.Head)
+        local a1 = Instance.new("Attachment", o)
+        a1.WorldPosition = tp
+        local bm = Instance.new("Beam", a0)
+        bm.Attachment0 = a0
+        bm.Attachment1 = a1
+        bm.Color = ColorSequence.new(c)
+        bm.Width0 = 0.03
+        bm.Width1 = 0.03
+        bm.Transparency = NumberSequence.new(0.3)
+        bm.FaceCamera = true
+        table.insert(beamData, {beam = bm, a0 = a0, a1 = a1})
+    end)
+end
+
+function updateBeams()
+    clearBeams()
+    if not rayEnabled or not espEnabled then
+        return
+    end
+    local ch = LocalPlayer.Character
+    if not ch or not ch:FindFirstChild("Head") then
+        return
+    end
+    local hp = ch.Head.Position
+    for _, o in ipairs(workspace:GetDescendants()) do
+        local po = getPos(o)
+        if not po or (hp - po).Magnitude > 200 then
+            continue
+        end
+        local c = nil
+        if showDoors and o:IsA("Model") and o.Name == "Door" then
+            c = Color3.fromRGB(50, 150, 255)
+        elseif showBook and o.Name == "LiveHintBook" then
+            c = Color3.fromRGB(255, 150, 50)
+        elseif showBattery and o.Name:lower():find("stuff") then
+            c = Color3.fromRGB(255, 255, 0)
+        elseif showKeys and o.Name == "KeyObtain" then
+            c = Color3.fromRGB(255, 200, 0)
+        elseif showLevers and o.Name:lower():find("lever") then
+            c = Color3.fromRGB(255, 100, 255)
+        elseif showItems then
+            if o:IsA("Tool") then
+                c = Color3.fromRGB(50, 255, 50)
+            elseif o:IsA("Model") then
+                local n = o.Name:lower()
+                if not n:find("book") and (n:find("gold") or n:find("coin") or n:find("flashlight") or n:find("lighter") or n:find("vitamin") or n:find("lockpick") or n:find("bandage") or n:find("crucifix") or n:find("revolver") or n:find("shotgun") or n:find("rifle") or n:find("skeletonkey") or n:find("pills")) then
+                    c = Color3.fromRGB(50, 255, 50)
+                end
+            end
+        elseif showMonsters and o:IsA("Model") and not Players:GetPlayerFromCharacter(o) then
+            local mn = getMonsterName(o)
+            if mn then
+                c = Color3.fromRGB(255, 50, 50)
+            end
+        end
+        if c then
+            addScreenBeam(o, c)
+        end
+    end
+    if showTeammates then
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
+                addScreenBeam(p.Character, Color3.new(1, 1, 1))
+            end
+        end
+    end
+end
+
+function getMonsterName(o)
+    local n = o.Name:lower()
+    if n:find("ambush") then
+        return "Ambush"
+    elseif n:find("rush") then
+        return "Rush"
+    elseif n:find("screech") or n:find("psst") then
+        return "Screech"
+    elseif n:find("figure") or n:find("blind") or n:find("library") then
+        return "Figure"
+    elseif n:find("seek") then
+        return "Seek"
+    elseif n:find("halt") then
+        return "Halt"
+    elseif n:find("eyes") then
+        return "Eyes"
+    elseif n:find("hide") then
+        return "Hide"
+    elseif n:find("dupe") then
+        return "Dupe"
+    elseif n:find("shadow") then
+        return "Shadow"
+    elseif n:find("granny") then
+        return "Figure"
+    elseif o:FindFirstChild("Humanoid") then
+        return "怪物"
+    end
+    return nil
+end
+
+function updateESP()
+    clearHighlights()
+    if not espEnabled then
+        return
+    end
+    for _, o in ipairs(workspace:GetDescendants()) do
+        if showDoors and o:IsA("Model") and o.Name == "Door" then
+            addHighlight(o, Color3.fromRGB(50, 150, 255), "门#" .. getDoorNumber(o))
+        elseif showBook and o.Name == "LiveHintBook" then
+            addHighlight(o, Color3.fromRGB(255, 150, 50), "书")
+        elseif showBattery and o.Name:lower():find("stuff") then
+            addHighlight(o, Color3.fromRGB(255, 255, 0), "电池")
+        elseif showKeys and o.Name == "KeyObtain" then
+            addHighlight(o, Color3.fromRGB(255, 200, 0), "钥匙")
+        elseif showLevers and o.Name:lower():find("lever") then
+            addHighlight(o, Color3.fromRGB(255, 100, 255), "拉杆")
+        elseif showItems then
+            if o:IsA("Tool") then
+                addHighlight(o, Color3.fromRGB(50, 255, 50), "道具")
+            elseif o:IsA("Model") then
+                local n = o.Name:lower()
+                if not n:find("book") and (n:find("gold") or n:find("coin") or n:find("flashlight") or n:find("lighter") or n:find("vitamin") or n:find("lockpick") or n:find("bandage") or n:find("crucifix") or n:find("revolver") or n:find("shotgun") or n:find("rifle") or n:find("skeletonkey") or n:find("pills")) then
+                    addHighlight(o, Color3.fromRGB(50, 255, 50), "道具")
+                end
+            end
+        elseif showMonsters and o:IsA("Model") and not Players:GetPlayerFromCharacter(o) then
+            local mn = getMonsterName(o)
+            if mn then
+                local po = o:FindFirstChildWhichIsA("BasePart")
+                if po and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    local d = (LocalPlayer.Character.HumanoidRootPart.Position - po.Position).Magnitude
+                    local md = (mn == "Rush" or mn == "Ambush") and 500 or (mn == "Seek") and 300 or (mn == "Screech") and 40 or 80
+                    if d < md then
+                        addHighlight(o, Color3.fromRGB(255, 50, 50), mn)
+                    end
+                end
+            end
+        end
+    end
+    if showTeammates then
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character then
+                addHighlight(p.Character, Color3.new(1, 1, 1), p.Name)
+            end
+        end
+    end
+end
+
+-- 主循环
+spawn(function()
+    while true do
+        if espEnabled then
+            updateESP()
+            if rayEnabled then
+                updateBeams()
+            else
+                clearBeams()
+            end
+        else
+            clearAll()
+        end
+        task.wait(0.5)
     end
 end)
 
-print("🟢 按 K 键测试Rush弹窗")
-function showPopup(name)
-    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        return
-    end
-    
-    while #activePopups >= 5 do 
-        local old = table.remove(activePopups,1)
-        if old then old:Destroy() end
-    end
-    
-    for _,p in ipairs(activePopups) do
-        TweenService:Create(p,TweenInfo.new(0.25),{Position=UDim2.new(0,0,0,p.Position.Y.Offset+72)}):Play()
-    end
-    
-    local popup = Instance.new("Frame")
-    popup.Size = UDim2.new(0,280,0,60)
-    popup.Position = UDim2.new(0,-300,0,0)
-    popup.BackgroundColor3 = Color3.fromRGB(200,50,50)  -- 红色背景
-    popup.BorderSizePixel = 2
-    popup.BorderColor3 = Color3.fromRGB(255,0,0)  -- 红色边框
-    popup.ZIndex = 9999
-    popup.Parent = popupContainer
-    
-    local icon = Instance.new("TextLabel")
-    icon.Size = UDim2.new(0,40,0,40)
-    icon.Position = UDim2.new(0,8,0,10)
-    icon.BackgroundTransparency = 1
-    icon.Text = "⚠"
-    icon.Font = Enum.Font.SourceSansBold
-    icon.TextSize = 28
-    icon.ZIndex = 9999
-    icon.Parent = popup
-    
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1,-60,0,28)
-    title.Position = UDim2.new(0,50,0,5)
-    title.BackgroundTransparency = 1
-    title.TextColor3 = Color3.new(1,1,1)
-    title.Text = name.." 来了！"
-    title.Font = Enum.Font.SourceSansBold
-    title.TextSize = 16
-    title.ZIndex = 9999
-    title.TextXAlignment = Enum.TextXAlignment.Left
-    title.Parent = popup
-    
-    local desc = Instance.new("TextLabel")
-    desc.Size = UDim2.new(1,-60,0,22)
-    desc.Position = UDim2.new(0,50,0,33)
-    desc.BackgroundTransparency = 1
-    desc.TextColor3 = Color3.fromRGB(255,200,200)
-    desc.Text = "🏃 找个地方躲起来！"
-    desc.Font = Enum.Font.SourceSans
-    desc.TextSize = 12
-    desc.ZIndex = 9999
-    desc.TextXAlignment = Enum.TextXAlignment.Left
-    desc.Parent = popup
-    
-    table.insert(activePopups,popup)
-    TweenService:Create(popup,TweenInfo.new(0.4,Enum.EasingStyle.Quad),{Position=UDim2.new(0,0,0,0)}):Play()
-    
-    pcall(function()
-        local sound = Instance.new("Sound",popup)
-        sound.SoundId = "rbxassetid://147722335"
-        sound.Volume = 1.5
-        sound:Play()
-    end)
-    
-    task.delay(5,function()
-        pcall(function()
-            TweenService:Create(popup,TweenInfo.new(0.4),{Position=UDim2.new(0,-300,0,popup.Position.Y.Offset)}):Play()
-            task.wait(0.4)
-            for i,p in ipairs(activePopups)do 
-                if p==popup then 
-                    table.remove(activePopups,i)
-                    break 
-                end 
+spawn(function()
+    while true do
+        if speedEnabled then
+            local c = LocalPlayer.Character
+            if c and c:FindFirstChild("Humanoid") then
+                c.Humanoid.WalkSpeed = 21
             end
-            popup:Destroy()
-            for _,p in ipairs(activePopups)do
-                TweenService:Create(p,TweenInfo.new(0.25),{Position=UDim2.new(0,0,0,p.Position.Y.Offset-72)}):Play()
-            end
-        end)
-    end)
-end
--- 黑脚本 - Doors | Wind UI 第5段（杂项设置）
-
-local T5 = MainWindow:Tab({Title = "杂项", Icon = "solar:settings-bold"})
-
-T5:Paragraph({
-    Title = "⚙️ 杂项设置",
-    Desc = "快捷键 | 性能"
-})
-
--- 快捷键设置
-local S3 = T5:Section({Title = "⌨️ 快捷键"})
-
-S3:Keybind({
-    Title = "切换UI开关",
-    Key = Enum.KeyCode.RightShift,
-    Callback = function()
-        MainWindow:Toggle()
+        end
+        task.wait(0.1)
     end
-})
+end)
 
-S3:Keybind({
-    Title = "测试弹窗（K键）",
-    Key = Enum.KeyCode.K,
-    Callback = function()
-        showPopup("测试怪物")
-        print("✅ 测试弹窗已触发")
-    end
-})
-
--- 性能设置
-local S4 = T5:Section({Title = "⚡ 性能设置"})
-
-local showFPS = false
-local fpsLabel = nil
-
-S4:Toggle({
-    Title = "显示FPS",
-    Value = false,
-    Callback = function(v)
-        showFPS = v
-        if v then
-            if not fpsLabel then
-                fpsLabel = Instance.new("TextLabel")
-                fpsLabel.Size = UDim2.new(0, 80, 0, 30)
-                fpsLabel.Position = UDim2.new(0, 10, 1, -40)
-                fpsLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                fpsLabel.BackgroundTransparency = 0.5
-                fpsLabel.TextColor3 = Color3.new(1, 1, 1)
-                fpsLabel.Font = Enum.Font.GothamBold
-                fpsLabel.TextSize = 14
-                fpsLabel.ZIndex = 9999
-                fpsLabel.Parent = screenGui
-                Instance.new("UICorner", fpsLabel).CornerRadius = UDim.new(0, 6)
+spawn(function()
+    while true do
+        if antiSlip then
+            local c = LocalPlayer.Character
+            if c and c:FindFirstChild("Humanoid") and c:FindFirstChild("HumanoidRootPart") then
+                if c.Humanoid.MoveDirection.Magnitude == 0 then
+                    c.HumanoidRootPart.Velocity = Vector3.new(0, c.HumanoidRootPart.Velocity.Y, 0)
+                end
             end
-            fpsLabel.Visible = true
-            task.spawn(function()
-                local lastTime = tick()
-                local frameCount = 0
-                while showFPS do
-                    frameCount = frameCount + 1
-                    local currentTime = tick()
-                    if currentTime - lastTime >= 1 then
-                        pcall(function()
-                            fpsLabel.Text = "FPS: "..frameCount
-                        end)
-                        frameCount = 0
-                        lastTime = currentTime
+        end
+        task.wait(0.05)
+    end
+end)
+
+-- 怪物检测（全部红色弹窗，10秒冷却）
+local alertedMonsters = {}
+local monsterCooldown = {}
+
+spawn(function()
+    while true do
+        if monsterAlert then
+            local ch = LocalPlayer.Character
+            if ch and ch:FindFirstChild("HumanoidRootPart") then
+                local hrpPos = ch.HumanoidRootPart.Position
+                for _, o in ipairs(workspace:GetDescendants()) do
+                    if o:IsA("Model") and not Players:GetPlayerFromCharacter(o) then
+                        local mn = getMonsterName(o)
+                        if mn then
+                            local po = o:FindFirstChildWhichIsA("BasePart")
+                            if po then
+                                local d = (hrpPos - po.Position).Magnitude
+                                local md = (mn == "Rush" or mn == "Ambush") and 400 or (mn == "Seek") and 300 or 80
+                                local id = tostring(o)
+                                local now = tick()
+
+                                if d < md then
+                                    if not monsterCooldown[mn] or (now - monsterCooldown[mn]) > 10 then
+                                        if not alertedMonsters[id] then
+                                            alertedMonsters[id] = true
+                                            monsterCooldown[mn] = now
+                                            showPopup(mn)
+                                        end
+                                    end
+                                else
+                                    if alertedMonsters[id] then
+                                        alertedMonsters[id] = nil
+                                    end
+                                end
+                            end
+                        end
                     end
-                    task.wait()
                 end
-                if fpsLabel then
-                    fpsLabel.Visible = false
-                end
-            end)
-        else
-            if fpsLabel then
-                fpsLabel.Visible = false
             end
         end
+        task.wait(1)
     end
+end)
+
+print("第2段 OK")
+-- 黑脚本 - Doors | Wind UI 第3段（玩家列表）
+
+local T3 = MainWindow:Tab({Title = "玩家", Icon = "solar:users-bold"})
+
+T3:Paragraph({
+    Title = "👥 玩家列表",
+    Desc = "当前房间内所有玩家"
 })
 
-S4:Toggle({
-    Title = "减少特效（提升帧率）",
-    Value = false,
-    Callback = function(v)
-        if v then
-            pcall(function()
-                Lighting.Bloom.Enabled = false
-                Lighting.Blur.Enabled = false
-                if Lighting:FindFirstChild("ColorCorrection") then
-                    Lighting.ColorCorrection.Enabled = false
-                end
-            end)
-            print("✅ 特效已减少")
-        else
-            pcall(function()
-                Lighting.Bloom.Enabled = true
-                Lighting.Blur.Enabled = true
-                if Lighting:FindFirstChild("ColorCorrection") then
-                    Lighting.ColorCorrection.Enabled = true
-                end
-            end)
-            print("✅ 特效已恢复")
+local playerListFrame = Instance.new("ScrollingFrame")
+playerListFrame.Size = UDim2.new(1, -20, 0, 300)
+playerListFrame.Position = UDim2.new(0, 10, 0, 80)
+playerListFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+playerListFrame.BackgroundTransparency = 0.05
+playerListFrame.BorderSizePixel = 0
+playerListFrame.ScrollBarThickness = 3
+playerListFrame.ZIndex = 7
+playerListFrame.Parent = T3:GetContainer()
+
+local playerListLayout = Instance.new("UIListLayout")
+playerListLayout.Padding = UDim.new(0, 4)
+playerListLayout.Parent = playerListFrame
+
+local function updatePlayerList()
+    for _, v in ipairs(playerListFrame:GetChildren()) do
+        if v:IsA("TextLabel") or v:IsA("Frame") then
+            v:Destroy()
         end
     end
+    
+    local players = Players:GetPlayers()
+    for i, p in ipairs(players) do
+        local item = Instance.new("Frame")
+        item.Size = UDim2.new(1, -10, 0, 30)
+        item.BackgroundColor3 = (i % 2 == 0) and Color3.fromRGB(240, 240, 240) or Color3.fromRGB(255, 255, 255)
+        item.BorderSizePixel = 0
+        item.Parent = playerListFrame
+        Instance.new("UICorner", item).CornerRadius = UDim.new(0, 4)
+        
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(0.5, 0, 1, 0)
+        nameLabel.Position = UDim2.new(0, 8, 0, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.TextColor3 = (p == LocalPlayer) and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(50, 50, 50)
+        nameLabel.Text = (p == LocalPlayer) and "⭐ "..p.Name or p.Name
+        nameLabel.Font = Enum.Font.GothamSemibold
+        nameLabel.TextSize = 12
+        nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+        nameLabel.Parent = item
+        
+        local statusLabel = Instance.new("TextLabel")
+        statusLabel.Size = UDim2.new(0.5, 0, 1, 0)
+        statusLabel.Position = UDim2.new(0.5, 0, 0, 0)
+        statusLabel.BackgroundTransparency = 1
+        if p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+            statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
+            statusLabel.Text = "🟢 存活"
+        else
+            statusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+            statusLabel.Text = "🔴 死亡"
+        end
+        statusLabel.Font = Enum.Font.Gotham
+        statusLabel.TextSize = 11
+        statusLabel.TextXAlignment = Enum.TextXAlignment.Right
+        statusLabel.Parent = item
+    end
+    
+    playerListFrame.CanvasSize = UDim2.new(0, 0, 0, #players * 34 + 4)
+end
+
+updatePlayerList()
+Players.PlayerAdded:Connect(updatePlayerList)
+Players.PlayerRemoving:Connect(updatePlayerList)
+
+T3:Button({
+    Title = "🔄 刷新列表",
+    Justify = "Center",
+    Color = Color3.fromRGB(76, 175, 80),
+    Callback = function()
+        updatePlayerList()
+    end
 })
 
-print("第5段 OK - 杂项设置")
+print("第3段 OK")
 
+print("🟢 按 K 键测试弹窗")
