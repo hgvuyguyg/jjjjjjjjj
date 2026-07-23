@@ -130,7 +130,7 @@ function showPopup(name)
     
     pcall(function()
         local sound = Instance.new("Sound",popup)
-        sound.SoundId = "rbxassetid://147722335"
+        sound.SoundId = "rbxassetid://9126074485"
         sound.Volume = 1.5
         sound:Play()
     end)
@@ -1174,7 +1174,7 @@ T4:Divider()
 
 T4:Paragraph({
     Title = "说明",
-    Desc = "拦截Eyes伤害远程事件/n开启时必须先低头/n没低头用用不了就受着吧😂"
+    Desc = "拦截Eyes伤害远程事件 开启时必须先低头"
 })
 
 WI:Popup({
