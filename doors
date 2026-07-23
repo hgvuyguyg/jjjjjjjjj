@@ -627,86 +627,113 @@ function showPopup(name)
         end)
     end)
 end
--- 黑脚本 - Doors | Wind UI 第5段（绕过区 - Screech防绕过）
+-- 黑脚本 - Doors | Wind UI 第5段（杂项设置）
 
-local T4 = MainWindow:Tab({Title="绕过区", Icon="solar:shield-bold"})
+local T5 = MainWindow:Tab({Title = "杂项", Icon = "solar:settings-bold"})
 
-local S2 = T4:Section({Title="🛡 防御功能"})
+T5:Paragraph({
+    Title = "⚙️ 杂项设置",
+    Desc = "快捷键 | 性能"
+})
 
-S2:Toggle({
-    Title="👁 防止眼睛伤害",
-    Value=false,
-    Callback=function(v)
-        eyesBypass = v
+-- 快捷键设置
+local S3 = T5:Section({Title = "⌨️ 快捷键"})
+
+S3:Keybind({
+    Title = "切换UI开关",
+    Key = Enum.KeyCode.RightShift,
+    Callback = function()
+        MainWindow:Toggle()
+    end
+})
+
+S3:Keybind({
+    Title = "测试弹窗（K键）",
+    Key = Enum.KeyCode.K,
+    Callback = function()
+        showPopup("测试怪物")
+        print("✅ 测试弹窗已触发")
+    end
+})
+
+-- 性能设置
+local S4 = T5:Section({Title = "⚡ 性能设置"})
+
+local showFPS = false
+local fpsLabel = nil
+
+S4:Toggle({
+    Title = "显示FPS",
+    Value = false,
+    Callback = function(v)
+        showFPS = v
         if v then
-            T4:Paragraph({
-                Title="⚠ 重要提示",
-                Desc="开启防眼睛伤害后，请先低头向下看再抬头，\n否则可能会出现bug导致防不了！"
-            })
-            local E = game:GetService("ReplicatedStorage").RemotesFolder.MotorReplication
-            local m
-            m = hookmetamethod(game, "__namecall", function(...)
-                local s = ...
-                if rawequal(s, E) and getnamecallmethod() == "FireServer" then
-                    local A = table.pack(...)
-                    local R = table.pack(m(s, table.unpack(A, 1, A.n)))
-                    return table.unpack(R, 1, R.n)
+            if not fpsLabel then
+                fpsLabel = Instance.new("TextLabel")
+                fpsLabel.Size = UDim2.new(0, 80, 0, 30)
+                fpsLabel.Position = UDim2.new(0, 10, 1, -40)
+                fpsLabel.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+                fpsLabel.BackgroundTransparency = 0.5
+                fpsLabel.TextColor3 = Color3.new(1, 1, 1)
+                fpsLabel.Font = Enum.Font.GothamBold
+                fpsLabel.TextSize = 14
+                fpsLabel.ZIndex = 9999
+                fpsLabel.Parent = screenGui
+                Instance.new("UICorner", fpsLabel).CornerRadius = UDim.new(0, 6)
+            end
+            fpsLabel.Visible = true
+            task.spawn(function()
+                local lastTime = tick()
+                local frameCount = 0
+                while showFPS do
+                    frameCount = frameCount + 1
+                    local currentTime = tick()
+                    if currentTime - lastTime >= 1 then
+                        pcall(function()
+                            fpsLabel.Text = "FPS: "..frameCount
+                        end)
+                        frameCount = 0
+                        lastTime = currentTime
+                    end
+                    task.wait()
                 end
-                return m(...)
-            end)
-            local o
-            o = hookfunction(E.FireServer, function(...)
-                local s = ...
-                if rawequal(s, E) then
-                    local A = table.pack(...)
-                    local R = table.pack(o(table.unpack(A, 1, A.n)))
-                    return table.unpack(R, 1, R.n)
+                if fpsLabel then
+                    fpsLabel.Visible = false
                 end
-                return o(s, ...)
             end)
+        else
+            if fpsLabel then
+                fpsLabel.Visible = false
+            end
         end
     end
 })
 
-S2:Toggle({
-    Title="🔇 防止Screech伤害",
-    Value=false,
-    Callback=function(v)
-        screechBypass = v
+S4:Toggle({
+    Title = "减少特效（提升帧率）",
+    Value = false,
+    Callback = function(v)
         if v then
-            local Event = game:GetService("ReplicatedStorage").RemotesFolder.Screech
-            local mtHook
-            mtHook = hookmetamethod(game, "__namecall", function(...)
-                local self = ...
-                if rawequal(self, Event) and getnamecallmethod() == "FireServer" then
-                    local Args = table.pack(...)
-                    local Result = table.pack(mtHook(self, table.unpack(Args, 1, Args.n)))
-                    print("拦截 Screech (__namecall)")
-                    return table.unpack(Result, 1, Result.n)
+            pcall(function()
+                Lighting.Bloom.Enabled = false
+                Lighting.Blur.Enabled = false
+                if Lighting:FindFirstChild("ColorCorrection") then
+                    Lighting.ColorCorrection.Enabled = false
                 end
-                return mtHook(...)
             end)
-            local OldFireServer
-            OldFireServer = hookfunction(Event.FireServer, function(...)
-                local self = ...
-                if rawequal(self, Event) then
-                    local Args = table.pack(...)
-                    local Result = table.pack(OldFireServer(table.unpack(Args, 1, Args.n)))
-                    print("拦截 Screech (__index)")
-                    return table.unpack(Result, 1, Result.n)
+            print("✅ 特效已减少")
+        else
+            pcall(function()
+                Lighting.Bloom.Enabled = true
+                Lighting.Blur.Enabled = true
+                if Lighting:FindFirstChild("ColorCorrection") then
+                    Lighting.ColorCorrection.Enabled = true
                 end
-                return OldFireServer(self, ...)
             end)
+            print("✅ 特效已恢复")
         end
     end
 })
 
-T4:Divider()
-
-T4:Paragraph({
-    Title="说明",
-    Desc="👁 防止眼睛伤害 - 拦截Eyes远程事件\n（开启后先低头看地再抬头）\n\n🔇 防止Screech伤害 - 拦截Screech远程事件"
-})
-
-print("第5段 OK - 绕过区Screech")
+print("第5段 OK - 杂项设置")
 
