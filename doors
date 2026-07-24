@@ -32,7 +32,6 @@ local nightVisionConn = nil
 local doorCount = 0
 local countedDoors = {}
 
--- 弹窗（红色）
 local activePopups = {}
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "MonsterAlertUI"
@@ -47,91 +46,18 @@ popupContainer.ZIndex = 9999
 popupContainer.Parent = screenGui
 
 function showPopup(name)
-    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        return
-    end
-    
-    while #activePopups >= 5 do 
-        local old = table.remove(activePopups,1)
-        if old then old:Destroy() end
-    end
-    
-    for _,p in ipairs(activePopups) do
-        TweenService:Create(p,TweenInfo.new(0.25),{Position=UDim2.new(0,0,0,p.Position.Y.Offset+72)}):Play()
-    end
-    
-    local popup = Instance.new("Frame")
-    popup.Size = UDim2.new(0,280,0,60)
-    popup.Position = UDim2.new(0,-300,0,0)
-    popup.BackgroundColor3 = Color3.fromRGB(200,50,50)
-    popup.BorderSizePixel = 2
-    popup.BorderColor3 = Color3.fromRGB(255,0,0)
-    popup.ZIndex = 9999
-    popup.Parent = popupContainer
-    
-    local icon = Instance.new("TextLabel")
-    icon.Size = UDim2.new(0,40,0,40)
-    icon.Position = UDim2.new(0,8,0,10)
-    icon.BackgroundTransparency = 1
-    icon.Text = "⚠"
-    icon.Font = Enum.Font.SourceSansBold
-    icon.TextSize = 28
-    icon.ZIndex = 9999
-    icon.Parent = popup
-    
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1,-60,0,28)
-    title.Position = UDim2.new(0,50,0,5)
-    title.BackgroundTransparency = 1
-    title.TextColor3 = Color3.new(1,1,1)
-    title.Text = name.." 来了！"
-    title.Font = Enum.Font.SourceSansBold
-    title.TextSize = 16
-    title.ZIndex = 9999
-    title.TextXAlignment = Enum.TextXAlignment.Left
-    title.Parent = popup
-    
-    local desc = Instance.new("TextLabel")
-    desc.Size = UDim2.new(1,-60,0,22)
-    desc.Position = UDim2.new(0,50,0,33)
-    desc.BackgroundTransparency = 1
-    desc.TextColor3 = Color3.fromRGB(255,200,200)
-    desc.Text = "🏃 找个地方躲起来！"
-    desc.Font = Enum.Font.SourceSans
-    desc.TextSize = 12
-    desc.ZIndex = 9999
-    desc.TextXAlignment = Enum.TextXAlignment.Left
-    desc.Parent = popup
-    
-    table.insert(activePopups,popup)
-    TweenService:Create(popup,TweenInfo.new(0.4,Enum.EasingStyle.Quad),{Position=UDim2.new(0,0,0,0)}):Play()
-    
-    pcall(function()
-        local sound = Instance.new("Sound",popup)
-        sound.SoundId = "rbxassetid://9126074485"
-        sound.Volume = 2
-        sound:Play()
-    end)
-    
-    task.delay(5,function()
-        pcall(function()
-            TweenService:Create(popup,TweenInfo.new(0.4),{Position=UDim2.new(0,-300,0,popup.Position.Y.Offset)}):Play()
-            task.wait(0.4)
-            for i,p in ipairs(activePopups)do 
-                if p==popup then 
-                    table.remove(activePopups,i)
-                    break 
-                end 
-            end
-            popup:Destroy()
-            for _,p in ipairs(activePopups)do
-                TweenService:Create(p,TweenInfo.new(0.25),{Position=UDim2.new(0,0,0,p.Position.Y.Offset-72)}):Play()
-            end
-        end)
-    end)
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
+    while #activePopups >= 5 do local old = table.remove(activePopups,1); if old then old:Destroy() end end
+    for _,p in ipairs(activePopups) do TweenService:Create(p,TweenInfo.new(0.25),{Position=UDim2.new(0,0,0,p.Position.Y.Offset+72)}):Play() end
+    local popup = Instance.new("Frame"); popup.Size = UDim2.new(0,280,0,60); popup.Position = UDim2.new(0,-300,0,0); popup.BackgroundColor3 = Color3.fromRGB(200,50,50); popup.BorderSizePixel = 2; popup.BorderColor3 = Color3.fromRGB(255,0,0); popup.ZIndex = 9999; popup.Parent = popupContainer
+    local icon = Instance.new("TextLabel"); icon.Size = UDim2.new(0,40,0,40); icon.Position = UDim2.new(0,8,0,10); icon.BackgroundTransparency = 1; icon.Text = "⚠"; icon.Font = Enum.Font.SourceSansBold; icon.TextSize = 28; icon.ZIndex = 9999; icon.Parent = popup
+    local title = Instance.new("TextLabel"); title.Size = UDim2.new(1,-60,0,28); title.Position = UDim2.new(0,50,0,5); title.BackgroundTransparency = 1; title.TextColor3 = Color3.new(1,1,1); title.Text = name.." 来了！"; title.Font = Enum.Font.SourceSansBold; title.TextSize = 16; title.ZIndex = 9999; title.TextXAlignment = Enum.TextXAlignment.Left; title.Parent = popup
+    local desc = Instance.new("TextLabel"); desc.Size = UDim2.new(1,-60,0,22); desc.Position = UDim2.new(0,50,0,33); desc.BackgroundTransparency = 1; desc.TextColor3 = Color3.fromRGB(255,200,200); desc.Text = "🏃 找个地方躲起来！"; desc.Font = Enum.Font.SourceSans; desc.TextSize = 12; desc.ZIndex = 9999; desc.TextXAlignment = Enum.TextXAlignment.Left; desc.Parent = popup
+    table.insert(activePopups,popup); TweenService:Create(popup,TweenInfo.new(0.4,Enum.EasingStyle.Quad),{Position=UDim2.new(0,0,0,0)}):Play()
+    pcall(function() local sound = Instance.new("Sound",popup); sound.SoundId = "rbxassetid://9126074485"; sound.Volume = 2; sound:Play() end)
+    task.delay(5,function() pcall(function() TweenService:Create(popup,TweenInfo.new(0.4),{Position=UDim2.new(0,-300,0,popup.Position.Y.Offset)}):Play(); task.wait(0.4); for i,p in ipairs(activePopups)do if p==popup then table.remove(activePopups,i);break end end; popup:Destroy(); for _,p in ipairs(activePopups)do TweenService:Create(p,TweenInfo.new(0.25),{Position=UDim2.new(0,0,0,p.Position.Y.Offset-72)}):Play() end end) end)
 end
 
--- ==================== UI界面 ====================
 local MainWindow = WI:CreateWindow({
     Title = "黑脚本 - Doors",
     Icon = "solar:door-open-bold",
@@ -141,722 +67,182 @@ local MainWindow = WI:CreateWindow({
     ScrollBarEnabled = true
 })
 
--- 公告
 local T1 = MainWindow:Tab({Title="公告", Icon="solar:info-bold"})
-T1:Paragraph({
-    Title="黑脚本 - Doors",
-    Desc="C工作室制作 | Wind UI\n\nESP透视 | 红色弹窗 | 可调速度\n夜视 | 防滑 | 自动互动\n射线连线 | 队友透视 | 门编号\n防Eyes | 防Screech"
-})
-T1:Button({
-    Title="关闭面板",
-    Justify="Center",
-    Color=Color3.fromHex("#888888"),
-    Callback=function()
-        MainWindow:Close()
-    end
-})
+T1:Paragraph({Title="黑脚本 - Doors", Desc="C工作室制作 | Wind UI\n\nESP透视 | 红色弹窗 | 可调速度\n夜视 | 防滑 | 自动互动\n射线连线 | 队友透视 | 门编号\n防Eyes | 防Screech"})
+T1:Button({Title="关闭面板", Justify="Center", Color=Color3.fromHex("#888888"), Callback=function() MainWindow:Close() end})
 
--- ==================== 功能 ====================
 local T2 = MainWindow:Tab({Title="功能", Icon="solar:bolt-bold"})
-
--- 速度设置
 local speedSection = T2:Section({Title="🏃 速度设置"})
-
 local speedInputRef = nil
-
-speedSection:Toggle({
-    Title="开启速度",
-    Value=false,
-    Callback=function(v)
-        speedEnabled = v
-        if not v then
-            local c = LocalPlayer.Character
-            if c and c:FindFirstChild("Humanoid") then
-                c.Humanoid.WalkSpeed = 16
-            end
-        end
-    end
-})
-
-local speedInput = speedSection:Input({
-    Title="速度数值",
-    Description="输入1-100之间的数值",
-    Value="21",
-    Callback=function(v)
-        local num = tonumber(v)
-        if num and num > 0 and num <= 100 then
-            speedValue = num
-            _G.speedValue = num
-        end
-    end
-})
+speedSection:Toggle({Title="开启速度", Value=false, Callback=function(v) speedEnabled = v; if not v then local c = LocalPlayer.Character; if c and c:FindFirstChild("Humanoid") then c.Humanoid.WalkSpeed = 16 end end end})
+local speedInput = speedSection:Input({Title="速度数值", Description="输入1-100之间的数值", Value="21", Callback=function(v) local num = tonumber(v); if num and num > 0 and num <= 100 then speedValue = num; _G.speedValue = num end end})
 speedInputRef = speedInput
+speedSection:Button({Title="⭐ 推荐（21速度）", Justify="Center", Color=Color3.fromRGB(255,200,50), Callback=function() speedValue = 21; _G.speedValue = 21; if speedInputRef then pcall(function() speedInputRef:SetValue("21") end) end; WI:Notify({Title="设置成功", Content="速度已设为 21", Duration=2, Type="success"}) end})
 
-speedSection:Button({
-    Title="⭐ 推荐（21速度）",
-    Justify="Center",
-    Color=Color3.fromRGB(255, 200, 50),
-    Callback=function()
-        speedValue = 21
-        _G.speedValue = 21
-        if speedInputRef then
+T2:Toggle({Title="夜视", Value=false, Callback=function(v)
+    nightVision = v
+    if v then
+        if nightVisionConn then nightVisionConn:Disconnect() end
+        nightVisionConn = RunService.RenderStepped:Connect(function()
             pcall(function()
-                speedInputRef:SetValue("21")
+                if Lighting.Brightness > 1.5 then return end
+                Lighting.Brightness = 1.2; Lighting.ClockTime = 14; Lighting.FogEnd = 100000; Lighting.GlobalShadows = false
             end)
-        end
-        WI:Notify({
-            Title="设置成功",
-            Content="速度已设为 21",
-            Duration=2,
-            Type="success"
-        })
+        end)
+    else
+        if nightVisionConn then nightVisionConn:Disconnect(); nightVisionConn = nil end
+        pcall(function() Lighting.Brightness = 1; Lighting.FogEnd = 500; Lighting.GlobalShadows = true end)
     end
-})
+end})
+T2:Toggle({Title="怪物弹窗提示", Value=false, Callback=function(v) monsterAlert = v end})
+T2:Toggle({Title="防滑模式", Value=false, Callback=function(v) antiSlip = v end})
+T2:Toggle({Title="自动互动", Value=false, Callback=function(v) autoInteract = v end})
 
--- 夜视（RenderStepped每帧循环 - 稳定不闪）
-T2:Toggle({
-    Title="夜视",
-    Value=false,
-    Callback=function(v)
-        nightVision = v
-        if v then
-            if nightVisionConn then nightVisionConn:Disconnect() end
-            nightVisionConn = RunService.RenderStepped:Connect(function()
-                pcall(function()
-                    Lighting.Brightness = 2
-                    Lighting.ClockTime = 14
-                    Lighting.FogEnd = 100000
-                    Lighting.GlobalShadows = false
-                    Lighting.ExposureCompensation = 1
-                end)
-            end)
-        else
-            if nightVisionConn then nightVisionConn:Disconnect(); nightVisionConn = nil end
-            pcall(function()
-                Lighting.Brightness = 1
-                Lighting.FogEnd = 500
-                Lighting.GlobalShadows = true
-                Lighting.ExposureCompensation = 0
-            end)
-        end
-    end
-})
-
-T2:Toggle({
-    Title="怪物弹窗提示",
-    Value=false,
-    Callback=function(v)
-        monsterAlert = v
-    end
-})
-
-T2:Toggle({
-    Title="防滑模式",
-    Value=false,
-    Callback=function(v)
-        antiSlip = v
-    end
-})
-
-T2:Toggle({
-    Title="自动互动",
-    Value=false,
-    Callback=function(v)
-        autoInteract = v
-    end
-})
-
--- ==================== ESP透视 ====================
 local T3 = MainWindow:Tab({Title="ESP透视", Icon="solar:eye-bold"})
-
-T3:Toggle({
-    Title="ESP总开关",
-    Value=false,
-    Callback=function(v)
-        espEnabled = v
-        if not v then
-            clearAll()
-        end
-    end
-})
-
+T3:Toggle({Title="ESP总开关", Value=false, Callback=function(v) espEnabled = v; if not v then clearAll() end end})
 T3:Divider()
-
 local S1 = T3:Section({Title="透视选项"})
-
-S1:Toggle({
-    Title="透视门",
-    Value=true,
-    Callback=function(v)
-        showDoors = v
-    end
-})
-
-S1:Toggle({
-    Title="透视钥匙",
-    Value=true,
-    Callback=function(v)
-        showKeys = v
-    end
-})
-
-S1:Toggle({
-    Title="透视道具",
-    Value=true,
-    Callback=function(v)
-        showItems = v
-    end
-})
-
-S1:Toggle({
-    Title="透视怪物",
-    Value=true,
-    Callback=function(v)
-        showMonsters = v
-    end
-})
-
-S1:Toggle({
-    Title="透视拉杆",
-    Value=true,
-    Callback=function(v)
-        showLevers = v
-    end
-})
-
-S1:Toggle({
-    Title="透视书",
-    Value=true,
-    Callback=function(v)
-        showBook = v
-    end
-})
-
-S1:Toggle({
-    Title="透视电池",
-    Value=true,
-    Callback=function(v)
-        showBattery = v
-    end
-})
-
-S1:Toggle({
-    Title="透视队友",
-    Value=true,
-    Callback=function(v)
-        showTeammates = v
-    end
-})
-
+S1:Toggle({Title="透视门", Value=true, Callback=function(v) showDoors = v end})
+S1:Toggle({Title="透视钥匙", Value=true, Callback=function(v) showKeys = v end})
+S1:Toggle({Title="透视道具", Value=true, Callback=function(v) showItems = v end})
+S1:Toggle({Title="透视怪物", Value=true, Callback=function(v) showMonsters = v end})
+S1:Toggle({Title="透视拉杆", Value=true, Callback=function(v) showLevers = v end})
+S1:Toggle({Title="透视书", Value=true, Callback=function(v) showBook = v end})
+S1:Toggle({Title="透视电池", Value=true, Callback=function(v) showBattery = v end})
+S1:Toggle({Title="透视队友", Value=true, Callback=function(v) showTeammates = v end})
 T3:Divider()
+T3:Toggle({Title="射线连线", Value=false, Callback=function(v) rayEnabled = v; if not v then clearBeams() end end})
 
-T3:Toggle({
-    Title="射线连线",
-    Value=false,
-    Callback=function(v)
-        rayEnabled = v
-        if not v then
-            clearBeams()
-        end
-    end
-})
-
--- ==================== 绕过区 ====================
 local T4 = MainWindow:Tab({Title="绕过区", Icon="solar:shield-bold"})
-
 local S2 = T4:Section({Title="防御功能"})
-
-local eyesBypass = false
-S2:Toggle({
-    Title="防止眼睛伤害",
-    Value=false,
-    Callback=function(v)
-        eyesBypass = v
-        if v then
-            T4:Paragraph({
-                Title="⚠ 重要提示",
-                Desc="开启后请先低头向下看再抬头，\n否则可能防不了！"
-            })
-            local E = game:GetService("ReplicatedStorage").RemotesFolder.MotorReplication
-            local m
-            m = hookmetamethod(game, "__namecall", function(...)
-                local s = ...
-                if rawequal(s, E) and getnamecallmethod() == "FireServer" then
-                    local A = table.pack(...)
-                    local R = table.pack(m(s, table.unpack(A, 1, A.n)))
-                    return table.unpack(R, 1, R.n)
-                end
-                return m(...)
-            end)
-            local o
-            o = hookfunction(E.FireServer, function(...)
-                local s = ...
-                if rawequal(s, E) then
-                    local A = table.pack(...)
-                    local R = table.pack(o(table.unpack(A, 1, A.n)))
-                    return table.unpack(R, 1, R.n)
-                end
-                return o(s, ...)
-            end)
-        end
-    end
-})
-
-local screechBypass = false
-S2:Toggle({
-    Title="防止Screech伤害",
-    Value=false,
-    Callback=function(v)
-        screechBypass = v
-        if v then
-            local Event = game:GetService("ReplicatedStorage").RemotesFolder.Screech
-            local mtHook
-            mtHook = hookmetamethod(game, "__namecall", function(...)
-                local self = ...
-                if rawequal(self, Event) and getnamecallmethod() == "FireServer" then
-                    local Args = table.pack(...)
-                    local Result = table.pack(mtHook(self, table.unpack(Args, 1, Args.n)))
-                    return table.unpack(Result, 1, Result.n)
-                end
-                return mtHook(...)
-            end)
-            local OldFireServer
-            OldFireServer = hookfunction(Event.FireServer, function(...)
-                local self = ...
-                if rawequal(self, Event) then
-                    local Args = table.pack(...)
-                    local Result = table.pack(OldFireServer(table.unpack(Args, 1, Args.n)))
-                    return table.unpack(Result, 1, Result.n)
-                end
-                return OldFireServer(self, ...)
-            end)
-        end
-    end
-})
-
+S2:Toggle({Title="防止眼睛伤害", Value=false, Callback=function(v) if v then T4:Paragraph({Title="⚠ 重要提示", Desc="开启后请先低头向下看再抬头，\n否则可能防不了！"}); local E = game:GetService("ReplicatedStorage").RemotesFolder.MotorReplication; local m; m = hookmetamethod(game,"__namecall",function(...) local s = ...; if rawequal(s,E) and getnamecallmethod() == "FireServer" then local A = table.pack(...); local R = table.pack(m(s,table.unpack(A,1,A.n))); return table.unpack(R,1,R.n) end; return m(...) end); local o; o = hookfunction(E.FireServer,function(...) local s = ...; if rawequal(s,E) then local A = table.pack(...); local R = table.pack(o(table.unpack(A,1,A.n))); return table.unpack(R,1,R.n) end; return o(s,...) end) end end})
+S2:Toggle({Title="防止Screech伤害", Value=false, Callback=function(v) if v then local Event = game:GetService("ReplicatedStorage").RemotesFolder.Screech; local mtHook; mtHook = hookmetamethod(game,"__namecall",function(...) local self = ...; if rawequal(self,Event) and getnamecallmethod() == "FireServer" then local Args = table.pack(...); local Result = table.pack(mtHook(self,table.unpack(Args,1,Args.n))); return table.unpack(Result,1,Result.n) end; return mtHook(...) end); local OldFireServer; OldFireServer = hookfunction(Event.FireServer,function(...) local self = ...; if rawequal(self,Event) then local Args = table.pack(...); local Result = table.pack(OldFireServer(table.unpack(Args,1,Args.n))); return table.unpack(Result,1,Result.n) end; return OldFireServer(self,...) end) end end})
 T4:Divider()
-T4:Paragraph({
-    Title="说明",
-    Desc="防止眼睛伤害 - 开启后先低头看地\n防止Screech伤害 - 拦截Screech远程事件"
-})
+T4:Paragraph({Title="说明", Desc="防止眼睛伤害 - 开启后先低头看地\n防止Screech伤害 - 拦截Screech远程事件"})
 
-WI:Popup({
-    Title="黑脚本 - Doors",
-    Content="加载完成\n按RightShift开关\n\n红色弹窗 | 音效\n公告 | 功能 | ESP透视 | 绕过区",
-    Buttons={{
-        Title="确定",
-        Variant="Primary",
-        Callback=function() end
-    }}
-})
+WI:Popup({Title="黑脚本 - Doors", Content="加载完成\n按RightShift开关\n\n红色弹窗 | 音效\n公告 | 功能 | ESP透视 | 绕过区", Buttons={{Title="确定", Variant="Primary", Callback=function() end}}})
 
--- ==================== 暴露变量给其他段 ====================
 _G.speedValue = speedValue
 _G.nightVisionConn = nightVisionConn
 
--- 测试触发器（按K键）
 local testActive = false
 function triggerTest()
-    if testActive then return end
-    testActive = true
+    if testActive then return end; testActive = true
     showPopup("Rush")
-    pcall(function()
-        local sound = Instance.new("Sound")
-        sound.SoundId = "rbxassetid://9126074485"
-        sound.Volume = 2
-        sound.Parent = screenGui
-        sound:Play()
-        task.wait(1)
-        sound:Destroy()
-    end)
-    task.wait(2)
-    testActive = false
+    pcall(function() local sound = Instance.new("Sound"); sound.SoundId = "rbxassetid://9126074485"; sound.Volume = 2; sound.Parent = screenGui; sound:Play(); task.wait(1); sound:Destroy() end)
+    task.wait(2); testActive = false
 end
-
-game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.K then
-        triggerTest()
-    end
-end)
+game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed) if gameProcessed then return end; if input.KeyCode == Enum.KeyCode.K then triggerTest() end end)
 
 print("第1段 OK")
--- 黑脚本 - Doors | Wind UI 第2段
+-- 黑脚本 - Doors | Wind UI 第2段（完整版）
 
 function clearHighlights()
-    for _, d in pairs(highlights) do
-        pcall(function()
-            if d.hl then d.hl:Destroy() end
-            if d.bb then d.bb:Destroy() end
-            if d.conn then d.conn:Disconnect() end
-        end)
-    end
+    for _, d in pairs(highlights) do pcall(function() if d.hl then d.hl:Destroy() end if d.bb then d.bb:Destroy() end if d.conn then d.conn:Disconnect() end end) end
     highlights = {}
 end
-
 function clearBeams()
-    for _, b in pairs(beamData) do
-        pcall(function()
-            if b.beam then b.beam:Destroy() end
-            if b.a0 then b.a0:Destroy() end
-            if b.a1 then b.a1:Destroy() end
-        end)
-    end
+    for _, b in pairs(beamData) do pcall(function() if b.beam then b.beam:Destroy() end if b.a0 then b.a0:Destroy() end if b.a1 then b.a1:Destroy() end end) end
     beamData = {}
 end
-
-function clearAll()
-    clearHighlights()
-    clearBeams()
-end
-
+function clearAll() clearHighlights(); clearBeams() end
 function getPos(o)
-    if o:IsA("BasePart") then
-        return o.Position
-    end
-    if o:IsA("Model") then
-        local p = o:FindFirstChildWhichIsA("BasePart")
-        if p then
-            return p.Position
-        end
-    end
+    if o:IsA("BasePart") then return o.Position end
+    if o:IsA("Model") then local p = o:FindFirstChildWhichIsA("BasePart"); if p then return p.Position end end
     return nil
 end
-
-function getDoorNumber(dm)
-    if not countedDoors[dm] then
-        doorCount = doorCount + 1
-        countedDoors[dm] = doorCount
-    end
-    return countedDoors[dm]
-end
-
+function getDoorNumber(dm) if not countedDoors[dm] then doorCount = doorCount + 1; countedDoors[dm] = doorCount end; return countedDoors[dm] end
 function addHighlight(o, c, n)
     pcall(function()
-        local hl = Instance.new("Highlight")
-        hl.FillColor = c
-        hl.FillTransparency = 0.3
-        hl.OutlineColor = Color3.new(1, 1, 1)
-        hl.OutlineTransparency = 0
-        hl.Adornee = o
-        hl.Parent = o
-        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-
-        local bb = Instance.new("BillboardGui")
-        bb.Size = UDim2.new(0, 200, 0, 40)
-        bb.AlwaysOnTop = true
-        bb.Parent = o
-
-        local nl = Instance.new("TextLabel")
-        nl.Size = UDim2.new(1, 0, 0.5, 0)
-        nl.BackgroundTransparency = 1
-        nl.TextColor3 = Color3.new(1, 1, 1)
-        nl.Text = n
-        nl.Font = Enum.Font.SourceSansBold
-        nl.TextSize = 15
-        nl.Parent = bb
-
-        local dl = Instance.new("TextLabel")
-        dl.Size = UDim2.new(1, 0, 0.5, 0)
-        dl.Position = UDim2.new(0, 0, 0.5, 0)
-        dl.BackgroundTransparency = 1
-        dl.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-        dl.Text = "0m"
-        dl.Font = Enum.Font.SourceSans
-        dl.TextSize = 12
-        dl.Parent = bb
-
-        local cn = RunService.Heartbeat:Connect(function()
-            if not o or not o.Parent then
-                cn:Disconnect()
-                pcall(function()
-                    hl:Destroy()
-                    bb:Destroy()
-                end)
-                return
-            end
-            local ch = LocalPlayer.Character
-            if ch and ch:FindFirstChild("HumanoidRootPart") then
-                local po = getPos(o)
-                if po then
-                    pcall(function()
-                        dl.Text = string.format("%.1fm", (ch.HumanoidRootPart.Position - po).Magnitude)
-                    end)
-                end
-            end
-        end)
-
-        table.insert(highlights, {hl = hl, bb = bb, conn = cn})
+        local hl = Instance.new("Highlight"); hl.FillColor = c; hl.FillTransparency = 0.3; hl.OutlineColor = Color3.new(1,1,1); hl.OutlineTransparency = 0; hl.Adornee = o; hl.Parent = o; hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        local bb = Instance.new("BillboardGui"); bb.Size = UDim2.new(0,200,0,40); bb.AlwaysOnTop = true; bb.Parent = o
+        local nl = Instance.new("TextLabel"); nl.Size = UDim2.new(1,0,0.5,0); nl.BackgroundTransparency = 1; nl.TextColor3 = Color3.new(1,1,1); nl.Text = n; nl.Font = Enum.Font.SourceSansBold; nl.TextSize = 15; nl.Parent = bb
+        local dl = Instance.new("TextLabel"); dl.Size = UDim2.new(1,0,0.5,0); dl.Position = UDim2.new(0,0,0.5,0); dl.BackgroundTransparency = 1; dl.TextColor3 = Color3.new(0.8,0.8,0.8); dl.Text = "0m"; dl.Font = Enum.Font.SourceSans; dl.TextSize = 12; dl.Parent = bb
+        local cn = RunService.Heartbeat:Connect(function() if not o or not o.Parent then cn:Disconnect(); pcall(function() hl:Destroy() bb:Destroy() end); return end; local ch = LocalPlayer.Character; if ch and ch:FindFirstChild("HumanoidRootPart") then local po = getPos(o); if po then pcall(function() dl.Text = string.format("%.1fm",(ch.HumanoidRootPart.Position-po).Magnitude) end) end end end)
+        table.insert(highlights,{hl=hl,bb=bb,conn=cn})
     end)
 end
-
 function addScreenBeam(o, c)
-    pcall(function()
-        local ch = LocalPlayer.Character
-        if not ch or not ch:FindFirstChild("Head") then
-            return
-        end
-        local tp = getPos(o)
-        if not tp then
-            return
-        end
-        local a0 = Instance.new("Attachment", ch.Head)
-        local a1 = Instance.new("Attachment", o)
-        a1.WorldPosition = tp
-        local bm = Instance.new("Beam", a0)
-        bm.Attachment0 = a0
-        bm.Attachment1 = a1
-        bm.Color = ColorSequence.new(c)
-        bm.Width0 = 0.03
-        bm.Width1 = 0.03
-        bm.Transparency = NumberSequence.new(0.3)
-        bm.FaceCamera = true
-        table.insert(beamData, {beam = bm, a0 = a0, a1 = a1})
-    end)
+    pcall(function() local ch = LocalPlayer.Character; if not ch or not ch:FindFirstChild("Head") then return end; local tp = getPos(o); if not tp then return end; local a0 = Instance.new("Attachment",ch.Head); local a1 = Instance.new("Attachment",o); a1.WorldPosition = tp; local bm = Instance.new("Beam",a0); bm.Attachment0 = a0; bm.Attachment1 = a1; bm.Color = ColorSequence.new(c); bm.Width0 = 0.03; bm.Width1 = 0.03; bm.Transparency = NumberSequence.new(0.3); bm.FaceCamera = true; table.insert(beamData,{beam=bm,a0=a0,a1=a1}) end)
 end
-
 function updateBeams()
-    clearBeams()
-    if not rayEnabled or not espEnabled then
-        return
+    clearBeams(); if not rayEnabled or not espEnabled then return end
+    local ch = LocalPlayer.Character; if not ch or not ch:FindFirstChild("Head") then return end; local hp = ch.Head.Position
+    for _, o in ipairs(workspace:GetDescendants()) do local po = getPos(o); if po and (hp-po).Magnitude <= 200 then local c = nil
+        if showDoors and o:IsA("Model") and o.Name == "Door" then c = Color3.fromRGB(50,150,255)
+        elseif showBook and o.Name == "LiveHintBook" then c = Color3.fromRGB(255,150,50)
+        elseif showBattery and o.Name:lower():find("stuff") then c = Color3.fromRGB(255,255,0)
+        elseif showKeys and o.Name == "KeyObtain" then c = Color3.fromRGB(255,200,0)
+        elseif showLevers and o.Name:lower():find("lever") then c = Color3.fromRGB(255,100,255)
+        elseif showItems then if o:IsA("Tool") then c = Color3.fromRGB(50,255,50) elseif o:IsA("Model") then local n = o.Name:lower(); if not n:find("book") and (n:find("gold") or n:find("coin") or n:find("flashlight") or n:find("lighter") or n:find("vitamin") or n:find("lockpick") or n:find("bandage") or n:find("crucifix") or n:find("revolver") or n:find("shotgun") or n:find("rifle") or n:find("skeletonkey") or n:find("pills")) then c = Color3.fromRGB(50,255,50) end end
+        elseif showMonsters and o:IsA("Model") and not Players:GetPlayerFromCharacter(o) then local mn = getMonsterName(o); if mn then c = Color3.fromRGB(255,50,50) end end
+        if c then addScreenBeam(o,c) end end
     end
-    local ch = LocalPlayer.Character
-    if not ch or not ch:FindFirstChild("Head") then
-        return
-    end
-    local hp = ch.Head.Position
-    for _, o in ipairs(workspace:GetDescendants()) do
-        local po = getPos(o)
-        if not po or (hp - po).Magnitude > 200 then
-            continue
-        end
-        local c = nil
-        if showDoors and o:IsA("Model") and o.Name == "Door" then
-            c = Color3.fromRGB(50, 150, 255)
-        elseif showBook and o.Name == "LiveHintBook" then
-            c = Color3.fromRGB(255, 150, 50)
-        elseif showBattery and o.Name:lower():find("stuff") then
-            c = Color3.fromRGB(255, 255, 0)
-        elseif showKeys and o.Name == "KeyObtain" then
-            c = Color3.fromRGB(255, 200, 0)
-        elseif showLevers and o.Name:lower():find("lever") then
-            c = Color3.fromRGB(255, 100, 255)
-        elseif showItems then
-            if o:IsA("Tool") then
-                c = Color3.fromRGB(50, 255, 50)
-            elseif o:IsA("Model") then
-                local n = o.Name:lower()
-                if not n:find("book") and (n:find("gold") or n:find("coin") or n:find("flashlight") or n:find("lighter") or n:find("vitamin") or n:find("lockpick") or n:find("bandage") or n:find("crucifix") or n:find("revolver") or n:find("shotgun") or n:find("rifle") or n:find("skeletonkey") or n:find("pills")) then
-                    c = Color3.fromRGB(50, 255, 50)
-                end
-            end
-        elseif showMonsters and o:IsA("Model") and not Players:GetPlayerFromCharacter(o) then
-            local mn = getMonsterName(o)
-            if mn then
-                c = Color3.fromRGB(255, 50, 50)
-            end
-        end
-        if c then
-            addScreenBeam(o, c)
-        end
-    end
-    if showTeammates then
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
-                addScreenBeam(p.Character, Color3.new(1, 1, 1))
-            end
-        end
-    end
+    if showTeammates then for _, p in ipairs(Players:GetPlayers()) do if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then addScreenBeam(p.Character,Color3.new(1,1,1)) end end end
 end
-
 function getMonsterName(o)
     local n = o.Name:lower()
-    if n:find("ambush") then
-        return "Ambush"
-    elseif n:find("rush") then
-        return "Rush"
-    elseif n:find("screech") or n:find("psst") then
-        return "Screech"
-    elseif n:find("figure") or n:find("blind") or n:find("library") then
-        return "Figure"
-    elseif n:find("seek") then
-        return "Seek"
-    elseif n:find("halt") then
-        return "Halt"
-    elseif n:find("eyes") then
-        return "Eyes"
-    elseif n:find("hide") then
-        return "Hide"
-    elseif n:find("dupe") then
-        return "Dupe"
-    elseif n:find("shadow") then
-        return "Shadow"
-    elseif n:find("granny") then
-        return "Figure"
-    elseif o:FindFirstChild("Humanoid") then
-        return "怪物"
-    end
+    if n:find("ambush") then return "Ambush" elseif n:find("rush") then return "Rush" elseif n:find("screech") or n:find("psst") then return "Screech" elseif n:find("figure") or n:find("blind") or n:find("library") then return "Figure" elseif n:find("seek") then return "Seek" elseif n:find("halt") then return "Halt" elseif n:find("eyes") then return "Eyes" elseif n:find("hide") then return "Hide" elseif n:find("dupe") then return "Dupe" elseif n:find("shadow") then return "Shadow" elseif n:find("granny") then return "Figure" elseif o:FindFirstChild("Humanoid") then return "怪物" end
     return nil
 end
-
 function updateESP()
-    clearHighlights()
-    if not espEnabled then
-        return
-    end
+    clearHighlights(); if not espEnabled then return end
     for _, o in ipairs(workspace:GetDescendants()) do
-        if showDoors and o:IsA("Model") and o.Name == "Door" then
-            addHighlight(o, Color3.fromRGB(50, 150, 255), "门#" .. getDoorNumber(o))
-        elseif showBook and o.Name == "LiveHintBook" then
-            addHighlight(o, Color3.fromRGB(255, 150, 50), "书")
-        elseif showBattery and o.Name:lower():find("stuff") then
-            addHighlight(o, Color3.fromRGB(255, 255, 0), "电池")
-        elseif showKeys and o.Name == "KeyObtain" then
-            addHighlight(o, Color3.fromRGB(255, 200, 0), "钥匙")
-        elseif showLevers and o.Name:lower():find("lever") then
-            addHighlight(o, Color3.fromRGB(255, 100, 255), "拉杆")
-        elseif showItems then
-            if o:IsA("Tool") then
-                addHighlight(o, Color3.fromRGB(50, 255, 50), "道具")
-            elseif o:IsA("Model") then
-                local n = o.Name:lower()
-                if not n:find("book") and (n:find("gold") or n:find("coin") or n:find("flashlight") or n:find("lighter") or n:find("vitamin") or n:find("lockpick") or n:find("bandage") or n:find("crucifix") or n:find("revolver") or n:find("shotgun") or n:find("rifle") or n:find("skeletonkey") or n:find("pills")) then
-                    addHighlight(o, Color3.fromRGB(50, 255, 50), "道具")
-                end
-            end
-        elseif showMonsters and o:IsA("Model") and not Players:GetPlayerFromCharacter(o) then
-            local mn = getMonsterName(o)
-            if mn then
-                local po = o:FindFirstChildWhichIsA("BasePart")
-                if po and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    local d = (LocalPlayer.Character.HumanoidRootPart.Position - po.Position).Magnitude
-                    local md = (mn == "Rush" or mn == "Ambush") and 500 or (mn == "Seek") and 300 or (mn == "Screech") and 40 or 80
-                    if d < md then
-                        addHighlight(o, Color3.fromRGB(255, 50, 50), mn)
-                    end
-                end
-            end
-        end
+        if showDoors and o:IsA("Model") and o.Name == "Door" then addHighlight(o,Color3.fromRGB(50,150,255),"门#"..getDoorNumber(o))
+        elseif showBook and o.Name == "LiveHintBook" then addHighlight(o,Color3.fromRGB(255,150,50),"书")
+        elseif showBattery and o.Name:lower():find("stuff") then addHighlight(o,Color3.fromRGB(255,255,0),"电池")
+        elseif showKeys and o.Name == "KeyObtain" then addHighlight(o,Color3.fromRGB(255,200,0),"钥匙")
+        elseif showLevers and o.Name:lower():find("lever") then addHighlight(o,Color3.fromRGB(255,100,255),"拉杆")
+        elseif showItems then if o:IsA("Tool") then addHighlight(o,Color3.fromRGB(50,255,50),"道具") elseif o:IsA("Model") then local n = o.Name:lower(); if not n:find("book") and (n:find("gold") or n:find("coin") or n:find("flashlight") or n:find("lighter") or n:find("vitamin") or n:find("lockpick") or n:find("bandage") or n:find("crucifix") or n:find("revolver") or n:find("shotgun") or n:find("rifle") or n:find("skeletonkey") or n:find("pills")) then addHighlight(o,Color3.fromRGB(50,255,50),"道具") end end
+        elseif showMonsters and o:IsA("Model") and not Players:GetPlayerFromCharacter(o) then local mn = getMonsterName(o); if mn then local po = o:FindFirstChildWhichIsA("BasePart"); if po and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then local d = (LocalPlayer.Character.HumanoidRootPart.Position-po.Position).Magnitude; local md = (mn=="Rush" or mn=="Ambush") and 500 or (mn=="Seek") and 300 or (mn=="Screech") and 40 or 80; if d < md then addHighlight(o,Color3.fromRGB(255,50,50),mn) end end end end
     end
-    if showTeammates then
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer and p.Character then
-                addHighlight(p.Character, Color3.new(1, 1, 1), p.Name)
-            end
-        end
-    end
+    if showTeammates then for _, p in ipairs(Players:GetPlayers()) do if p ~= LocalPlayer and p.Character then addHighlight(p.Character,Color3.new(1,1,1),p.Name) end end end
 end
 
--- 主循环
-spawn(function()
-    while true do
-        if espEnabled then
-            updateESP()
-            if rayEnabled then
-                updateBeams()
-            else
-                clearBeams()
-            end
-        else
-            clearAll()
-        end
-        task.wait(0.5)
-    end
-end)
+spawn(function() while true do if espEnabled then updateESP(); if rayEnabled then updateBeams() else clearBeams() end else clearAll() end; task.wait(0.5) end end)
+spawn(function() while true do if speedEnabled then local c = LocalPlayer.Character; if c and c:FindFirstChild("Humanoid") then c.Humanoid.WalkSpeed = _G.speedValue or 21 end end; task.wait(0.001) end end)
+spawn(function() while true do if antiSlip then local c = LocalPlayer.Character; if c and c:FindFirstChild("Humanoid") and c:FindFirstChild("HumanoidRootPart") then if c.Humanoid.MoveDirection.Magnitude == 0 then c.HumanoidRootPart.Velocity = Vector3.new(0,c.HumanoidRootPart.Velocity.Y,0) end end end; task.wait(0.05) end end)
 
--- 速度循环
+-- 自动互动（三层名字检测跳过柜子/床/画）
 spawn(function()
-    while true do
-        if speedEnabled then
-            local c = LocalPlayer.Character
-            if c and c:FindFirstChild("Humanoid") then
-                local spd = _G.speedValue or 21
-                c.Humanoid.WalkSpeed = spd
-            end
-        end
-        task.wait(0.001)
-    end
-end)
-
--- 防滑循环
-spawn(function()
-    while true do
-        if antiSlip then
-            local c = LocalPlayer.Character
-            if c and c:FindFirstChild("Humanoid") and c:FindFirstChild("HumanoidRootPart") then
-                if c.Humanoid.MoveDirection.Magnitude == 0 then
-                    c.HumanoidRootPart.Velocity = Vector3.new(0, c.HumanoidRootPart.Velocity.Y, 0)
-                end
-            end
-        end
-        task.wait(0.05)
-    end
-end)
-
--- 自动互动循环（有画/柜子/床不互动，门长按E）
-spawn(function()
-    local cabinetNames = {"wardrobe", "cabinet", "closet", "bed", "衣柜", "柜子", "床", "hide", "hiding"}
+    local skipNames = {"wardrobe","cabinet","closet","bed","衣柜","柜子","床","hide","hiding","painting","画","drawing","canvas","picture","frame","photo","portrait"}
     while true do
         if autoInteract then
             pcall(function()
-                local p = LocalPlayer.Character
-                if p and p:FindFirstChild("HumanoidRootPart") then
-                    local hrp = p.HumanoidRootPart
-                    local hrpPos = hrp.Position
-                    local skip = false
-                    
-                    for _, o in ipairs(workspace:GetDescendants()) do
-                        if o:IsA("Model") then
-                            local name = o.Name:lower()
-                            local isCabinet = false
-                            for _, kw in ipairs(cabinetNames) do if name:find(kw) then isCabinet = true; break end end
-                            local isPainting = name:find("painting") or name:find("画")
-                            if isCabinet or isPainting then
-                                local bp = o:FindFirstChildWhichIsA("BasePart")
-                                if bp and (bp.Position - hrpPos).Magnitude < 10 then
-                                    skip = true; break
-                                end
-                            end
-                        end
-                    end
-                    
-                    if not skip then
-                        for _, o in ipairs(workspace:GetDescendants()) do
-                            if o:IsA("ProximityPrompt") and o.Enabled then
-                                local pp = o.Parent
-                                if pp then
-                                    local po = nil
-                                    if pp:IsA("BasePart") then po = pp.Position
-                                    elseif pp:IsA("Model") then local bp = pp:FindFirstChildWhichIsA("BasePart"); if bp then po = bp.Position end end
-                                    if po and (po - hrpPos).Magnitude < 10 then
-                                        local pn = pp.Name:lower()
-                                        if pn == "door" or (pp.Parent and pp.Parent.Name:lower() == "door") then
-                                            fireproximityprompt(o, 1)
-                                        else
-                                            fireproximityprompt(o)
-                                        end
-                                    end
-                                end
+                local p = LocalPlayer.Character; if not p or not p:FindFirstChild("HumanoidRootPart") then return end
+                local hrp = p.HumanoidRootPart; local hrpPos = hrp.Position
+                for _, o in ipairs(workspace:GetDescendants()) do
+                    if o:IsA("ProximityPrompt") and o.Enabled then
+                        local pp = o.Parent; if not pp then continue end
+                        local po = nil; if pp:IsA("BasePart") then po = pp.Position elseif pp:IsA("Model") then local bp = pp:FindFirstChildWhichIsA("BasePart"); if bp then po = bp.Position end end
+                        if po and (po-hrpPos).Magnitude < 10 then
+                            local name = pp.Name:lower()
+                            local parentName = pp.Parent and pp.Parent.Name:lower() or ""
+                            local grandparentName = pp.Parent and pp.Parent.Parent and pp.Parent.Parent.Name:lower() or ""
+                            local combined = name .. " " .. parentName .. " " .. grandparentName
+                            local shouldSkip = false
+                            for _, kw in ipairs(skipNames) do if combined:find(kw) then shouldSkip = true; break end end
+                            if not shouldSkip then
+                                if name == "door" or parentName == "door" then fireproximityprompt(o,1) else fireproximityprompt(o) end
                             end
                         end
                     end
                 end
             end)
         end
-        task.wait(0.1)
+        task.wait(0.15)
     end
 end)
 
--- 怪物检测
-local alertedMonsters = {}
-local monsterCooldown = {}
-
+-- 怪物检测（名字判断，离开范围重置）
+local monsterInRange = {}
 spawn(function()
     while true do
         if monsterAlert then
             local ch = LocalPlayer.Character
             if ch and ch:FindFirstChild("HumanoidRootPart") then
                 local hrpPos = ch.HumanoidRootPart.Position
+                local currentlyInRange = {}
                 for _, o in ipairs(workspace:GetDescendants()) do
                     if o:IsA("Model") and not Players:GetPlayerFromCharacter(o) then
                         local mn = getMonsterName(o)
@@ -864,163 +250,58 @@ spawn(function()
                             local po = o:FindFirstChildWhichIsA("BasePart")
                             if po then
                                 local d = (hrpPos - po.Position).Magnitude
-                                local md = (mn == "Rush" or mn == "Ambush") and 400 or (mn == "Seek") and 300 or 80
-                                local id = tostring(o)
-                                local now = tick()
-
+                                local md = (mn == "Rush" or mn == "Ambush") and 500 or (mn == "Seek") and 300 or (mn == "Screech") and 40 or 80
                                 if d < md then
-                                    if not monsterCooldown[mn] or (now - monsterCooldown[mn]) > 10 then
-                                        if not alertedMonsters[id] then
-                                            alertedMonsters[id] = true
-                                            monsterCooldown[mn] = now
-                                            showPopup(mn)
-                                        end
-                                    end
-                                else
-                                    if alertedMonsters[id] then
-                                        alertedMonsters[id] = nil
+                                    currentlyInRange[mn] = true
+                                    if not monsterInRange[mn] then
+                                        monsterInRange[mn] = true
+                                        showPopup(mn)
                                     end
                                 end
                             end
                         end
                     end
                 end
+                for mn, _ in pairs(monsterInRange) do
+                    if not currentlyInRange[mn] then monsterInRange[mn] = nil end
+                end
             end
         end
-        task.wait(1)
+        task.wait(0.5)
     end
 end)
 
 print("第2段 OK")
--- 黑脚本 - Doors | Wind UI 第3段
+-- 黑脚本 - Doors | Wind UI 第3段（保留夜视修复，其他删除避免重复）
 
--- 速度循环
+-- 夜视循环（修复堆积问题）
 spawn(function()
-    while true do
-        if speedEnabled then
-            local c = LocalPlayer.Character
-            if c and c:FindFirstChild("Humanoid") then
-                c.Humanoid.WalkSpeed = 21
-            end
-        end
-        task.wait(0.1)
-    end
-end)
-
--- 防滑循环
-spawn(function()
-    while true do
-        if antiSlip then
-            local c = LocalPlayer.Character
-            if c and c:FindFirstChild("Humanoid") and c:FindFirstChild("HumanoidRootPart") then
-                if c.Humanoid.MoveDirection.Magnitude == 0 then
-                    c.HumanoidRootPart.Velocity = Vector3.new(0, c.HumanoidRootPart.Velocity.Y, 0)
-                end
-            end
-        end
-        task.wait(0.05)
-    end
-end)
-
--- 自动互动循环（修复版 - 支持床和柜子）
-spawn(function()
-    while true do
-        if autoInteract then
-            pcall(function()
-                local p = LocalPlayer.Character
-                if p and p:FindFirstChild("HumanoidRootPart") then
-                    local hrp = p.HumanoidRootPart
-                    local hrpPos = hrp.Position
-                    
-                    for _, o in ipairs(workspace:GetDescendants()) do
-                        -- 检测ProximityPrompt
-                        if o:IsA("ProximityPrompt") and o.Enabled then
-                            local pp = o.Parent
-                            if pp then
-                                local po = nil
-                                if pp:IsA("BasePart") then
-                                    po = pp.Position
-                                elseif pp:IsA("Model") then
-                                    local bp = pp:FindFirstChildWhichIsA("BasePart")
-                                    if bp then
-                                        po = bp.Position
-                                    end
-                                end
-                                if po and (po - hrpPos).Magnitude < 10 then
-                                    fireproximityprompt(o)
-                                end
-                            end
-                        end
-                        
-                        -- 检测床（Bed）
-                        if o:IsA("Model") and o.Name:lower():find("bed") then
-                            local bp = o:FindFirstChildWhichIsA("BasePart")
-                            if bp and (bp.Position - hrpPos).Magnitude < 8 then
-                                for _, prompt in ipairs(o:GetDescendants()) do
-                                    if prompt:IsA("ProximityPrompt") and prompt.Enabled then
-                                        fireproximityprompt(prompt)
-                                    end
-                                end
-                            end
-                        end
-                        
-                        -- 检测柜子（Wardrobe/Cabinet/Closet）
-                        local names = {"wardrobe", "cabinet", "closet"}
-                        for _, kw in ipairs(names) do
-                            if o:IsA("Model") and o.Name:lower():find(kw) then
-                                local bp = o:FindFirstChildWhichIsA("BasePart")
-                                if bp and (bp.Position - hrpPos).Magnitude < 8 then
-                                    for _, prompt in ipairs(o:GetDescendants()) do
-                                        if prompt:IsA("ProximityPrompt") and prompt.Enabled then
-                                            fireproximityprompt(prompt)
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end)
-        end
-        task.wait(0.1)
-    end
-end)
-
--- 夜视循环
-spawn(function()
+    local nightEffect = nil
     while true do
         if nightVision then
             pcall(function()
-                local cc = Instance.new("ColorCorrectionEffect")
-                cc.Brightness = 0.15
-                cc.Contrast = 0.2
-                cc.Saturation = -0.3
-                cc.Parent = Lighting
-                
-                Lighting.Ambient = Color3.fromRGB(180, 180, 180)
-                Lighting.Brightness = 2.5
-                Lighting.OutdoorAmbient = Color3.fromRGB(150, 150, 150)
-                Lighting.FogEnd = 999999
-                Lighting.FogStart = 0
+                if not nightEffect then
+                    nightEffect = Instance.new("ColorCorrectionEffect")
+                    nightEffect.Parent = Lighting
+                end
+                nightEffect.Brightness = 0.15
+                nightEffect.Contrast = 0.2
+                nightEffect.Saturation = -0.3
+                Lighting.Brightness = 1.2
+                Lighting.FogEnd = 100000
                 Lighting.GlobalShadows = false
             end)
         else
             pcall(function()
-                for _, cc in ipairs(Lighting:GetChildren()) do
-                    if cc:IsA("ColorCorrectionEffect") then
-                        cc:Destroy()
-                    end
-                end
-                Lighting.Ambient = Color3.fromRGB(127, 127, 127)
+                if nightEffect then nightEffect:Destroy(); nightEffect = nil end
                 Lighting.Brightness = 1
-                Lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
                 Lighting.FogEnd = 500
-                Lighting.FogStart = 0
                 Lighting.GlobalShadows = true
             end)
         end
-        task.wait(1)
+        task.wait(0.3)
     end
 end)
 
 print("第3段 OK")
+
