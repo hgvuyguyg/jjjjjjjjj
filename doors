@@ -793,8 +793,9 @@ spawn(function()
     end
 end)
 
--- 自动互动循环（修复版 - 附近有床/柜子/画时跳过）
+-- 自动互动循环（有画/柜子/床不互动，门长按E）
 spawn(function()
+    local cabinetNames = {"wardrobe", "cabinet", "closet", "bed", "衣柜", "柜子", "床", "hide", "hiding"}
     while true do
         if autoInteract then
             pcall(function()
@@ -804,38 +805,36 @@ spawn(function()
                     local hrpPos = hrp.Position
                     local skip = false
                     
-                    -- 检查附近是否有床、柜子、画
                     for _, o in ipairs(workspace:GetDescendants()) do
                         if o:IsA("Model") then
                             local name = o.Name:lower()
-                            local isTarget = name:find("bed") or name:find("wardrobe") or name:find("cabinet") or name:find("closet") or name:find("painting")
-                            if isTarget then
+                            local isCabinet = false
+                            for _, kw in ipairs(cabinetNames) do if name:find(kw) then isCabinet = true; break end end
+                            local isPainting = name:find("painting") or name:find("画")
+                            if isCabinet or isPainting then
                                 local bp = o:FindFirstChildWhichIsA("BasePart")
                                 if bp and (bp.Position - hrpPos).Magnitude < 10 then
-                                    skip = true
-                                    break
+                                    skip = true; break
                                 end
                             end
                         end
                     end
                     
-                    -- 如果没有障碍物，才执行点击
                     if not skip then
                         for _, o in ipairs(workspace:GetDescendants()) do
                             if o:IsA("ProximityPrompt") and o.Enabled then
                                 local pp = o.Parent
                                 if pp then
                                     local po = nil
-                                    if pp:IsA("BasePart") then
-                                        po = pp.Position
-                                    elseif pp:IsA("Model") then
-                                        local bp = pp:FindFirstChildWhichIsA("BasePart")
-                                        if bp then
-                                            po = bp.Position
-                                        end
-                                    end
+                                    if pp:IsA("BasePart") then po = pp.Position
+                                    elseif pp:IsA("Model") then local bp = pp:FindFirstChildWhichIsA("BasePart"); if bp then po = bp.Position end end
                                     if po and (po - hrpPos).Magnitude < 10 then
-                                        fireproximityprompt(o)
+                                        local pn = pp.Name:lower()
+                                        if pn == "door" or (pp.Parent and pp.Parent.Name:lower() == "door") then
+                                            fireproximityprompt(o, 1)
+                                        else
+                                            fireproximityprompt(o)
+                                        end
                                     end
                                 end
                             end
@@ -1025,4 +1024,3 @@ spawn(function()
 end)
 
 print("第3段 OK")
-
