@@ -1,4 +1,4 @@
--- 黑脚本 - Doors | Wind UI 第1段（完整版）
+-- 黑脚本 - Doors | Wind UI 第1段
 
 local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 if not WI then return end
@@ -26,16 +26,14 @@ local monsterAlert = false
 local antiSlip = false
 local autoInteract = false
 local speedEnabled = false
-local removeFog = false
-local eyesBypass = false
-local screechBypass = false
+local speedValue = 21
+local nightVisionConn = nil
 
 local doorCount = 0
 local countedDoors = {}
 
--- ==================== 弹窗系统（红色弹窗） ====================
+-- 弹窗（红色）
 local activePopups = {}
-
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "MonsterAlertUI"
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -110,8 +108,8 @@ function showPopup(name)
     
     pcall(function()
         local sound = Instance.new("Sound",popup)
-        sound.SoundId = "rbxassetid://147722335"
-        sound.Volume = 1.5
+        sound.SoundId = "rbxassetid://9126074485"
+        sound.Volume = 2
         sound:Play()
     end)
     
@@ -144,10 +142,10 @@ local MainWindow = WI:CreateWindow({
 })
 
 -- 公告
-local T1 = MainWindow:Tab({Title="公告",Icon="solar:info-bold"})
+local T1 = MainWindow:Tab({Title="公告", Icon="solar:info-bold"})
 T1:Paragraph({
     Title="黑脚本 - Doors",
-    Desc="C工作室制作 | Wind UI\n\nESP透视 | 红色弹窗\n增速21 | 夜视 | 防滑 | 自动互动\n射线连线 | 队友透视 | 门编号\n防Eyes | 防Screech | 去除雾气 | 音效提示\n\n公告 | 功能 | ESP透视 | 绕过区"
+    Desc="C工作室制作 | Wind UI\n\nESP透视 | 红色弹窗 | 可调速度\n夜视 | 防滑 | 自动互动\n射线连线 | 队友透视 | 门编号\n防Eyes | 防Screech"
 })
 T1:Button({
     Title="关闭面板",
@@ -158,11 +156,16 @@ T1:Button({
     end
 })
 
--- 功能
-local T2 = MainWindow:Tab({Title="功能",Icon="solar:bolt-bold"})
+-- ==================== 功能 ====================
+local T2 = MainWindow:Tab({Title="功能", Icon="solar:bolt-bold"})
 
-T2:Toggle({
-    Title="21速度",
+-- 速度设置
+local speedSection = T2:Section({Title="🏃 速度设置"})
+
+local speedInputRef = nil
+
+speedSection:Toggle({
+    Title="开启速度",
     Value=false,
     Callback=function(v)
         speedEnabled = v
@@ -175,53 +178,66 @@ T2:Toggle({
     end
 })
 
+local speedInput = speedSection:Input({
+    Title="速度数值",
+    Description="输入1-100之间的数值",
+    Value="21",
+    Callback=function(v)
+        local num = tonumber(v)
+        if num and num > 0 and num <= 100 then
+            speedValue = num
+            _G.speedValue = num
+        end
+    end
+})
+speedInputRef = speedInput
+
+speedSection:Button({
+    Title="⭐ 推荐（21速度）",
+    Justify="Center",
+    Color=Color3.fromRGB(255, 200, 50),
+    Callback=function()
+        speedValue = 21
+        _G.speedValue = 21
+        if speedInputRef then
+            pcall(function()
+                speedInputRef:SetValue("21")
+            end)
+        end
+        WI:Notify({
+            Title="设置成功",
+            Content="速度已设为 21",
+            Duration=2,
+            Type="success"
+        })
+    end
+})
+
+-- 夜视（RenderStepped每帧循环 - 稳定不闪）
 T2:Toggle({
     Title="夜视",
     Value=false,
     Callback=function(v)
         nightVision = v
         if v then
-            local cc = Instance.new("ColorCorrectionEffect")
-            cc.Brightness = 0.15
-            cc.Contrast = 0.2
-            cc.Saturation = -0.3
-            cc.Parent = Lighting
-            
-            Lighting.Ambient = Color3.fromRGB(180, 180, 180)
-            Lighting.Brightness = 2.5
-            Lighting.OutdoorAmbient = Color3.fromRGB(150, 150, 150)
-            Lighting.FogEnd = 999999
-            Lighting.FogStart = 0
-            Lighting.GlobalShadows = false
-            
-            task.spawn(function()
-                while nightVision do
-                    task.wait(1)
-                    pcall(function()
-                        if not cc.Parent then
-                            cc.Parent = Lighting
-                        end
-                        Lighting.Ambient = Color3.fromRGB(180, 180, 180)
-                        Lighting.Brightness = 2.5
-                        Lighting.OutdoorAmbient = Color3.fromRGB(150, 150, 150)
-                        Lighting.FogEnd = 999999
-                        Lighting.FogStart = 0
-                        Lighting.GlobalShadows = false
-                    end)
-                end
+            if nightVisionConn then nightVisionConn:Disconnect() end
+            nightVisionConn = RunService.RenderStepped:Connect(function()
+                pcall(function()
+                    Lighting.Brightness = 2
+                    Lighting.ClockTime = 14
+                    Lighting.FogEnd = 100000
+                    Lighting.GlobalShadows = false
+                    Lighting.ExposureCompensation = 1
+                end)
             end)
         else
-            for _, cc in ipairs(Lighting:GetChildren()) do
-                if cc:IsA("ColorCorrectionEffect") then
-                    cc:Destroy()
-                end
-            end
-            Lighting.Ambient = Color3.fromRGB(127, 127, 127)
-            Lighting.Brightness = 1
-            Lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
-            Lighting.FogEnd = 500
-            Lighting.FogStart = 0
-            Lighting.GlobalShadows = true
+            if nightVisionConn then nightVisionConn:Disconnect(); nightVisionConn = nil end
+            pcall(function()
+                Lighting.Brightness = 1
+                Lighting.FogEnd = 500
+                Lighting.GlobalShadows = true
+                Lighting.ExposureCompensation = 0
+            end)
         end
     end
 })
@@ -247,87 +263,11 @@ T2:Toggle({
     Value=false,
     Callback=function(v)
         autoInteract = v
-        if v then
-            task.spawn(function()
-                local li = 0
-                while autoInteract do
-                    local n = tick()
-                    if n - li < 0.2 then
-                        task.wait(0.05)
-                        continue
-                    end
-                    li = n
-                    pcall(function()
-                        local p = LocalPlayer.Character
-                        if not p or not p:FindFirstChild("HumanoidRootPart") then
-                            return
-                        end
-                        local hrp = p.HumanoidRootPart
-                        for _, o in ipairs(workspace:GetDescendants()) do
-                            if o:IsA("ProximityPrompt") and o.Enabled then
-                                local pp = o.Parent
-                                if pp then
-                                    local po = nil
-                                    if pp:IsA("BasePart") then
-                                        po = pp.Position
-                                    elseif pp:IsA("Model") then
-                                        local bp = pp:FindFirstChildWhichIsA("BasePart")
-                                        if bp then
-                                            po = bp.Position
-                                        end
-                                    end
-                                    if po and (po - hrp.Position).Magnitude < 10 then
-                                        local pn = pp.Name:lower()
-                                        if pn == "door" or (pp.Parent and pp.Parent.Name:lower() == "door") then
-                                            fireproximityprompt(o, 1)
-                                        else
-                                            local cn = {"wardrobe", "cabinet", "closet", "bed"}
-                                            local ic = false
-                                            for _, kw in ipairs(cn) do
-                                                if pn:find(kw) then
-                                                    ic = true
-                                                    break
-                                                end
-                                            end
-                                            if not ic then
-                                                fireproximityprompt(o)
-                                            end
-                                        end
-                                        break
-                                    end
-                                end
-                            end
-                        end
-                    end)
-                    task.wait(0.05)
-                end
-            end)
-        end
     end
 })
 
-T2:Toggle({
-    Title="🌫 去除雾气",
-    Value=false,
-    Callback=function(v)
-        removeFog = v
-        if v then
-            task.spawn(function()
-                while removeFog do
-                    task.wait(0.5)
-                    for _, fog in ipairs(workspace:GetDescendants()) do
-                        if fog:IsA("Part") and fog.Name:lower():find("fog") then
-                            pcall(function() fog:Destroy() end)
-                        end
-                    end
-                end
-            end)
-        end
-    end
-})
-
--- ESP透视
-local T3 = MainWindow:Tab({Title="ESP透视",Icon="solar:eye-bold"})
+-- ==================== ESP透视 ====================
+local T3 = MainWindow:Tab({Title="ESP透视", Icon="solar:eye-bold"})
 
 T3:Toggle({
     Title="ESP总开关",
@@ -345,7 +285,7 @@ T3:Divider()
 local S1 = T3:Section({Title="透视选项"})
 
 S1:Toggle({
-    Title="🚪 透视门",
+    Title="透视门",
     Value=true,
     Callback=function(v)
         showDoors = v
@@ -353,7 +293,7 @@ S1:Toggle({
 })
 
 S1:Toggle({
-    Title="🔑 透视钥匙",
+    Title="透视钥匙",
     Value=true,
     Callback=function(v)
         showKeys = v
@@ -361,7 +301,7 @@ S1:Toggle({
 })
 
 S1:Toggle({
-    Title="📦 透视道具",
+    Title="透视道具",
     Value=true,
     Callback=function(v)
         showItems = v
@@ -369,7 +309,7 @@ S1:Toggle({
 })
 
 S1:Toggle({
-    Title="👻 透视怪物",
+    Title="透视怪物",
     Value=true,
     Callback=function(v)
         showMonsters = v
@@ -377,7 +317,7 @@ S1:Toggle({
 })
 
 S1:Toggle({
-    Title="🕹 透视拉杆",
+    Title="透视拉杆",
     Value=true,
     Callback=function(v)
         showLevers = v
@@ -385,7 +325,7 @@ S1:Toggle({
 })
 
 S1:Toggle({
-    Title="📖 透视书",
+    Title="透视书",
     Value=true,
     Callback=function(v)
         showBook = v
@@ -393,7 +333,7 @@ S1:Toggle({
 })
 
 S1:Toggle({
-    Title="🔋 透视电池",
+    Title="透视电池",
     Value=true,
     Callback=function(v)
         showBattery = v
@@ -401,7 +341,7 @@ S1:Toggle({
 })
 
 S1:Toggle({
-    Title="👥 透视队友",
+    Title="透视队友",
     Value=true,
     Callback=function(v)
         showTeammates = v
@@ -411,7 +351,7 @@ S1:Toggle({
 T3:Divider()
 
 T3:Toggle({
-    Title="📡 射线连线",
+    Title="射线连线",
     Value=false,
     Callback=function(v)
         rayEnabled = v
@@ -421,20 +361,21 @@ T3:Toggle({
     end
 })
 
--- 绕过区
-local T4 = MainWindow:Tab({Title="绕过区",Icon="solar:shield-bold"})
+-- ==================== 绕过区 ====================
+local T4 = MainWindow:Tab({Title="绕过区", Icon="solar:shield-bold"})
 
-local S2 = T4:Section({Title="🛡 防御功能"})
+local S2 = T4:Section({Title="防御功能"})
 
+local eyesBypass = false
 S2:Toggle({
-    Title="👁 防止眼睛伤害",
+    Title="防止眼睛伤害",
     Value=false,
     Callback=function(v)
         eyesBypass = v
         if v then
             T4:Paragraph({
                 Title="⚠ 重要提示",
-                Desc="开启防眼睛伤害后，请先低头向下看再抬头，\n否则可能会出现bug导致防不了！"
+                Desc="开启后请先低头向下看再抬头，\n否则可能防不了！"
             })
             local E = game:GetService("ReplicatedStorage").RemotesFolder.MotorReplication
             local m
@@ -461,8 +402,9 @@ S2:Toggle({
     end
 })
 
+local screechBypass = false
 S2:Toggle({
-    Title="🔇 防止Screech伤害",
+    Title="防止Screech伤害",
     Value=false,
     Callback=function(v)
         screechBypass = v
@@ -474,7 +416,6 @@ S2:Toggle({
                 if rawequal(self, Event) and getnamecallmethod() == "FireServer" then
                     local Args = table.pack(...)
                     local Result = table.pack(mtHook(self, table.unpack(Args, 1, Args.n)))
-                    print("拦截 Screech (__namecall)")
                     return table.unpack(Result, 1, Result.n)
                 end
                 return mtHook(...)
@@ -485,7 +426,6 @@ S2:Toggle({
                 if rawequal(self, Event) then
                     local Args = table.pack(...)
                     local Result = table.pack(OldFireServer(table.unpack(Args, 1, Args.n)))
-                    print("拦截 Screech (__index)")
                     return table.unpack(Result, 1, Result.n)
                 end
                 return OldFireServer(self, ...)
@@ -495,10 +435,9 @@ S2:Toggle({
 })
 
 T4:Divider()
-
 T4:Paragraph({
     Title="说明",
-    Desc="👁 防止眼睛伤害 - 拦截Eyes远程事件\n（开启后先低头看地再抬头）\n\n🔇 防止Screech伤害 - 拦截Screech远程事件"
+    Desc="防止眼睛伤害 - 开启后先低头看地\n防止Screech伤害 - 拦截Screech远程事件"
 })
 
 WI:Popup({
@@ -509,9 +448,11 @@ WI:Popup({
         Variant="Primary",
         Callback=function() end
     }}
-)
+})
 
-print("第1段 OK")
+-- ==================== 暴露变量给其他段 ====================
+_G.speedValue = speedValue
+_G.nightVisionConn = nightVisionConn
 
 -- 测试触发器（按K键）
 local testActive = false
@@ -538,7 +479,9 @@ game:GetService("UserInputService").InputBegan:Connect(function(input, gameProce
         triggerTest()
     end
 end)
--- 黑脚本 - Doors | Wind UI 第2段（完整版）
+
+print("第1段 OK")
+-- 黑脚本 - Doors | Wind UI 第2段
 
 function clearHighlights()
     for _, d in pairs(highlights) do
@@ -821,18 +764,21 @@ spawn(function()
     end
 end)
 
+-- 速度循环
 spawn(function()
     while true do
         if speedEnabled then
             local c = LocalPlayer.Character
             if c and c:FindFirstChild("Humanoid") then
-                c.Humanoid.WalkSpeed = 21
+                local spd = _G.speedValue or 21
+                c.Humanoid.WalkSpeed = spd
             end
         end
-        task.wait(0.1)
+        task.wait(0.001)
     end
 end)
 
+-- 防滑循环
 spawn(function()
     while true do
         if antiSlip then
@@ -847,7 +793,62 @@ spawn(function()
     end
 end)
 
--- 怪物检测（全部红色弹窗，10秒冷却）
+-- 自动互动循环（修复版 - 附近有床/柜子/画时跳过）
+spawn(function()
+    while true do
+        if autoInteract then
+            pcall(function()
+                local p = LocalPlayer.Character
+                if p and p:FindFirstChild("HumanoidRootPart") then
+                    local hrp = p.HumanoidRootPart
+                    local hrpPos = hrp.Position
+                    local skip = false
+                    
+                    -- 检查附近是否有床、柜子、画
+                    for _, o in ipairs(workspace:GetDescendants()) do
+                        if o:IsA("Model") then
+                            local name = o.Name:lower()
+                            local isTarget = name:find("bed") or name:find("wardrobe") or name:find("cabinet") or name:find("closet") or name:find("painting")
+                            if isTarget then
+                                local bp = o:FindFirstChildWhichIsA("BasePart")
+                                if bp and (bp.Position - hrpPos).Magnitude < 10 then
+                                    skip = true
+                                    break
+                                end
+                            end
+                        end
+                    end
+                    
+                    -- 如果没有障碍物，才执行点击
+                    if not skip then
+                        for _, o in ipairs(workspace:GetDescendants()) do
+                            if o:IsA("ProximityPrompt") and o.Enabled then
+                                local pp = o.Parent
+                                if pp then
+                                    local po = nil
+                                    if pp:IsA("BasePart") then
+                                        po = pp.Position
+                                    elseif pp:IsA("Model") then
+                                        local bp = pp:FindFirstChildWhichIsA("BasePart")
+                                        if bp then
+                                            po = bp.Position
+                                        end
+                                    end
+                                    if po and (po - hrpPos).Magnitude < 10 then
+                                        fireproximityprompt(o)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+        task.wait(0.1)
+    end
+end)
+
+-- 怪物检测
 local alertedMonsters = {}
 local monsterCooldown = {}
 
@@ -892,89 +893,136 @@ spawn(function()
 end)
 
 print("第2段 OK")
--- 黑脚本 - Doors | Wind UI 第3段（玩家列表）
+-- 黑脚本 - Doors | Wind UI 第3段
 
-local T3 = MainWindow:Tab({Title = "玩家", Icon = "solar:users-bold"})
-
-T3:Paragraph({
-    Title = "👥 玩家列表",
-    Desc = "当前房间内所有玩家"
-})
-
-local playerListFrame = Instance.new("ScrollingFrame")
-playerListFrame.Size = UDim2.new(1, -20, 0, 300)
-playerListFrame.Position = UDim2.new(0, 10, 0, 80)
-playerListFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-playerListFrame.BackgroundTransparency = 0.05
-playerListFrame.BorderSizePixel = 0
-playerListFrame.ScrollBarThickness = 3
-playerListFrame.ZIndex = 7
-playerListFrame.Parent = T3:GetContainer()
-
-local playerListLayout = Instance.new("UIListLayout")
-playerListLayout.Padding = UDim.new(0, 4)
-playerListLayout.Parent = playerListFrame
-
-local function updatePlayerList()
-    for _, v in ipairs(playerListFrame:GetChildren()) do
-        if v:IsA("TextLabel") or v:IsA("Frame") then
-            v:Destroy()
+-- 速度循环
+spawn(function()
+    while true do
+        if speedEnabled then
+            local c = LocalPlayer.Character
+            if c and c:FindFirstChild("Humanoid") then
+                c.Humanoid.WalkSpeed = 21
+            end
         end
+        task.wait(0.1)
     end
-    
-    local players = Players:GetPlayers()
-    for i, p in ipairs(players) do
-        local item = Instance.new("Frame")
-        item.Size = UDim2.new(1, -10, 0, 30)
-        item.BackgroundColor3 = (i % 2 == 0) and Color3.fromRGB(240, 240, 240) or Color3.fromRGB(255, 255, 255)
-        item.BorderSizePixel = 0
-        item.Parent = playerListFrame
-        Instance.new("UICorner", item).CornerRadius = UDim.new(0, 4)
-        
-        local nameLabel = Instance.new("TextLabel")
-        nameLabel.Size = UDim2.new(0.5, 0, 1, 0)
-        nameLabel.Position = UDim2.new(0, 8, 0, 0)
-        nameLabel.BackgroundTransparency = 1
-        nameLabel.TextColor3 = (p == LocalPlayer) and Color3.fromRGB(0, 150, 255) or Color3.fromRGB(50, 50, 50)
-        nameLabel.Text = (p == LocalPlayer) and "⭐ "..p.Name or p.Name
-        nameLabel.Font = Enum.Font.GothamSemibold
-        nameLabel.TextSize = 12
-        nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-        nameLabel.Parent = item
-        
-        local statusLabel = Instance.new("TextLabel")
-        statusLabel.Size = UDim2.new(0.5, 0, 1, 0)
-        statusLabel.Position = UDim2.new(0.5, 0, 0, 0)
-        statusLabel.BackgroundTransparency = 1
-        if p.Character and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
-            statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
-            statusLabel.Text = "🟢 存活"
+end)
+
+-- 防滑循环
+spawn(function()
+    while true do
+        if antiSlip then
+            local c = LocalPlayer.Character
+            if c and c:FindFirstChild("Humanoid") and c:FindFirstChild("HumanoidRootPart") then
+                if c.Humanoid.MoveDirection.Magnitude == 0 then
+                    c.HumanoidRootPart.Velocity = Vector3.new(0, c.HumanoidRootPart.Velocity.Y, 0)
+                end
+            end
+        end
+        task.wait(0.05)
+    end
+end)
+
+-- 自动互动循环（修复版 - 支持床和柜子）
+spawn(function()
+    while true do
+        if autoInteract then
+            pcall(function()
+                local p = LocalPlayer.Character
+                if p and p:FindFirstChild("HumanoidRootPart") then
+                    local hrp = p.HumanoidRootPart
+                    local hrpPos = hrp.Position
+                    
+                    for _, o in ipairs(workspace:GetDescendants()) do
+                        -- 检测ProximityPrompt
+                        if o:IsA("ProximityPrompt") and o.Enabled then
+                            local pp = o.Parent
+                            if pp then
+                                local po = nil
+                                if pp:IsA("BasePart") then
+                                    po = pp.Position
+                                elseif pp:IsA("Model") then
+                                    local bp = pp:FindFirstChildWhichIsA("BasePart")
+                                    if bp then
+                                        po = bp.Position
+                                    end
+                                end
+                                if po and (po - hrpPos).Magnitude < 10 then
+                                    fireproximityprompt(o)
+                                end
+                            end
+                        end
+                        
+                        -- 检测床（Bed）
+                        if o:IsA("Model") and o.Name:lower():find("bed") then
+                            local bp = o:FindFirstChildWhichIsA("BasePart")
+                            if bp and (bp.Position - hrpPos).Magnitude < 8 then
+                                for _, prompt in ipairs(o:GetDescendants()) do
+                                    if prompt:IsA("ProximityPrompt") and prompt.Enabled then
+                                        fireproximityprompt(prompt)
+                                    end
+                                end
+                            end
+                        end
+                        
+                        -- 检测柜子（Wardrobe/Cabinet/Closet）
+                        local names = {"wardrobe", "cabinet", "closet"}
+                        for _, kw in ipairs(names) do
+                            if o:IsA("Model") and o.Name:lower():find(kw) then
+                                local bp = o:FindFirstChildWhichIsA("BasePart")
+                                if bp and (bp.Position - hrpPos).Magnitude < 8 then
+                                    for _, prompt in ipairs(o:GetDescendants()) do
+                                        if prompt:IsA("ProximityPrompt") and prompt.Enabled then
+                                            fireproximityprompt(prompt)
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+        task.wait(0.1)
+    end
+end)
+
+-- 夜视循环
+spawn(function()
+    while true do
+        if nightVision then
+            pcall(function()
+                local cc = Instance.new("ColorCorrectionEffect")
+                cc.Brightness = 0.15
+                cc.Contrast = 0.2
+                cc.Saturation = -0.3
+                cc.Parent = Lighting
+                
+                Lighting.Ambient = Color3.fromRGB(180, 180, 180)
+                Lighting.Brightness = 2.5
+                Lighting.OutdoorAmbient = Color3.fromRGB(150, 150, 150)
+                Lighting.FogEnd = 999999
+                Lighting.FogStart = 0
+                Lighting.GlobalShadows = false
+            end)
         else
-            statusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
-            statusLabel.Text = "🔴 死亡"
+            pcall(function()
+                for _, cc in ipairs(Lighting:GetChildren()) do
+                    if cc:IsA("ColorCorrectionEffect") then
+                        cc:Destroy()
+                    end
+                end
+                Lighting.Ambient = Color3.fromRGB(127, 127, 127)
+                Lighting.Brightness = 1
+                Lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
+                Lighting.FogEnd = 500
+                Lighting.FogStart = 0
+                Lighting.GlobalShadows = true
+            end)
         end
-        statusLabel.Font = Enum.Font.Gotham
-        statusLabel.TextSize = 11
-        statusLabel.TextXAlignment = Enum.TextXAlignment.Right
-        statusLabel.Parent = item
+        task.wait(1)
     end
-    
-    playerListFrame.CanvasSize = UDim2.new(0, 0, 0, #players * 34 + 4)
-end
-
-updatePlayerList()
-Players.PlayerAdded:Connect(updatePlayerList)
-Players.PlayerRemoving:Connect(updatePlayerList)
-
-T3:Button({
-    Title = "🔄 刷新列表",
-    Justify = "Center",
-    Color = Color3.fromRGB(76, 175, 80),
-    Callback = function()
-        updatePlayerList()
-    end
-})
+end)
 
 print("第3段 OK")
 
-print("🟢 按 K 键测试弹窗")
