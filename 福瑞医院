@@ -52,7 +52,7 @@ local T2 = MainWindow:Tab({Title = "主要功能", Icon = "solar:shield-bold"})
 
 T2:Paragraph({
     Title = "🛡️ 主要功能",
-    Desc = "点击下方按钮开启/关闭功能"
+    Desc = "点击下方按钮开启/关闭功能\n开启后扣理智喝咖啡就行"
 })
 
 T2:Divider()
@@ -162,7 +162,7 @@ local function StopSanityBypass()
 end
 
 T2:Button({
-    Title = "🧠 防止扣除理智--还扣理智的话喝杯咖啡就行",
+    Title = "🧠 防止扣除理智bata",
     Justify = "Center",
     Color = Color3.fromRGB(76, 175, 80),
     Callback = function()
