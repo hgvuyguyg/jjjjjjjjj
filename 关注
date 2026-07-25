@@ -1,0 +1,274 @@
+-- 关注者脚本 | V1.0
+
+local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+if not WI then return end
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local TweenService = game:GetService("TweenService")
+
+local autoClick = false
+local clickCount = 0
+local clickThread = nil
+local popupUI = nil
+local autoFarm = false
+local farmThread = nil
+
+-- ==================== 主窗口 ====================
+local MainWindow = WI:CreateWindow({
+    Title = "每次点击加1关注者",
+    Icon = "solar:user-heart-bold",
+    Size = UDim2.fromOffset(480, 460),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Acrylic = true,
+    ScrollBarEnabled = true
+})
+
+local T1 = MainWindow:Tab({Title = "公告", Icon = "solar:info-bold"})
+T1:Paragraph({
+    Title = "💖 关注者脚本 V1.0",
+    Desc = "✅ 黑脚本--点击+1关注者\n✅ 自动刷胜利\n✅ Tween平滑移动2秒\n✅ 悬浮窗可拖动"
+})
+T1:Button({Title = "关闭面板", Justify = "Center", Color = Color3.fromHex("#888888"), Callback = function() MainWindow:Close() end})
+
+-- ==================== 自动 ====================
+local T2 = MainWindow:Tab({Title = "自动", Icon = "solar:settings-bold"})
+T2:Paragraph({Title = "⚙️ 自动点击", Desc = "每次点击+1关注者"})
+T2:Button({Title = "🖱️ 打开点击器", Justify = "Center", Color = Color3.fromRGB(76, 175, 80), Callback = function() CreateClickerPopup() end})
+
+T2:Divider()
+T2:Paragraph({Title = "🏆 自动刷胜利", Desc = "传送→2秒Tween→循环"})
+
+T2:Toggle({
+    Title = "自动刷胜利",
+    Value = false,
+    Callback = function(v)
+        autoFarm = v
+        if v then
+            farmThread = task.spawn(function()
+                while autoFarm do
+                    local char = LocalPlayer.Character
+                    if char and char:FindFirstChild("HumanoidRootPart") then
+                        local hrp = char.HumanoidRootPart
+                        -- 传送到起点
+                        hrp.CFrame = CFrame.new(1815, 14.8, 2176)
+                        task.wait(0.3)
+                        -- Tween平滑移动到终点（2秒）
+                        local target = CFrame.new(1800.02, 14.8, 2181)
+                        local tween = TweenService:Create(hrp, TweenInfo.new(2, Enum.EasingStyle.Linear), {CFrame = target})
+                        tween:Play()
+                        tween.Completed:Wait()
+                        task.wait(3)
+                    end
+                end
+            end)
+        else
+            if farmThread then task.cancel(farmThread); farmThread = nil end
+        end
+    end
+})
+
+-- ==================== 传送 ====================
+local T3 = MainWindow:Tab({Title = "传送", Icon = "solar:map-bold"})
+T3:Paragraph({Title = "🚀 传送区", Desc = "点击下方按钮传送"})
+T3:Button({
+    Title = "📍 传送至刷点",
+    Justify = "Center",
+    Color = Color3.fromRGB(255, 200, 50),
+    Callback = function()
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            char.HumanoidRootPart.CFrame = CFrame.new(1813, 15, 2178)
+            WI:Notify({Title = "✅ 传送成功", Content = "已传送至刷点", Duration = 2, Type = "success"})
+        end
+    end
+})
+
+-- ==================== 点击函数 ====================
+function PerformClick()
+    local screenSize = workspace.CurrentCamera.ViewportSize
+    local centerX = screenSize.X / 2
+    local centerY = screenSize.Y / 2
+    VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, true, game, 1)
+    task.wait(0.005)
+    VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, false, game, 1)
+    return true
+end
+
+function StartAutoClick()
+    if autoClick then return end
+    autoClick = true
+    clickCount = 0
+    clickThread = task.spawn(function()
+        while autoClick do
+            PerformClick()
+            clickCount = clickCount + 1
+            task.wait(0.05)
+        end
+    end)
+end
+
+function StopAutoClick()
+    autoClick = false
+    if clickThread then task.cancel(clickThread); clickThread = nil end
+    pcall(function() UserInputService.TouchEnabled = true end)
+end
+
+-- ==================== 悬浮窗 ====================
+function CreateClickerPopup()
+    if popupUI and popupUI.Parent then popupUI.Visible = true; return end
+
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "ClickerPopup"
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screenGui.Parent = CoreGui
+    popupUI = screenGui
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 280, 0, 170)
+    frame.Position = UDim2.new(0.5, -140, 0.5, -85)
+    frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    frame.BorderSizePixel = 2
+    frame.BorderColor3 = Color3.fromRGB(255, 100, 150)
+    frame.Active = true
+    frame.Draggable = true
+    frame.ClipsDescendants = true
+    frame.Parent = screenGui
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+
+    local titleBar = Instance.new("Frame")
+    titleBar.Size = UDim2.new(1, 0, 0, 32)
+    titleBar.BackgroundColor3 = Color3.fromRGB(255, 100, 150)
+    titleBar.BorderSizePixel = 0
+    titleBar.Parent = frame
+    Instance.new("UICorner", titleBar).CornerRadius = UDim.new(0, 12)
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(0.7, 0, 1, 0)
+    title.Position = UDim2.new(0, 12, 0, 0)
+    title.BackgroundTransparency = 1
+    title.TextColor3 = Color3.new(1, 1, 1)
+    title.Text = "💖 +1关注者"
+    title.Font = Enum.Font.SourceSansBold
+    title.TextSize = 14
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Parent = titleBar
+
+    local isCollapsed = false
+    local collapseBtn = Instance.new("TextButton")
+    collapseBtn.Size = UDim2.new(0, 24, 0, 24)
+    collapseBtn.Position = UDim2.new(1, -54, 0, 4)
+    collapseBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    collapseBtn.BackgroundTransparency = 0.5
+    collapseBtn.TextColor3 = Color3.new(1, 1, 1)
+    collapseBtn.Text = "−"
+    collapseBtn.Font = Enum.Font.SourceSansBold
+    collapseBtn.TextSize = 14
+    collapseBtn.BorderSizePixel = 0
+    collapseBtn.Parent = titleBar
+    Instance.new("UICorner", collapseBtn).CornerRadius = UDim.new(0, 12)
+
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Size = UDim2.new(0, 24, 0, 24)
+    closeBtn.Position = UDim2.new(1, -26, 0, 4)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    closeBtn.BackgroundTransparency = 0.5
+    closeBtn.TextColor3 = Color3.fromRGB(255, 150, 150)
+    closeBtn.Text = "✕"
+    closeBtn.Font = Enum.Font.SourceSansBold
+    closeBtn.TextSize = 14
+    closeBtn.BorderSizePixel = 0
+    closeBtn.Parent = titleBar
+    Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 12)
+
+    collapseBtn.MouseButton1Click:Connect(function()
+        isCollapsed = not isCollapsed
+        if isCollapsed then frame:TweenSize(UDim2.new(0, 280, 0, 32), "Out", "Quad", 0.3); collapseBtn.Text = "+"
+        else frame:TweenSize(UDim2.new(0, 280, 0, 170), "Out", "Quad", 0.3); collapseBtn.Text = "−" end
+    end)
+
+    closeBtn.MouseButton1Click:Connect(function()
+        StopAutoClick()
+        screenGui:Destroy()
+        popupUI = nil
+    end)
+
+    local content = Instance.new("Frame")
+    content.Size = UDim2.new(1, 0, 0, 138)
+    content.Position = UDim2.new(0, 0, 0, 32)
+    content.BackgroundTransparency = 1
+    content.Parent = frame
+
+    local statusLabel = Instance.new("TextLabel")
+    statusLabel.Size = UDim2.new(1, -20, 0, 22)
+    statusLabel.Position = UDim2.new(0, 10, 0, 10)
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    statusLabel.Text = "⏸️ 等待启动"
+    statusLabel.Font = Enum.Font.SourceSans
+    statusLabel.TextSize = 13
+    statusLabel.Parent = content
+
+    local countLabel = Instance.new("TextLabel")
+    countLabel.Size = UDim2.new(1, -20, 0, 22)
+    countLabel.Position = UDim2.new(0, 10, 0, 35)
+    countLabel.BackgroundTransparency = 1
+    countLabel.TextColor3 = Color3.fromRGB(255, 180, 200)
+    countLabel.Text = "+0 关注者"
+    countLabel.Font = Enum.Font.SourceSansBold
+    countLabel.TextSize = 15
+    countLabel.Parent = content
+
+    local startBtn = Instance.new("TextButton")
+    startBtn.Size = UDim2.new(0, 110, 0, 32)
+    startBtn.Position = UDim2.new(0.18, -48, 0, 70)
+    startBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 150)
+    startBtn.BorderSizePixel = 0
+    startBtn.Text = "▶ 开始"
+    startBtn.TextColor3 = Color3.new(1, 1, 1)
+    startBtn.Font = Enum.Font.SourceSansBold
+    startBtn.TextSize = 13
+    startBtn.Parent = content
+    Instance.new("UICorner", startBtn).CornerRadius = UDim.new(0, 8)
+
+    local stopBtn = Instance.new("TextButton")
+    stopBtn.Size = UDim2.new(0, 110, 0, 32)
+    stopBtn.Position = UDim2.new(0.82, -48, 0, 70)
+    stopBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+    stopBtn.BorderSizePixel = 0
+    stopBtn.Text = "⏹ 停止"
+    stopBtn.TextColor3 = Color3.new(1, 1, 1)
+    stopBtn.Font = Enum.Font.SourceSansBold
+    stopBtn.TextSize = 13
+    stopBtn.Parent = content
+    Instance.new("UICorner", stopBtn).CornerRadius = UDim.new(0, 8)
+
+    startBtn.MouseButton1Click:Connect(function()
+        if not autoClick then
+            StartAutoClick()
+            statusLabel.Text = "💖 正在点击..."
+            statusLabel.TextColor3 = Color3.fromRGB(255, 100, 150)
+            task.spawn(function() while autoClick do countLabel.Text = "+" .. clickCount .. " 关注者"; task.wait(0.1) end end)
+        end
+    end)
+
+    stopBtn.MouseButton1Click:Connect(function()
+        if autoClick then
+            StopAutoClick()
+            statusLabel.Text = "⏸️ 已停止"
+            statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+        end
+    end)
+end
+
+WI:Popup({
+    Title = "💖 关注者脚本 V1.0",
+    Content = "✅ 加载完成\n\n点击+1关注者\n自动刷胜利：传送→2秒Tween→3秒循环\n传送至刷点",
+    Buttons = {{Title = "确定", Variant = "Primary", Callback = function() end}}
+})
+
+print("✅ 关注者脚本 V1.0 加载完成")
