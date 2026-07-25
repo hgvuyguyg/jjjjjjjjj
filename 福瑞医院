@@ -1,0 +1,383 @@
+-- 动物医院脚本 | V3.2
+
+local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+if not WI then return end
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- ==================== 变量 ====================
+local speedValue = 16
+local speedEnabled = false
+local sanityBypass = false
+local sanityThread = nil
+local Event = nil
+local mtHook = nil
+local OldFireServer = nil
+local hookActive = false
+local interceptEnabled = false  -- 控制是否拦截
+
+-- ==================== 主窗口 ====================
+local MainWindow = WI:CreateWindow({
+    Title = "黑脚本--动物医院",
+    Icon = "solar:heart-bold",
+    Size = UDim2.fromOffset(500, 440),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Acrylic = true,
+    ScrollBarEnabled = true
+})
+
+-- ==================== 公告标签页 ====================
+local T1 = MainWindow:Tab({Title = "公告", Icon = "solar:info-bold"})
+
+T1:Paragraph({
+    Title = "🏥 动物医院脚本",
+    Desc = "版本 V3.2\n\n功能列表：\n- 防止扣除理智 \n- 速度调节\n- 传送功能 \n\n使用说明：\n1. 打开主要功能标签页\n2. 开启防止扣除理智\n3. 在玩家标签页调节速度\n4. 在传送标签页快速传送"
+})
+
+T1:Button({
+    Title = "关闭面板",
+    Justify = "Center",
+    Color = Color3.fromHex("#888888"),
+    Callback = function()
+        MainWindow:Close()
+    end
+})
+
+-- ==================== 主要功能标签页 ====================
+local T2 = MainWindow:Tab({Title = "主要功能", Icon = "solar:shield-bold"})
+
+T2:Paragraph({
+    Title = "🛡️ 主要功能",
+    Desc = "点击下方按钮开启/关闭功能"
+})
+
+T2:Divider()
+
+-- ==================== 获取事件 ====================
+local function GetSanityEvent()
+    local e = ReplicatedStorage:FindFirstChild("Util")
+    if e then
+        e = e:FindFirstChild("Net")
+        if e then
+            e = e:FindFirstChild("RE/PlayerLostSanity")
+        end
+    end
+    return e
+end
+
+-- ==================== 永久拦截（只hook一次，用变量控制开关） ====================
+local function SetupPermanentHook()
+    if hookActive then return end
+    
+    Event = GetSanityEvent()
+    if not Event then
+        WI:Notify({
+            Title = "❌ 错误",
+            Content = "未找到远程事件",
+            Duration = 2,
+            Type = "error"
+        })
+        return
+    end
+    
+    interceptEnabled = true  -- 默认开启拦截
+    
+    -- 只hook一次，永久生效，用interceptEnabled控制开关
+    mtHook = hookmetamethod(game, "__namecall", function(...)
+        local self = ...
+        if rawequal(self, Event) and getnamecallmethod() == "FireServer" then
+            if interceptEnabled then
+                print("✅ 拦截理智扣除")
+                return
+            else
+                print("⏸️ 拦截暂停，放行")
+                return mtHook(...)
+            end
+        end
+        return mtHook(...)
+    end)
+    
+    OldFireServer = hookfunction(Event.FireServer, function(...)
+        local self = ...
+        if rawequal(self, Event) then
+            if interceptEnabled then
+                print("✅ 拦截理智扣除")
+                return
+            else
+                print("⏸️ 拦截暂停，放行")
+                return OldFireServer(self, ...)
+            end
+        end
+        return OldFireServer(self, ...)
+    end)
+    
+    hookActive = true
+    print("🛡️ 永久拦截已开启")
+end
+
+-- ==================== 30秒循环 ====================
+local function StartSanityLoop()
+    if sanityThread then return end
+    
+    sanityThread = task.spawn(function()
+        while sanityBypass do
+            -- 等待30秒
+            task.wait(30)
+            
+            -- 暂停拦截（放行扣理智包）
+            interceptEnabled = false
+            print("⏸️ 拦截暂停，准备扣理智")
+            task.wait(0.5)
+            
+            -- 执行扣理智事件
+            pcall(function()
+                local e = GetSanityEvent()
+                if e then
+                    e:FireServer(1, "Job Stress", true)
+                    print("💀 执行扣理智")
+                end
+            end)
+            
+            task.wait(0.5)
+            
+            -- 恢复拦截
+            interceptEnabled = true
+            print("🛡️ 拦截恢复")
+        end
+    end)
+end
+
+local function StopSanityBypass()
+    sanityBypass = false
+    interceptEnabled = false
+    if sanityThread then
+        task.cancel(sanityThread)
+        sanityThread = nil
+    end
+    print("⏹️ 理智循环已停止")
+end
+
+T2:Button({
+    Title = "🧠 防止扣除理智--还扣理智的话喝杯咖啡就行",
+    Justify = "Center",
+    Color = Color3.fromRGB(76, 175, 80),
+    Callback = function()
+        sanityBypass = not sanityBypass
+        if sanityBypass then
+            SetupPermanentHook()
+            StartSanityLoop()
+            WI:Notify({
+                Title = "✅ 已开启",
+                Content = "永久拦截 + 30秒扣理智循环",
+                Duration = 2,
+                Type = "success"
+            })
+        else
+            StopSanityBypass()
+            WI:Notify({
+                Title = "⏹️ 已关闭",
+                Content = "理智循环已停止",
+                Duration = 2,
+                Type = "warning"
+            })
+        end
+    end
+})
+
+-- ==================== 玩家标签页 ====================
+local T3 = MainWindow:Tab({Title = "玩家", Icon = "solar:user-bold"})
+
+T3:Paragraph({
+    Title = "👤 玩家设置",
+    Desc = "调节玩家属性"
+})
+
+T3:Divider()
+
+T3:Toggle({
+    Title = "开启速度调节",
+    Value = false,
+    Callback = function(v)
+        speedEnabled = v
+        if not v then
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("Humanoid") then
+                char.Humanoid.WalkSpeed = 16
+            end
+        end
+        print("速度调节: "..(v and "开启" or "关闭"))
+    end
+})
+
+T3:Input({
+    Title = "速度数值",
+    Description = "输入数字后点击更新",
+    Value = "16",
+    Callback = function(v)
+        local num = tonumber(v)
+        if num and num > 0 and num <= 100 then
+            speedValue = num
+            print("✅ 速度已设置为: "..num)
+            WI:Notify({
+                Title = "✅ 已更新",
+                Content = "速度已设为 "..num,
+                Duration = 2,
+                Type = "success"
+            })
+            if speedEnabled then
+                local char = LocalPlayer.Character
+                if char and char:FindFirstChild("Humanoid") then
+                    char.Humanoid.WalkSpeed = speedValue
+                end
+            end
+        else
+            WI:Notify({
+                Title = "❌ 错误",
+                Content = "请输入1-100之间的数字",
+                Duration = 2,
+                Type = "error"
+            })
+        end
+    end
+})
+
+T3:Button({
+    Title = "🔄 更新速度",
+    Justify = "Center",
+    Color = Color3.fromRGB(255, 200, 50),
+    Callback = function()
+        if speedEnabled then
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("Humanoid") then
+                char.Humanoid.WalkSpeed = speedValue
+                WI:Notify({
+                    Title = "✅ 已更新",
+                    Content = "速度已设为 "..speedValue,
+                    Duration = 2,
+                    Type = "success"
+                })
+            end
+        else
+            WI:Notify({
+                Title = "⚠️ 提示",
+                Content = "请先开启速度调节",
+                Duration = 2,
+                Type = "warning"
+            })
+        end
+    end
+})
+
+-- ==================== 传送标签页 ====================
+local T4 = MainWindow:Tab({Title = "传送", Icon = "solar:map-bold"})
+
+T4:Paragraph({
+    Title = "🚀 传送区",
+    Desc = "点击下方按钮传送到对应位置"
+})
+
+T4:Divider()
+
+local function TeleportTo(x, y, z, name)
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        char.HumanoidRootPart.CFrame = CFrame.new(x, y, z)
+        WI:Notify({
+            Title = "✅ 传送成功",
+            Content = "已传送到 "..name,
+            Duration = 2,
+            Type = "success"
+        })
+    else
+        WI:Notify({
+            Title = "❌ 传送失败",
+            Content = "未找到角色",
+            Duration = 2,
+            Type = "error"
+        })
+    end
+end
+
+T4:Button({
+    Title = "🏢 传送至前台",
+    Justify = "Center",
+    Color = Color3.fromRGB(100, 200, 255),
+    Callback = function()
+        TeleportTo(-103, 3.4, 3.3, "前台")
+    end
+})
+
+T4:Button({
+    Title = "🏥 传送至一号病房",
+    Justify = "Center",
+    Color = Color3.fromRGB(255, 200, 50),
+    Callback = function()
+        TeleportTo(-168, 3.5, -53, "一号病房")
+    end
+})
+
+T4:Button({
+    Title = "🏥 传送至二号病房",
+    Justify = "Center",
+    Color = Color3.fromRGB(255, 200, 50),
+    Callback = function()
+        TeleportTo(-120, 3.5, -48, "二号病房")
+    end
+})
+
+T4:Button({
+    Title = "🏥 传送至三号病房",
+    Justify = "Center",
+    Color = Color3.fromRGB(255, 200, 50),
+    Callback = function()
+        TeleportTo(-168, 3.5, -89, "三号病房")
+    end
+})
+
+T4:Button({
+    Title = "🏥 传送至四号病房",
+    Justify = "Center",
+    Color = Color3.fromRGB(255, 200, 50),
+    Callback = function()
+        TeleportTo(-121, 3.5, -89, "四号病房")
+    end
+})
+
+T4:Button({
+    Title = "🏥 传送至五号病房",
+    Justify = "Center",
+    Color = Color3.fromRGB(255, 200, 50),
+    Callback = function()
+        TeleportTo(-142, 3.5, -116, "五号病房")
+    end
+})
+
+-- ==================== 速度循环 ====================
+spawn(function()
+    while true do
+        if speedEnabled then
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("Humanoid") then
+                char.Humanoid.WalkSpeed = speedValue
+            end
+        end
+        task.wait(0.1)
+    end
+end)
+
+-- ==================== 启动弹窗 ====================
+WI:Popup({
+    Title = "动物医院脚本",
+    Content = "加载完成\n按 RightShift 开关面板\n\n版本 V3.2\n✅ 用变量控制拦截开关，不销毁hook",
+    Buttons = {{
+        Title = "确定",
+        Variant = "Primary",
+        Callback = function() end
+    }}
+})
+
+print("✅ 动物医院脚本 V3.2 加载完成")
