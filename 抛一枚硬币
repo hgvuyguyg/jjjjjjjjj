@@ -149,7 +149,7 @@ end)
 
 -- ==================== Wind UI ====================
 local MainWindow = WI:CreateWindow({
-    Title = "🎃抛一枚硬币",
+    Title = "抛一枚硬币",
     Icon = "solar:coin-bold",
     Size = UDim2.fromOffset(480, 520),
     ToggleKey = Enum.KeyCode.RightShift,
