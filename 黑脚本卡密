@@ -1,0 +1,197 @@
+-- 黑脚本卡密系统 | V0.2
+
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+if not WindUI then return end
+
+local correctKey = "黑脚本牛逼"
+local mainScriptLoaded = false
+local popupInstance = nil
+
+-- ==================== 创建自定义弹窗（不自动关闭） ====================
+local function CreateKeyPopup()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "KeySystem"
+    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screenGui.Parent = game:GetService("CoreGui")
+    popupInstance = screenGui
+    
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 380, 0, 240)
+    frame.Position = UDim2.new(0.5, -190, 0.5, -120)
+    frame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    frame.BorderSizePixel = 0
+    frame.Parent = screenGui
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+    
+    -- 标题
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, -30, 0, 36)
+    title.Position = UDim2.new(0, 15, 0, 10)
+    title.BackgroundTransparency = 1
+    title.TextColor3 = Color3.new(1, 1, 1)
+    title.Text = "黑脚本卡密系统 v0.1"
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 18
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Parent = frame
+    
+    -- 关闭按钮
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Size = UDim2.new(0, 30, 0, 30)
+    closeBtn.Position = UDim2.new(1, -38, 0, 8)
+    closeBtn.Text = "✕"
+    closeBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.TextSize = 16
+    closeBtn.BackgroundTransparency = 1
+    closeBtn.BorderSizePixel = 0
+    closeBtn.Parent = frame
+    closeBtn.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
+    end)
+    
+    -- 提示文字
+    local hint = Instance.new("TextLabel")
+    hint.Size = UDim2.new(1, -30, 0, 24)
+    hint.Position = UDim2.new(0, 15, 0, 50)
+    hint.BackgroundTransparency = 1
+    hint.TextColor3 = Color3.fromRGB(180, 180, 200)
+    hint.Text = "请输入卡密"
+    hint.Font = Enum.Font.Gotham
+    hint.TextSize = 14
+    hint.TextXAlignment = Enum.TextXAlignment.Left
+    hint.Parent = frame
+    
+    -- 输入框
+    local inputBox = Instance.new("TextBox")
+    inputBox.Size = UDim2.new(1, -30, 0, 40)
+    inputBox.Position = UDim2.new(0, 15, 0, 80)
+    inputBox.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    inputBox.TextColor3 = Color3.new(1, 1, 1)
+    inputBox.Text = ""
+    inputBox.Font = Enum.Font.Gotham
+    inputBox.TextSize = 16
+    inputBox.PlaceholderText = "请输入卡密"
+    inputBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 170)
+    inputBox.BorderSizePixel = 0
+    inputBox.ClearTextOnFocus = false
+    inputBox.Parent = frame
+    Instance.new("UICorner", inputBox).CornerRadius = UDim.new(0, 6)
+    
+    -- 按钮行
+    local btnFrame = Instance.new("Frame")
+    btnFrame.Size = UDim2.new(1, -30, 0, 40)
+    btnFrame.Position = UDim2.new(0, 15, 0, 135)
+    btnFrame.BackgroundTransparency = 1
+    btnFrame.Parent = frame
+    
+    -- 获取卡密按钮
+    local getBtn = Instance.new("TextButton")
+    getBtn.Size = UDim2.new(0, 100, 0, 36)
+    getBtn.Position = UDim2.new(0, 0, 0, 2)
+    getBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    getBtn.Text = "获取卡密"
+    getBtn.TextColor3 = Color3.new(1, 1, 1)
+    getBtn.Font = Enum.Font.GothamBold
+    getBtn.TextSize = 14
+    getBtn.BorderSizePixel = 0
+    getBtn.Parent = btnFrame
+    Instance.new("UICorner", getBtn).CornerRadius = UDim.new(0, 6)
+    getBtn.MouseButton1Click:Connect(function()
+        setclipboard("黑脚本牛逼")
+        inputBox.Text = "黑脚本牛逼"
+        WindUI:Notify({
+            Title = "✅ 已复制",
+            Content = "卡密已自动填入",
+            Duration = 2,
+            Type = "success"
+        })
+    end)
+    
+    -- 执行按钮
+    local execBtn = Instance.new("TextButton")
+    execBtn.Size = UDim2.new(0, 100, 0, 36)
+    execBtn.Position = UDim2.new(1, -210, 0, 2)
+    execBtn.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
+    execBtn.Text = "执行"
+    execBtn.TextColor3 = Color3.new(1, 1, 1)
+    execBtn.Font = Enum.Font.GothamBold
+    execBtn.TextSize = 14
+    execBtn.BorderSizePixel = 0
+    execBtn.Parent = btnFrame
+    Instance.new("UICorner", execBtn).CornerRadius = UDim.new(0, 6)
+    execBtn.MouseButton1Click:Connect(function()
+        local input = inputBox.Text
+        if input == correctKey then
+            screenGui:Destroy()
+            WindUI:Notify({
+                Title = "✅ 验证成功",
+                Content = "正在加载主脚本...",
+                Duration = 2,
+                Type = "success"
+            })
+            LoadMainScript()
+        else
+            WindUI:Notify({
+                Title = "❌ 验证失败",
+                Content = "卡密错误，请重新输入",
+                Duration = 2,
+                Type = "error"
+            })
+        end
+    end)
+end
+
+-- ==================== 加载主脚本 ====================
+function LoadMainScript()
+    if mainScriptLoaded then return end
+    pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/%E9%BB%91%E8%84%9A%E6%9C%ACV1.5"))()
+        mainScriptLoaded = true
+        print("✅ 主脚本加载完成")
+        task.wait(5)
+        ShowExtraScriptPopup()
+    end)
+end
+
+-- ==================== 额外脚本弹窗 ====================
+function ShowExtraScriptPopup()
+    WindUI:Popup({
+        Title = "额外脚本加载",
+        Icon = "solar:plus-bold",
+        Content = "是否加载额外美化脚本？",
+        Buttons = {
+            {
+                Title = "加载",
+                Variant = "Primary",
+                Callback = function()
+                    pcall(function()
+                        loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-7yd7-I-Emote-Script-48024"))()
+                        WindUI:Notify({
+                            Title = "✅ 加载成功",
+                            Content = "额外脚本已加载",
+                            Duration = 2,
+                            Type = "success"
+                        })
+                    end)
+                end
+            },
+            {
+                Title = "不加载",
+                Variant = "Secondary",
+                Callback = function()
+                    WindUI:Notify({
+                        Title = "⏭️ 已跳过",
+                        Content = "未加载额外脚本",
+                        Duration = 2,
+                        Type = "warning"
+                    })
+                end
+            }
+        }
+    })
+end
+
+-- ==================== 启动 ====================
+CreateKeyPopup()
+print("✅ 黑脚本卡密系统 v0.2 加载完成")
