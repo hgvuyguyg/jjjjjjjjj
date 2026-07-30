@@ -1,0 +1,485 @@
+-- 餐厅大亨3 | V1.4
+
+local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+if not WI then return end
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+
+-- ==================== 清理旧UI（只清理同名的） ====================
+pcall(function()
+    for _, gui in ipairs(CoreGui:GetChildren()) do
+        if gui:IsA("ScreenGui") and gui.Name == "RestaurantUI" then
+            gui:Destroy()
+        end
+    end
+end)
+
+-- ==================== 变量 ====================
+local autoInteract = false
+local speedValue = 16
+local speedEnabled = false
+local espEnabled = false
+local espHighlights = {}
+local selectedPlayer = nil
+
+-- ==================== 速度循环 ====================
+task.spawn(function()
+    while true do
+        if speedEnabled then
+            local c = LocalPlayer.Character
+            if c and c:FindFirstChild("Humanoid") then
+                c.Humanoid.WalkSpeed = speedValue
+            end
+        end
+        task.wait(0.1)
+    end
+end)
+
+-- ==================== ESP ====================
+local function clearESP()
+    for _, obj in pairs(espHighlights) do
+        pcall(function() obj:Destroy() end)
+    end
+    espHighlights = {}
+end
+
+local function updateESP()
+    clearESP()
+    if not espEnabled then return end
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character then
+            pcall(function()
+                local char = p.Character
+                local hl = Instance.new("Highlight")
+                hl.FillColor = Color3.fromRGB(0, 150, 255)
+                hl.FillTransparency = 0.3
+                hl.OutlineColor = Color3.new(1, 1, 1)
+                hl.Adornee = char
+                hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                hl.Parent = char
+                table.insert(espHighlights, hl)
+                
+                local bb = Instance.new("BillboardGui")
+                bb.Size = UDim2.new(0, 200, 0, 30)
+                bb.AlwaysOnTop = true
+                bb.Parent = char
+                local head = char:FindFirstChild("Head")
+                if head then bb.Adornee = head end
+                
+                local label = Instance.new("TextLabel")
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.BackgroundTransparency = 1
+                label.TextColor3 = Color3.new(1, 1, 1)
+                label.Text = p.Name
+                label.Font = Enum.Font.SourceSansBold
+                label.TextSize = 14
+                label.TextStrokeColor3 = Color3.new(0, 0, 0)
+                label.TextStrokeTransparency = 0.5
+                label.Parent = bb
+                table.insert(espHighlights, bb)
+            end)
+        end
+    end
+end
+
+task.spawn(function()
+    while true do
+        if espEnabled then
+            updateESP()
+        else
+            clearESP()
+        end
+        task.wait(0.5)
+    end
+end)
+
+-- ==================== 获取所有玩家名字 ====================
+local function GetPlayerNames()
+    local names = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            table.insert(names, p.Name)
+        end
+    end
+    return names
+end
+
+-- ==================== 传送功能 ====================
+local function TeleportToPlayer(playerName)
+    if not playerName or playerName == "" then
+        WI:Notify({
+            Title = "❌ 传送失败",
+            Content = "请先选择一名玩家",
+            Duration = 2,
+            Type = "error"
+        })
+        return false
+    end
+    
+    local target = Players:FindFirstChild(playerName)
+    if not target then
+        WI:Notify({
+            Title = "❌ 传送失败",
+            Content = "玩家不存在",
+            Duration = 2,
+            Type = "error"
+        })
+        return false
+    end
+    
+    if not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then
+        WI:Notify({
+            Title = "❌ 传送失败",
+            Content = "目标玩家没有角色",
+            Duration = 2,
+            Type = "error"
+        })
+        return false
+    end
+    
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then
+        WI:Notify({
+            Title = "❌ 传送失败",
+            Content = "你的角色不存在",
+            Duration = 2,
+            Type = "error"
+        })
+        return false
+    end
+    
+    local targetPos = target.Character.HumanoidRootPart.Position
+    char.HumanoidRootPart.CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0))
+    
+    WI:Notify({
+        Title = "✅ 传送成功",
+        Content = "已传送到 " .. playerName,
+        Duration = 2,
+        Type = "success"
+    })
+    return true
+end
+
+-- ==================== 自动互动（带三层名称检测） ====================
+task.spawn(function()
+    local skipNames = {"wardrobe","cabinet","closet","bed","衣柜","柜子","床","hide","hiding","painting","画","drawing","canvas","picture","frame","photo","portrait"}
+    while true do
+        if autoInteract then
+            pcall(function()
+                local p = LocalPlayer.Character
+                if not p or not p:FindFirstChild("HumanoidRootPart") then return end
+                local hrp = p.HumanoidRootPart
+                local hrpPos = hrp.Position
+                
+                for _, o in ipairs(Workspace:GetDescendants()) do
+                    if o:IsA("ProximityPrompt") and o.Enabled then
+                        local pp = o.Parent
+                        if not pp then continue end
+                        
+                        local po = nil
+                        if pp:IsA("BasePart") then
+                            po = pp.Position
+                        elseif pp:IsA("Model") then
+                            local bp = pp:FindFirstChildWhichIsA("BasePart")
+                            if bp then po = bp.Position end
+                        end
+                        
+                        if po and (po - hrpPos).Magnitude < 10 then
+                            local name = pp.Name:lower()
+                            local parentName = pp.Parent and pp.Parent.Name:lower() or ""
+                            local grandparentName = pp.Parent and pp.Parent.Parent and pp.Parent.Parent.Name:lower() or ""
+                            local combined = name .. " " .. parentName .. " " .. grandparentName
+                            
+                            local shouldSkip = false
+                            for _, kw in ipairs(skipNames) do
+                                if combined:find(kw) then
+                                    shouldSkip = true
+                                    break
+                                end
+                            end
+                            
+                            if not shouldSkip then
+                                if name == "door" or parentName == "door" then
+                                    fireproximityprompt(o, 1)
+                                else
+                                    fireproximityprompt(o)
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+        task.wait(0.15)
+    end
+end)
+
+-- ==================== Wind UI ====================
+local MainWindow = WI:CreateWindow({
+    Title = "餐厅大亨3",
+    Icon = "solar:restaurant-bold",
+    Size = UDim2.fromOffset(480, 520),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Acrylic = true,
+    ScrollBarEnabled = true
+})
+
+-- ==================== 公告 ====================
+local T1 = MainWindow:Tab({Title = "公告", Icon = "solar:info-bold"})
+
+T1:Paragraph({
+    Title = "黑脚本--🍽️ 餐厅大亨3",
+    Desc = "版本 V1.4\n\n功能列表：\n- 自动互动（带三层名称检测）\n- 速度调节\n- 透视所有人\n- 传送玩家"
+})
+
+T1:Button({
+    Title = "关闭面板",
+    Justify = "Center",
+    Color = Color3.fromHex("#888888"),
+    Callback = function()
+        MainWindow:Close()
+    end
+})
+
+-- ==================== 自动 ====================
+local T2 = MainWindow:Tab({Title = "自动", Icon = "solar:auto-bold"})
+
+T2:Paragraph({
+    Title = "🤖 自动化",
+    Desc = "自动执行餐厅操作"
+})
+
+T2:Divider()
+
+T2:Toggle({
+    Title = "🔄 自动互动",
+    Value = false,
+    Callback = function(v)
+        autoInteract = v
+        if v then
+            print("🔄 自动互动已开启")
+            WI:Notify({
+                Title = "✅ 已开启",
+                Content = "自动互动已开启",
+                Duration = 2,
+                Type = "success"
+            })
+        else
+            print("🔄 自动互动已关闭")
+            WI:Notify({
+                Title = "⏹️ 已关闭",
+                Content = "自动互动已关闭",
+                Duration = 2,
+                Type = "warning"
+            })
+        end
+    end
+})
+
+-- ==================== 玩家 ====================
+local T3 = MainWindow:Tab({Title = "玩家", Icon = "solar:user-bold"})
+
+T3:Paragraph({
+    Title = "👤 玩家设置",
+    Desc = "调节玩家属性"
+})
+
+T3:Divider()
+
+T3:Toggle({
+    Title = "🏃 开启速度调节",
+    Value = false,
+    Callback = function(v)
+        speedEnabled = v
+        if not v then
+            local c = LocalPlayer.Character
+            if c and c:FindFirstChild("Humanoid") then
+                c.Humanoid.WalkSpeed = 16
+            end
+        end
+    end
+})
+
+T3:Input({
+    Title = "速度数值",
+    Description = "输入1-200",
+    Value = "16",
+    Callback = function(v)
+        local num = tonumber(v)
+        if num and num > 0 and num <= 200 then
+            speedValue = num
+        end
+    end
+})
+
+T3:Button({
+    Title = "⭐ 推荐（25速度）",
+    Justify = "Center",
+    Color = Color3.fromRGB(255, 200, 50),
+    Callback = function()
+        speedValue = 25
+        if speedEnabled then
+            local c = LocalPlayer.Character
+            if c and c:FindFirstChild("Humanoid") then
+                c.Humanoid.WalkSpeed = 25
+            end
+        end
+    end
+})
+
+T3:Divider()
+
+T3:Toggle({
+    Title = "👁️ 透视所有人",
+    Value = false,
+    Callback = function(v)
+        espEnabled = v
+        if not v then
+            clearESP()
+        end
+    end
+})
+
+T3:Divider()
+
+T3:Paragraph({
+    Title = "🚀 传送玩家",
+    Desc = "选择玩家后点击传送"
+})
+
+local playerDropdown = nil
+local selectedPlayerName = ""
+
+local function RefreshPlayerList()
+    local names = GetPlayerNames()
+    if #names == 0 then
+        table.insert(names, "无玩家")
+    end
+    if playerDropdown then
+        playerDropdown:SetValues(names)
+        playerDropdown:SetValue(names[1] or "无玩家")
+    end
+end
+
+playerDropdown = T3:Dropdown({
+    Title = "选择玩家",
+    Values = GetPlayerNames(),
+    Value = GetPlayerNames()[1] or "无玩家",
+    Callback = function(v)
+        selectedPlayerName = v
+    end
+})
+
+T3:Button({
+    Title = "🔄 刷新玩家列表",
+    Justify = "Center",
+    Color = Color3.fromRGB(76, 175, 80),
+    Callback = function()
+        RefreshPlayerList()
+        WI:Notify({
+            Title = "✅ 已刷新",
+            Content = "玩家列表已更新",
+            Duration = 2,
+            Type = "success"
+        })
+    end
+})
+
+T3:Divider()
+
+T3:Button({
+    Title = "📍 传送至选定玩家",
+    Justify = "Center",
+    Color = Color3.fromRGB(255, 200, 50),
+    Callback = function()
+        if not selectedPlayerName or selectedPlayerName == "" or selectedPlayerName == "无玩家" then
+            WI:Notify({
+                Title = "❌ 传送失败",
+                Content = "请先选择一名玩家",
+                Duration = 2,
+                Type = "error"
+            })
+            return
+        end
+        TeleportToPlayer(selectedPlayerName)
+    end
+})
+
+-- ==================== 设置 ====================
+local T4 = MainWindow:Tab({Title = "设置", Icon = "solar:settings-bold"})
+
+T4:Paragraph({
+    Title = "⚙️ UI设置",
+    Desc = "调整界面外观"
+})
+
+T4:Divider()
+
+local themeNames = {
+    "BlueWhite", "Dark", "Light", "Rose", "Plant",
+    "Ocean", "Sunset", "Midnight", "Forest",
+    "Lavender", "Coral", "Mint", "Sky",
+    "Blood", "Lemon", "Cyber"
+}
+
+T4:Dropdown({
+    Title = "🎨 UI主题",
+    Values = themeNames,
+    Value = "Plant",
+    Callback = function(v)
+        pcall(function()
+            WI:SetTheme(v)
+        end)
+    end
+})
+
+T4:Divider()
+
+T4:Slider({
+    Title = "窗口透明度",
+    Value = 0,
+    Min = 0,
+    Max = 1,
+    Step = 0.05,
+    Callback = function(v)
+        pcall(function()
+            MainWindow:SetBackgroundTransparency(v)
+        end)
+    end
+})
+
+T4:Divider()
+
+T4:Button({
+    Title = "🔄 重置UI位置",
+    Justify = "Center",
+    Color = Color3.fromRGB(76, 175, 80),
+    Callback = function()
+        pcall(function()
+            MainWindow:SetPosition(UDim2.new(0.5, -240, 0.5, -260))
+            WI:Notify({
+                Title = "✅ 已重置",
+                Content = "UI位置已重置",
+                Duration = 2,
+                Type = "success"
+            })
+        end)
+    end
+})
+
+-- ==================== 启动弹窗 ====================
+WI:Popup({
+    Title = "餐厅大亨3",
+    Content = "加载完成\n按 RightShift 开关面板\n\n版本 V1.4",
+    Buttons = {{
+        Title = "确定",
+        Variant = "Primary",
+        Callback = function() end
+    }}
+})
+
+print("✅ 餐厅大亨3 V1.4 加载完成")
