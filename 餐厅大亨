@@ -1,66 +1,98 @@
--- 餐厅大亨3 | V2.2
+-- 餐厅大亨3 | V2.6 修复版3
 
-local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
-if not WI then return end
+-- 先加载UI库
+local success, WindUI = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+end)
 
--- 设置默认主题为 Night
-WI:SetTheme("Night")
+if not success or not WindUI then
+    warn("WindUI加载失败，尝试备用方法...")
+    
+    local httpRequest = syn and syn.request or http_request or request
+    if httpRequest then
+        local response = httpRequest({
+            Url = "https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua",
+            Method = "GET"
+        })
+        if response and response.Body then
+            local func = loadstring(response.Body)
+            if func then
+                WindUI = func()
+            end
+        end
+    end
+    
+    if not WindUI then
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "错误",
+            Text = "UI库加载失败",
+            Duration = 5
+        })
+        return
+    end
+end
+
+_G.WindUI = WindUI
+local WI = _G.WindUI
+
+task.wait(1)
+
+pcall(function()
+    WI:SetTheme("Night")
+end)
 
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
-local UserInputService = game:GetService("UserInputService")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 local CoreGui = game:GetService("CoreGui")
+local StarterGui = game:GetService("StarterGui")
+local RunService = game:GetService("RunService")
 
--- ==================== 清理旧UI ====================
-pcall(function()
-    for _, gui in ipairs(CoreGui:GetChildren()) do
-        if gui:IsA("ScreenGui") and gui.Name == "RestaurantUI" then
-            gui:Destroy()
-        end
-    end
-end)
-
--- ==================== 变量 ====================
 local autoInteract = false
 local autoCollect = false
 local speedValue = 16
 local speedEnabled = false
 local espEnabled = false
 local espHighlights = {}
-local selectedPlayer = nil
 local collectThread = nil
 local centerPos = nil
 local collectedTables = {}
-local isUIOpen = true
 local recentTeleports = {}
-local TELEPORT_HISTORY_LIMIT = 5
+local COLLECT_RADIUS = 200
+local isCollecting = false
+local MainWindow = nil
 
--- ==================== 速度循环 ====================
+pcall(function()
+    for _, obj in ipairs(CoreGui:GetChildren()) do
+        if obj:IsA("ScreenGui") then
+            obj:Destroy()
+        end
+    end
+end)
+
 task.spawn(function()
     while true do
+        task.wait(0.1)
         if speedEnabled then
             local c = LocalPlayer.Character
             if c and c:FindFirstChild("Humanoid") then
                 c.Humanoid.WalkSpeed = speedValue
             end
         end
-        task.wait(0.1)
     end
 end)
 
--- ==================== ESP ====================
 local function clearESP()
     for _, obj in pairs(espHighlights) do
         pcall(function() obj:Destroy() end)
     end
-    espHighlights = {}
+    table.clear(espHighlights)
 end
 
 local function updateESP()
     clearESP()
     if not espEnabled then return end
+    
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= LocalPlayer and p.Character then
             pcall(function()
@@ -73,14 +105,14 @@ local function updateESP()
                 hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
                 hl.Parent = char
                 table.insert(espHighlights, hl)
-
+                
                 local bb = Instance.new("BillboardGui")
                 bb.Size = UDim2.new(0, 200, 0, 30)
                 bb.AlwaysOnTop = true
                 bb.Parent = char
                 local head = char:FindFirstChild("Head")
                 if head then bb.Adornee = head end
-
+                
                 local label = Instance.new("TextLabel")
                 label.Size = UDim2.new(1, 0, 1, 0)
                 label.BackgroundTransparency = 1
@@ -99,16 +131,15 @@ end
 
 task.spawn(function()
     while true do
+        task.wait(0.5)
         if espEnabled then
             updateESP()
         else
             clearESP()
         end
-        task.wait(0.5)
     end
 end)
 
--- ==================== 获取所有玩家名字 ====================
 local function GetPlayerNames()
     local names = {}
     for _, p in ipairs(Players:GetPlayers()) do
@@ -119,221 +150,111 @@ local function GetPlayerNames()
     return names
 end
 
--- ==================== 传送功能 ====================
 local function TeleportToPlayer(playerName)
     if not playerName or playerName == "" then
-        WI:Notify({
-            Title = "❌ 传送失败",
-            Content = "请先选择一名玩家",
-            Duration = 2,
-            Type = "error"
+        StarterGui:SetCore("SendNotification", {
+            Title = "失败",
+            Text = "请选择玩家",
+            Duration = 2
         })
-        return false
+        return
     end
-
+    
     local target = Players:FindFirstChild(playerName)
-    if not target then
-        WI:Notify({
-            Title = "❌ 传送失败",
-            Content = "玩家不存在",
-            Duration = 2,
-            Type = "error"
+    if not target or not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then
+        StarterGui:SetCore("SendNotification", {
+            Title = "失败",
+            Text = "目标不存在",
+            Duration = 2
         })
-        return false
+        return
     end
-
-    if not target.Character or not target.Character:FindFirstChild("HumanoidRootPart") then
-        WI:Notify({
-            Title = "❌ 传送失败",
-            Content = "目标玩家没有角色",
-            Duration = 2,
-            Type = "error"
-        })
-        return false
-    end
-
+    
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then
-        WI:Notify({
-            Title = "❌ 传送失败",
-            Content = "你的角色不存在",
-            Duration = 2,
-            Type = "error"
+        StarterGui:SetCore("SendNotification", {
+            Title = "失败",
+            Text = "角色不存在",
+            Duration = 2
         })
-        return false
+        return
     end
-
-    local targetPos = target.Character.HumanoidRootPart.Position
-    char.HumanoidRootPart.CFrame = CFrame.new(targetPos + Vector3.new(0, 2, 0))
-
-    WI:Notify({
-        Title = "✅ 传送成功",
-        Content = "已传送到 " .. playerName,
-        Duration = 2,
-        Type = "success"
-    })
-    return true
+    
+    char.HumanoidRootPart.CFrame = CFrame.new(target.Character.HumanoidRootPart.Position + Vector3.new(0, 2, 0))
 end
 
--- ==================== 自动互动（修复） ====================
-task.spawn(function()
-    -- 有用物体关键词（只点这些）
-    local usefulKeywords = {
-        "register","收银","counter","收银台",
-        "oven","烤箱","stove","炉子","fryer","炸锅",
-        "grill","烤架","mixer","搅拌机",
-        "prep","备料","cutting","切菜","sink","水槽",
-        "fridge","冰箱","freezer","冷冻柜",
-        "shelf","架子","rack","货架","display","展示柜",
-        "trash","垃圾桶","bin","桶"
-    }
-    
-    -- 绝对跳过的关键词（所有场景物体）
-    local skipKeywords = {
-        "flower","花","plant","植物","tree","树","bush","灌木","grass","草","weed","杂草",
-        "lamp","灯","light","台灯","wall","墙","floor","地板","ceiling","天花板",
-        "chair","椅子","stool","凳","seat","座位","table","桌","desk","书桌",
-        "door","门","window","窗","窗户","sign","告示牌","board","看板",
-        "decoration","装饰","pot","花盆","box","箱子","crate","货箱",
-        "rock","石头","stone","石块","post","柱子","fence","栅栏","rail","栏杆",
-        "glass","玻璃","mirror","镜子","countertop","台面","sink","水槽",
-        "cabinet","柜子","wardrobe","衣柜","closet","壁橱","bed","床",
-        "painting","画","drawing","canvas","picture","frame","photo","portrait",
-        "hide","hiding","drawer","抽屉","shelf","架子","rack","货架"
-    }
-    
-    while true do
-        if autoInteract then
-            pcall(function()
-                local p = LocalPlayer.Character
-                if not p or not p:FindFirstChild("HumanoidRootPart") then return end
-                local hrp = p.HumanoidRootPart
-                local hrpPos = hrp.Position
-
-                for _, o in ipairs(Workspace:GetDescendants()) do
-                    if o:IsA("ProximityPrompt") and o.Enabled then
-                        local pp = o.Parent
-                        if not pp then continue end
-
-                        local po = nil
-                        if pp:IsA("BasePart") then
-                            po = pp.Position
-                        elseif pp:IsA("Model") then
-                            local bp = pp:FindFirstChildWhichIsA("BasePart")
-                            if bp then po = bp.Position end
-                        end
-
-                        if po and (po - hrpPos).Magnitude < 10 then
-                            local fullName = pp.Name:lower() .. " " .. (pp.Parent and pp.Parent.Name:lower() or "")
-                            
-                            -- 先检查是否应该跳过
-                            local shouldSkip = false
-                            for _, kw in ipairs(skipKeywords) do
-                                if fullName:find(kw) then
-                                    shouldSkip = true
-                                    break
-                                end
-                            end
-                            if shouldSkip then continue end
-                            
-                            -- 检查是否在有用列表里
-                            local isUseful = false
-                            for _, kw in ipairs(usefulKeywords) do
-                                if fullName:find(kw) then
-                                    isUseful = true
-                                    break
-                                end
-                            end
-                            
-                            -- 如果名字包含交互关键词也点
-                            if not isUseful and (fullName:find("button") or fullName:find("prompt") or fullName:find("interact") or fullName:find("click")) then
-                                isUseful = true
-                            end
-                            
-                            if isUseful then
-                                fireproximityprompt(o)
-                            end
-                        end
-                    end
-                end
-            end)
-        end
-        task.wait(0.2)
-    end
-end)
-
--- ==================== 检查是否在15米内重复传送 ====================
-local function IsTooCloseToRecent(pos)
-    local count = 0
-    for _, recentPos in ipairs(recentTeleports) do
-        if (pos - recentPos).Magnitude < 15 then
-            count = count + 1
-            if count >= 2 then
-                return true
-            end
+local function IsTooClose(pos)
+    for _, p in ipairs(recentTeleports) do
+        if (pos - p).Magnitude < 15 then
+            return true
         end
     end
     return false
 end
 
--- ==================== 自动收钱（只传完美匹配Base，跳过所有误识别） ====================
-local function FindAllBases()
+local function IsRealBase(obj)
+    if obj.Name ~= "Base" then
+        return false
+    end
+    
+    local parent = obj.Parent
+    if parent then
+        local parentName = parent.Name:lower()
+        local skip = {"lamp","wall","ceiling","floor","chair","table","plant","tree",
+                      "decoration","painting","frame","mirror","glass","door","window",
+                      "shelf","rack","fence","post","bed","cabinet","drawer","counter"}
+        
+        for _, word in ipairs(skip) do
+            if parentName:find(word) then
+                return false
+            end
+        end
+        
+        if parent:IsA("Model") then
+            local count = 0
+            for _, child in ipairs(parent:GetChildren()) do
+                if child:IsA("BasePart") then
+                    count = count + 1
+                end
+            end
+            if count > 3 then
+                return false
+            end
+        end
+    end
+    
+    return true
+end
+
+local function FindBases()
     local bases = {}
     if not centerPos then
-        print("⚠️ 中心点未设置，请重新开启自动收钱")
         return bases
     end
-
-    -- 需要跳过的关键词（防止传到花坛/树/灯等）
-    local skipBaseKeywords = {
-        "flower","花","plant","植物","tree","树","bush","灌木","grass","草",
-        "lamp","灯","light","台灯","wall","墙","floor","地板","ceiling","天花板",
-        "chair","椅子","table","桌","desk","书桌","door","门","window","窗",
-        "sign","告示牌","board","看板","decoration","装饰","pot","花盆",
-        "rock","石头","stone","石块","post","柱子","fence","栅栏","glass","玻璃",
-        "cabinet","柜子","wardrobe","衣柜","closet","壁橱","bed","床",
-        "painting","画","drawing","canvas","picture","frame","photo","portrait",
-        "shelf","架子","rack","货架","drawer","抽屉","countertop","台面"
-    }
-
+    
     for _, obj in ipairs(Workspace:GetDescendants()) do
-        -- 只匹配名字完全等于 "Base" 的物体
-        if obj.Name == "Base" then
-            if obj:IsA("Part") or obj:IsA("Model") then
-                local pos = nil
-                if obj:IsA("Part") then
-                    pos = obj.Position
-                elseif obj:IsA("Model") then
-                    local p = obj:FindFirstChildWhichIsA("BasePart")
-                    if p then pos = p.Position end
-                end
-                if pos and (pos - centerPos).Magnitude <= 200 then
-                    -- 检查名字是否包含跳过关键词
-                    local fullName = obj.Name:lower() .. " " .. (obj.Parent and obj.Parent.Name:lower() or "")
-                    local shouldSkip = false
-                    for _, kw in ipairs(skipBaseKeywords) do
-                        if fullName:find(kw) then
-                            shouldSkip = true
-                            break
-                        end
-                    end
-                    if shouldSkip then
-                        print("⏭️ 跳过非厨房 Base: " .. obj.Name)
-                        continue
-                    end
-                    
+        if IsRealBase(obj) then
+            local pos = nil
+            if obj:IsA("Part") then
+                pos = obj.Position
+            elseif obj:IsA("Model") then
+                local p = obj:FindFirstChildWhichIsA("BasePart")
+                if p then pos = p.Position end
+            end
+            
+            if pos then
+                local dist = (pos - centerPos).Magnitude
+                if dist <= COLLECT_RADIUS then
                     local id = tostring(obj)
-                    if not collectedTables[id] then
-                        if IsTooCloseToRecent(pos) then
-                            print("⏭️ 跳过近距离重复 Base: " .. obj.Name)
-                            continue
-                        end
-                        table.insert(bases, {obj = obj, pos = pos, id = id})
+                    if not collectedTables[id] and not IsTooClose(pos) then
+                        table.insert(bases, {obj = obj, pos = pos, id = id, dist = dist})
                     end
                 end
             end
         end
     end
+    
+    table.sort(bases, function(a, b) return a.dist < b.dist end)
     return bases
 end
 
@@ -342,9 +263,10 @@ local function StartCollect()
         task.cancel(collectThread)
         collectThread = nil
     end
-    collectedTables = {}
-    recentTeleports = {}
-
+    table.clear(collectedTables)
+    table.clear(recentTeleports)
+    isCollecting = false
+    
     collectThread = task.spawn(function()
         while autoCollect do
             pcall(function()
@@ -352,74 +274,55 @@ local function StartCollect()
                 if not char then return end
                 local hrp = char:FindFirstChild("HumanoidRootPart")
                 if not hrp then return end
-
-                local bases = FindAllBases()
+                
+                local bases = FindBases()
                 if #bases == 0 then
-                    print("💰 200m内没有可用的 Base 物体")
                     task.wait(2)
                     return
                 end
-
-                print("💰 找到 " .. #bases .. " 个可用的 Base 物体")
-
-                for _, baseData in ipairs(bases) do
+                
+                for _, data in ipairs(bases) do
                     if not autoCollect then break end
-                    local target = baseData.obj
-                    local pos = baseData.pos
-                    local id = baseData.id
-
-                    if target and pos then
-                        hrp.CFrame = CFrame.new(pos + Vector3.new(0, 2, 0))
-                        task.wait(0.3)
+                    if isCollecting then
+                        task.wait(0.1)
+                    else
+                        local target = data.obj
+                        local pos = data.pos
                         
-                        -- 记录此次传送位置
-                        table.insert(recentTeleports, pos)
-                        if #recentTeleports > TELEPORT_HISTORY_LIMIT then
-                            table.remove(recentTeleports, 1)
-                        end
-
-                        -- 强制按E（多种方式）
-                        local pressed = false
-                        
-                        -- 方法1: 找ProximityPrompt
-                        local prompt = nil
-                        if target:IsA("Part") then
-                            prompt = target:FindFirstChildOfClass("ProximityPrompt")
-                        elseif target:IsA("Model") then
-                            for _, d in ipairs(target:GetDescendants()) do
-                                if d:IsA("ProximityPrompt") then
-                                    prompt = d
-                                    break
+                        if target and pos then
+                            isCollecting = true
+                            hrp.CFrame = CFrame.new(pos + Vector3.new(0, 2, 0))
+                            task.wait(0.3)
+                            
+                            table.insert(recentTeleports, pos)
+                            if #recentTeleports > 10 then
+                                table.remove(recentTeleports, 1)
+                            end
+                            
+                            local prompt = nil
+                            if target:IsA("Part") then
+                                prompt = target:FindFirstChildOfClass("ProximityPrompt")
+                            elseif target:IsA("Model") then
+                                for _, d in ipairs(target:GetDescendants()) do
+                                    if d:IsA("ProximityPrompt") then
+                                        prompt = d
+                                        break
+                                    end
                                 end
                             end
-                        end
-                        if prompt and prompt.Enabled then
-                            fireproximityprompt(prompt)
-                            pressed = true
-                        end
-                        
-                        -- 方法2: 模拟按键E
-                        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-                        task.wait(0.05)
-                        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
-                        
-                        -- 方法3: 如果上面两种都没成功，再试一次火触
-                        if not pressed then
-                            task.wait(0.1)
+                            
                             if prompt and prompt.Enabled then
                                 fireproximityprompt(prompt)
                             end
+                            
+                            collectedTables[data.id] = true
+                            isCollecting = false
+                            task.wait(0.3)
                         end
-
-                        collectedTables[id] = true
-                        print("💰 已收 Base: " .. target.Name)
-
-                        task.wait(0.3)
                     end
                 end
-
-                collectedTables = {}
-                print("💰 一轮完成，等待2秒后继续")
+                
+                table.clear(collectedTables)
                 task.wait(2)
             end)
             task.wait(0.5)
@@ -427,355 +330,236 @@ local function StartCollect()
     end)
 end
 
--- ==================== 重置UI ====================
-local function ResetUI()
+task.spawn(function()
+    while true do
+        task.wait(0.2)
+        if autoInteract then
+            pcall(function()
+                local char = LocalPlayer.Character
+                if not char then return end
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if not hrp then return end
+                local pos = hrp.Position
+                
+                for _, o in ipairs(Workspace:GetDescendants()) do
+                    if o:IsA("ProximityPrompt") and o.Enabled then
+                        local parent = o.Parent
+                        if parent then
+                            local ppos = nil
+                            if parent:IsA("BasePart") then
+                                ppos = parent.Position
+                            elseif parent:IsA("Model") then
+                                local bp = parent:FindFirstChildWhichIsA("BasePart")
+                                if bp then ppos = bp.Position end
+                            end
+                            
+                            if ppos and (ppos - pos).Magnitude < 10 then
+                                fireproximityprompt(o)
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+local function CreateUI()
     pcall(function()
-        MainWindow:SetPosition(UDim2.new(0.5, -240, 0.5, -270))
-        MainWindow:SetBackgroundTransparency(0)
-        WI:Notify({
-            Title = "🔄 UI已重置",
-            Content = "按 RightShift 打开面板",
-            Duration = 2,
-            Type = "info"
+        MainWindow = WI:CreateWindow({
+            Title = "餐厅大亨3",
+            Icon = "solar:restaurant-bold",
+            Size = UDim2.fromOffset(620, 380),  -- 宽度620，高度380，横向矩形
+            ToggleKey = Enum.KeyCode.RightShift,
+            Acrylic = false,
+            ScrollBarEnabled = true,
+            Position = UDim2.fromScale(0.5, 0.5),
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            MinSize = Vector2.new(500, 320),  -- 最小尺寸也改成横向
+        })
+        
+        if not MainWindow then
+            error("窗口创建失败")
+        end
+        
+        local T1 = MainWindow:Tab({Title = "公告", Icon = "solar:info-bold"})
+        T1:Paragraph({
+            Title = "黑脚本--🍽️ 餐厅大亨3",
+            Desc = "V2.6 修复版\n\n✅ 横向宽屏UI\n✅ 修复缩放消失问题\n✅ 自动收钱肯定有bug\n✅ 15米防重复\n✅ 自定义范围"
+        })
+        
+        local T2 = MainWindow:Tab({Title = "自动", Icon = "solar:auto-bold"})
+        
+        T2:Toggle({
+            Title = "🔄 自动互动",
+            Value = false,
+            Callback = function(v)
+                autoInteract = v
+            end
+        })
+        
+        T2:Divider()
+        
+        T2:Input({
+            Title = "📏 收集半径 (米)",
+            Description = "默认200，范围1-10000",
+            Value = "200",
+            Callback = function(v)
+                local num = tonumber(v)
+                if num and num >= 1 and num <= 10000 then
+                    COLLECT_RADIUS = num
+                end
+            end
+        })
+        
+        T2:Divider()
+        
+        T2:Toggle({
+            Title = "💰 自动收钱 betaV0.1",
+            Value = false,
+            Callback = function(v)
+                autoCollect = v
+                if v then
+                    local char = LocalPlayer.Character
+                    if char and char:FindFirstChild("HumanoidRootPart") then
+                        centerPos = char.HumanoidRootPart.Position
+                        table.clear(collectedTables)
+                        table.clear(recentTeleports)
+                        StartCollect()
+                    else
+                        StarterGui:SetCore("SendNotification", {
+                            Title = "错误",
+                            Text = "无法获取位置",
+                            Duration = 2
+                        })
+                        autoCollect = false
+                    end
+                else
+                    if collectThread then
+                        task.cancel(collectThread)
+                        collectThread = nil
+                    end
+                    centerPos = nil
+                    table.clear(recentTeleports)
+                    isCollecting = false
+                end
+            end
+        })
+        
+        local T3 = MainWindow:Tab({Title = "玩家", Icon = "solar:user-bold"})
+        
+        T3:Toggle({
+            Title = "🏃 速度调节",
+            Value = false,
+            Callback = function(v)
+                speedEnabled = v
+                if not v then
+                    local c = LocalPlayer.Character
+                    if c and c:FindFirstChild("Humanoid") then
+                        c.Humanoid.WalkSpeed = 16
+                    end
+                end
+            end
+        })
+        
+        T3:Input({
+            Title = "速度值",
+            Description = "1-200",
+            Value = "16",
+            Callback = function(v)
+                local num = tonumber(v)
+                if num and num > 0 and num <= 200 then
+                    speedValue = num
+                end
+            end
+        })
+        
+        T3:Divider()
+        
+        T3:Toggle({
+            Title = "👁️ 透视",
+            Value = false,
+            Callback = function(v)
+                espEnabled = v
+                if not v then clearESP() end
+            end
+        })
+        
+        T3:Divider()
+        
+        local selectedPlayer = ""
+        T3:Dropdown({
+            Title = "选择玩家",
+            Values = GetPlayerNames(),
+            Value = GetPlayerNames()[1] or "无玩家",
+            Callback = function(v)
+                selectedPlayer = v
+            end
+        })
+        
+        T3:Button({
+            Title = "📍 传送",
+            Justify = "Center",
+            Color = Color3.fromRGB(255, 200, 50),
+            Callback = function()
+                if selectedPlayer and selectedPlayer ~= "" and selectedPlayer ~= "无玩家" then
+                    TeleportToPlayer(selectedPlayer)
+                end
+            end
+        })
+        
+        local T4 = MainWindow:Tab({Title = "设置", Icon = "solar:settings-bold"})
+        
+        T4:Dropdown({
+            Title = "🎨 主题",
+            Values = {"Night", "BlueWhite", "Dark", "Light", "Rose", "Plant"},
+            Value = "Night",
+            Callback = function(v)
+                pcall(function() WI:SetTheme(v) end)
+            end
+        })
+        
+        T4:Button({
+            Title = "🔄 重置UI位置",
+            Justify = "Center",
+            Color = Color3.fromRGB(100, 200, 100),
+            Callback = function()
+                pcall(function()
+                    if MainWindow and MainWindow.Window then
+                        MainWindow.Window.Position = UDim2.fromScale(0.5, 0.5)
+                        MainWindow.Window.Size = UDim2.fromOffset(620, 380)
+                    end
+                end)
+            end
+        })
+        
+        print("✅ 餐厅大亨3 V2.6 宽屏版 加载完成")
+        StarterGui:SetCore("SendNotification", {
+            Title = "加载成功",
+            Text = "按RightShift打开菜单",
+            Duration = 3
         })
     end)
 end
 
--- ==================== Wind UI ====================
-local MainWindow = WI:CreateWindow({
-    Title = "餐厅大亨3",
-    Icon = "solar:restaurant-bold",
-    Size = UDim2.fromOffset(480, 580),
-    ToggleKey = Enum.KeyCode.RightShift,
-    Acrylic = true,
-    ScrollBarEnabled = true,
-    OnClose = function()
-        isUIOpen = false
-        print("UI已关闭，按RightShift重新打开")
-    end,
-    OnOpen = function()
-        isUIOpen = true
-        print("UI已打开")
-    end
-})
+task.wait(2)
+CreateUI()
 
--- ==================== 公告 ====================
-local T1 = MainWindow:Tab({Title = "公告", Icon = "solar:info-bold"})
-
-T1:Paragraph({
-    Title = "🍽️ 餐厅大亨3",
-    Desc = "版本 V2.2\n\n功能列表：\n- 自动互动（只点厨房有用物体）\n- 自动收钱（固定中心200m，跳过花坛/树/灯等）\n- 速度调节\n- 透视所有人\n- 传送玩家\n\n主题: Night\n\n⚠️ UI消失按 RightShift 重新打开"
-})
-
-T1:Button({
-    Title = "关闭面板",
-    Justify = "Center",
-    Color = Color3.fromHex("#888888"),
-    Callback = function()
-        MainWindow:Close()
-    end
-})
-
--- ==================== 自动 ====================
-local T2 = MainWindow:Tab({Title = "自动", Icon = "solar:auto-bold"})
-
-T2:Paragraph({
-    Title = "🤖 自动化",
-    Desc = "自动执行餐厅操作"
-})
-
-T2:Divider()
-
-T2:Toggle({
-    Title = "🔄 自动互动",
-    Value = false,
-    Callback = function(v)
-        autoInteract = v
-        if v then
-            print("🔄 自动互动已开启")
-            WI:Notify({
-                Title = "✅ 已开启",
-                Content = "自动互动已开启",
-                Duration = 2,
-                Type = "success"
-            })
-        else
-            print("🔄 自动互动已关闭")
-            WI:Notify({
-                Title = "⏹️ 已关闭",
-                Content = "自动互动已关闭",
-                Duration = 2,
-                Type = "warning"
-            })
-        end
-    end
-})
-
-T2:Divider()
-
-T2:Toggle({
-    Title = "💰 自动收钱",
-    Value = false,
-    Callback = function(v)
-        autoCollect = v
-        if v then
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                centerPos = char.HumanoidRootPart.Position
-                print("📍 收钱中心已固定: " .. tostring(centerPos))
-                WI:Notify({
-                    Title = "✅ 已开启",
-                    Content = "自动收钱已开启（固定中心200m）",
-                    Duration = 2,
-                    Type = "success"
-                })
+-- UI监控
+task.spawn(function()
+    while true do
+        task.wait(5)
+        pcall(function()
+            if MainWindow and MainWindow.Window then
+                if not MainWindow.Window.Visible then
+                    MainWindow.Window.Position = UDim2.fromScale(0.5, 0.5)
+                    MainWindow.Window.Size = UDim2.fromOffset(620, 380)
+                    MainWindow.Window.Visible = true
+                end
             else
-                WI:Notify({
-                    Title = "❌ 错误",
-                    Content = "无法获取当前位置",
-                    Duration = 2,
-                    Type = "error"
-                })
-                autoCollect = false
-                return
+                warn("UI消失，正在重新创建...")
+                CreateUI()
             end
-            collectedTables = {}
-            recentTeleports = {}
-            StartCollect()
-        else
-            if collectThread then
-                task.cancel(collectThread)
-                collectThread = nil
-            end
-            centerPos = nil
-            recentTeleports = {}
-            print("💰 自动收钱已关闭，中心点已清除")
-            WI:Notify({
-                Title = "⏹️ 已关闭",
-                Content = "自动收钱已关闭",
-                Duration = 2,
-                Type = "warning"
-            })
-        end
-    end
-})
-
-T2:Paragraph({
-    Title = "📌 提示",
-    Desc = "自动收钱：\n• 中心固定在开启时的位置\n• 半径200m\n• 传送草丛等其他地方\n• 或者点到其他东西\n• 属于正常现象不影响使用"
-})
-
--- ==================== 玩家 ====================
-local T3 = MainWindow:Tab({Title = "玩家", Icon = "solar:user-bold"})
-
-T3:Paragraph({
-    Title = "👤 玩家设置",
-    Desc = "调节玩家属性"
-})
-
-T3:Divider()
-
-T3:Toggle({
-    Title = "🏃 开启速度调节",
-    Value = false,
-    Callback = function(v)
-        speedEnabled = v
-        if not v then
-            local c = LocalPlayer.Character
-            if c and c:FindFirstChild("Humanoid") then
-                c.Humanoid.WalkSpeed = 16
-            end
-        end
-    end
-})
-
-T3:Input({
-    Title = "速度数值",
-    Description = "输入1-200",
-    Value = "16",
-    Callback = function(v)
-        local num = tonumber(v)
-        if num and num > 0 and num <= 200 then
-            speedValue = num
-        end
-    end
-})
-
-T3:Button({
-    Title = "⭐ 推荐（25速度）",
-    Justify = "Center",
-    Color = Color3.fromRGB(255, 200, 50),
-    Callback = function()
-        speedValue = 25
-        if speedEnabled then
-            local c = LocalPlayer.Character
-            if c and c:FindFirstChild("Humanoid") then
-                c.Humanoid.WalkSpeed = 25
-            end
-        end
-    end
-})
-
-T3:Divider()
-
-T3:Toggle({
-    Title = "👁️ 透视所有人",
-    Value = false,
-    Callback = function(v)
-        espEnabled = v
-        if not v then
-            clearESP()
-        end
-    end
-})
-
-T3:Divider()
-
-T3:Paragraph({
-    Title = "🚀 传送玩家",
-    Desc = "选择玩家后点击传送"
-})
-
-local playerDropdown = nil
-local selectedPlayerName = ""
-
-local function RefreshPlayerList()
-    local names = GetPlayerNames()
-    if #names == 0 then
-        table.insert(names, "无玩家")
-    end
-    if playerDropdown then
-        playerDropdown:SetValues(names)
-        playerDropdown:SetValue(names[1] or "无玩家")
-    end
-end
-
-playerDropdown = T3:Dropdown({
-    Title = "选择玩家",
-    Values = GetPlayerNames(),
-    Value = GetPlayerNames()[1] or "无玩家",
-    Callback = function(v)
-        selectedPlayerName = v
-    end
-})
-
-T3:Button({
-    Title = "🔄 刷新玩家列表",
-    Justify = "Center",
-    Color = Color3.fromRGB(76, 175, 80),
-    Callback = function()
-        RefreshPlayerList()
-        WI:Notify({
-            Title = "✅ 已刷新",
-            Content = "玩家列表已更新",
-            Duration = 2,
-            Type = "success"
-        })
-    end
-})
-
-T3:Divider()
-
-T3:Button({
-    Title = "📍 传送至选定玩家",
-    Justify = "Center",
-    Color = Color3.fromRGB(255, 200, 50),
-    Callback = function()
-        if not selectedPlayerName or selectedPlayerName == "" or selectedPlayerName == "无玩家" then
-            WI:Notify({
-                Title = "❌ 传送失败",
-                Content = "请先选择一名玩家",
-                Duration = 2,
-                Type = "error"
-            })
-            return
-        end
-        TeleportToPlayer(selectedPlayerName)
-    end
-})
-
--- ==================== 设置 ====================
-local T4 = MainWindow:Tab({Title = "设置", Icon = "solar:settings-bold"})
-
-T4:Paragraph({
-    Title = "⚙️ UI设置",
-    Desc = "调整界面外观"
-})
-
-T4:Divider()
-
-local themeNames = {
-    "Night", "BlueWhite", "Dark", "Light", "Rose", "Plant",
-    "Ocean", "Sunset", "Midnight", "Forest",
-    "Lavender", "Coral", "Mint", "Sky",
-    "Blood", "Lemon", "Cyber"
-}
-
-T4:Dropdown({
-    Title = "🎨 UI主题",
-    Values = themeNames,
-    Value = "Night",
-    Callback = function(v)
-        pcall(function()
-            WI:SetTheme(v)
         end)
     end
-})
-
-T4:Divider()
-
-T4:Slider({
-    Title = "窗口透明度",
-    Value = 0,
-    Min = 0,
-    Max = 1,
-    Step = 0.05,
-    Callback = function(v)
-        pcall(function()
-            MainWindow:SetBackgroundTransparency(v)
-        end)
-    end
-})
-
-T4:Divider()
-
-T4:Button({
-    Title = "🔄 重置UI位置",
-    Justify = "Center",
-    Color = Color3.fromRGB(76, 175, 80),
-    Callback = function()
-        ResetUI()
-    end
-})
-
-T4:Button({
-    Title = "🔄 强制重开UI",
-    Justify = "Center",
-    Color = Color3.fromRGB(255, 200, 50),
-    Callback = function()
-        pcall(function()
-            MainWindow:Close()
-            task.wait(0.5)
-            MainWindow:Open()
-            WI:Notify({
-                Title = "✅ UI已重开",
-                Content = "按 RightShift 也可开关",
-                Duration = 2,
-                Type = "success"
-            })
-        end)
-    end
-})
-
--- ==================== 启动弹窗 ====================
-WI:Popup({
-    Title = "黑脚本--餐厅大亨3",
-    Content = "加载完成\n按 RightShift 开关面板\n\n版本 V2.2\n✅ 跳过花坛/树/灯/玻璃等\n✅ 只传厨房 Base\n✅ 强制按E\n✅ 默认 Night 主题",
-    Buttons = {{
-        Title = "确定",
-        Variant = "Primary",
-        Callback = function() end
-    }}
-})
-
-print("✅ 餐厅大亨3 V2.2 加载完成")
+end)
