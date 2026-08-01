@@ -1,0 +1,391 @@
+local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+if not WI then return end
+
+-- 服务与变量
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+-- 配置（全部默认关闭）
+local Settings = {
+    -- 透视设置
+    ESP_Enabled = false,
+    ESP_TeamCheck = false,
+    ESP_ShowKiller = false,
+    ESP_ShowCivilian = false,
+    ESP_ShowAgent = false,
+    ESP_ShowName = false,
+    ESP_ShowRole = false,
+    ESP_ShowHealth = false,
+    ESP_ShowBox = false,
+    ESP_ShowDistance = false,
+    ESP_ShowTracer = false,
+    ESP_TargetPart = "Head",
+    ESP_BoxColor_Killer = Color3.fromRGB(255, 50, 50),
+    ESP_BoxColor_Civilian = Color3.fromRGB(50, 255, 50),
+    ESP_BoxColor_Agent = Color3.fromRGB(50, 150, 255),
+    
+    -- UI风格
+    UI_Acrylic = true
+}
+
+-- 角色分类
+local function GetPlayerRole(player)
+    local character = player.Character
+    if not character then return "Unknown" end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return "Unknown" end
+    
+    return "Civilian" -- 默认返回平民，实际需根据游戏机制修改
+end
+
+local function GetRoleColor(role)
+    if role == "Killer" then
+        return Settings.ESP_BoxColor_Killer
+    elseif role == "Agent" then
+        return Settings.ESP_BoxColor_Agent
+    else
+        return Settings.ESP_BoxColor_Civilian
+    end
+end
+
+-- 透视绘制
+local function CreateESP()
+    local drawings = {}
+    
+    local function UpdateESP()
+        -- 清除旧绘图
+        for _, d in pairs(drawings) do
+            if d then d:Remove() end
+        end
+        table.clear(drawings)
+        
+        if not Settings.ESP_Enabled then return end
+        
+        for _, player in pairs(Players:GetPlayers()) do
+            if player == LocalPlayer then continue end
+            local character = player.Character
+            if not character or not character:FindFirstChild("HumanoidRootPart") then continue end
+            if character:FindFirstChild("Humanoid") and character.Humanoid.Health <= 0 then continue end
+            
+            local role = GetPlayerRole(player)
+            
+            -- 团队检查
+            if Settings.ESP_TeamCheck and role == GetPlayerRole(LocalPlayer) then
+                continue
+            end
+            
+            -- 角色过滤
+            if role == "Killer" and not Settings.ESP_ShowKiller then continue end
+            if role == "Civilian" and not Settings.ESP_ShowCivilian then continue end
+            if role == "Agent" and not Settings.ESP_ShowAgent then continue end
+            
+            local targetPart = character:FindFirstChild(Settings.ESP_TargetPart) or character:FindFirstChild("Head") or character:FindFirstChild("HumanoidRootPart")
+            if not targetPart then continue end
+            
+            local position, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+            if not onScreen then continue end
+            
+            local color = GetRoleColor(role)
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            local head = character:FindFirstChild("Head")
+            
+            -- 显示方框
+            if Settings.ESP_ShowBox and rootPart and head then
+                local rootPos, rootVisible = Camera:WorldToViewportPoint(rootPart.Position)
+                local headPos, headVisible = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                if rootVisible and headVisible then
+                    local boxHeight = math.abs(headPos.Y - rootPos.Y)
+                    local boxWidth = boxHeight * 0.65
+                    
+                    local boxOutline = Drawing.new("Square")
+                    boxOutline.Position = Vector2.new(headPos.X - boxWidth/2 - 1, headPos.Y - 1)
+                    boxOutline.Size = Vector2.new(boxWidth + 2, boxHeight + 2)
+                    boxOutline.Color = Color3.new(0,0,0)
+                    boxOutline.Filled = false
+                    boxOutline.Thickness = 3
+                    boxOutline.Visible = true
+                    table.insert(drawings, boxOutline)
+                    
+                    local box = Drawing.new("Square")
+                    box.Position = Vector2.new(headPos.X - boxWidth/2, headPos.Y)
+                    box.Size = Vector2.new(boxWidth, boxHeight)
+                    box.Color = color
+                    box.Filled = false
+                    box.Thickness = 1.5
+                    box.Visible = true
+                    table.insert(drawings, box)
+                end
+            end
+            
+            -- 显示名字
+            if Settings.ESP_ShowName then
+                local nameLabel = Drawing.new("Text")
+                nameLabel.Text = player.Name
+                nameLabel.Size = 14
+                nameLabel.Position = Vector2.new(position.X, position.Y - 40)
+                nameLabel.Color = Color3.new(255,255,255)
+                nameLabel.Outline = false
+                nameLabel.Center = true
+                nameLabel.Visible = true
+                table.insert(drawings, nameLabel)
+            end
+            
+            -- 显示职业
+            if Settings.ESP_ShowRole then
+                local roleLabel = Drawing.new("Text")
+                roleLabel.Text = role
+                roleLabel.Size = 13
+                roleLabel.Position = Vector2.new(position.X, position.Y - 25)
+                roleLabel.Color = color
+                roleLabel.Outline = false
+                roleLabel.Center = true
+                roleLabel.Visible = true
+                table.insert(drawings, roleLabel)
+            end
+            
+            -- 显示血量
+            if Settings.ESP_ShowHealth and character:FindFirstChild("Humanoid") then
+                local health = character.Humanoid.Health
+                local maxHealth = character.Humanoid.MaxHealth
+                local healthPercent = math.floor((health / maxHealth) * 100)
+                
+                local healthBar = Drawing.new("Square")
+                healthBar.Position = Vector2.new(position.X - 25, position.Y - 10)
+                healthBar.Size = Vector2.new(50, 4)
+                healthBar.Color = Color3.new(0,0,0)
+                healthBar.Filled = true
+                healthBar.Visible = true
+                table.insert(drawings, healthBar)
+                
+                local healthFill = Drawing.new("Square")
+                healthFill.Position = Vector2.new(position.X - 25, position.Y - 10)
+                healthFill.Size = Vector2.new(50 * (healthPercent / 100), 4)
+                healthFill.Color = healthPercent > 50 and Color3.new(50,255,50) or (healthPercent > 25 and Color3.new(255,255,50) or Color3.new(255,50,50))
+                healthFill.Filled = true
+                healthFill.Visible = true
+                table.insert(drawings, healthFill)
+                
+                local healthText = Drawing.new("Text")
+                healthText.Text = healthPercent .. "%"
+                healthText.Size = 12
+                healthText.Position = Vector2.new(position.X, position.Y - 10)
+                healthText.Color = Color3.new(255,255,255)
+                healthText.Outline = false
+                healthText.Center = true
+                healthText.Visible = true
+                table.insert(drawings, healthText)
+            end
+            
+            -- 显示距离
+            if Settings.ESP_ShowDistance and rootPart and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                local distance = (rootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                local distLabel = Drawing.new("Text")
+                distLabel.Text = math.floor(distance) .. "m"
+                distLabel.Size = 12
+                distLabel.Position = Vector2.new(position.X, position.Y + 20)
+                distLabel.Color = Color3.new(255,255,255)
+                distLabel.Outline = false
+                distLabel.Center = true
+                distLabel.Visible = true
+                table.insert(drawings, distLabel)
+            end
+            
+            -- 显示追踪线
+            if Settings.ESP_ShowTracer then
+                local line = Drawing.new("Line")
+                line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                line.To = Vector2.new(position.X, position.Y)
+                line.Color = color
+                line.Thickness = 1
+                line.Transparency = 0.7
+                line.Visible = true
+                table.insert(drawings, line)
+            end
+        end
+    end
+    
+    RunService.RenderStepped:Connect(UpdateESP)
+end
+
+-- 创建窗口
+local Win = WI:CreateWindow({
+    Title = "破坏者谜团2",
+    Icon = "solar:skull-bold",
+    Size = UDim2.fromOffset(450, 500),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Acrylic = Settings.UI_Acrylic,
+    ScrollBarEnabled = true
+})
+
+-- 公告标签页
+local TabAnnouncement = Win:Tab({
+    Title = "公告",
+    Icon = "solar:notification-bold"
+})
+
+TabAnnouncement:Paragraph({
+    Title = "黑_hub--功能公告",
+    Desc = [[
+    主要功能：
+    
+    ESP透视 - 显示所有玩家位置和角色best
+    自定义设置 - 自由调整UI和ESP
+    
+    使用提示：
+    按RightShift开关菜单
+    所有功能默认关闭，需手动开启
+    
+    注意：合理使用，避免被检测
+    ]]
+})
+
+-- ESP标签页
+local TabESP = Win:Tab({
+    Title = "ESP",
+    Icon = "solar:eye-bold"
+})
+
+TabESP:Toggle({
+    Title = "开启透视",
+    Value = Settings.ESP_Enabled,
+    Callback = function(v)
+        Settings.ESP_Enabled = v
+    end
+})
+
+TabESP:Divider()
+
+TabESP:Toggle({
+    Title = "透视杀手",
+    Value = Settings.ESP_ShowKiller,
+    Callback = function(v)
+        Settings.ESP_ShowKiller = v
+    end
+})
+
+TabESP:Toggle({
+    Title = "透视平民",
+    Value = Settings.ESP_ShowCivilian,
+    Callback = function(v)
+        Settings.ESP_ShowCivilian = v
+    end
+})
+
+TabESP:Toggle({
+    Title = "透视特工",
+    Value = Settings.ESP_ShowAgent,
+    Callback = function(v)
+        Settings.ESP_ShowAgent = v
+    end
+})
+
+TabESP:Divider()
+
+TabESP:Toggle({
+    Title = "显示方框",
+    Value = Settings.ESP_ShowBox,
+    Callback = function(v)
+        Settings.ESP_ShowBox = v
+    end
+})
+
+TabESP:Toggle({
+    Title = "显示名字",
+    Value = Settings.ESP_ShowName,
+    Callback = function(v)
+        Settings.ESP_ShowName = v
+    end
+})
+
+TabESP:Toggle({
+    Title = "显示血量",
+    Value = Settings.ESP_ShowHealth,
+    Callback = function(v)
+        Settings.ESP_ShowHealth = v
+    end
+})
+
+TabESP:Toggle({
+    Title = "显示职业",
+    Value = Settings.ESP_ShowRole,
+    Callback = function(v)
+        Settings.ESP_ShowRole = v
+    end
+})
+
+TabESP:Toggle({
+    Title = "显示距离",
+    Value = Settings.ESP_ShowDistance,
+    Callback = function(v)
+        Settings.ESP_ShowDistance = v
+    end
+})
+
+TabESP:Toggle({
+    Title = "显示追踪线",
+    Value = Settings.ESP_ShowTracer,
+    Callback = function(v)
+        Settings.ESP_ShowTracer = v
+    end
+})
+
+TabESP:Divider()
+
+TabESP:Dropdown({
+    Title = "透视部位",
+    Values = {"Head", "HumanoidRootPart", "Torso"},
+    Value = Settings.ESP_TargetPart,
+    Callback = function(v)
+        Settings.ESP_TargetPart = v
+    end
+})
+
+-- 设置标签页
+local TabSettings = Win:Tab({
+    Title = "设置",
+    Icon = "solar:settings-bold"
+})
+
+TabSettings:Dropdown({
+    Title = "UI风格",
+    Values = {"默认", "暗黑模式", "亮色模式"},
+    Value = "默认",
+    Callback = function(v)
+        WI:Notify({
+            Title = "提示",
+            Content = "切换UI风格需要重新注入脚本",
+            Duration = 3
+        })
+    end
+})
+
+TabSettings:Divider()
+
+TabSettings:Toggle({
+    Title = "毛玻璃效果",
+    Value = Settings.UI_Acrylic,
+    Callback = function(v)
+        Settings.UI_Acrylic = v
+        WI:Notify({
+            Title = "提示",
+            Content = "更改将在下次打开窗口时生效",
+            Duration = 2
+        })
+    end
+})
+
+-- 初始化系统
+CreateESP()
+
+-- 启动通知
+WI:Notify({
+    Title = "破坏者谜团2",
+    Content = "脚本加载完成！\n按RightShift打开菜单\n所有功能默认关闭",
+    Duration = 5
+})
+
+print("破坏者谜团2 脚本已加载")
+print("按RightShift开关窗口")
