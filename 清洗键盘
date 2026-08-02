@@ -1,5 +1,5 @@
--- 清洗键盘 脚本 v2.8
--- WindUI版 | 高度440 | 5个独立升级 | 默认延迟10秒
+-- 清洗键盘 脚本 v2.9
+-- 修复定位按钮
 local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 if not WI then return end
 
@@ -16,25 +16,72 @@ local Settings = {
 }
 
 local savedPositions = { soapPos = nil, waterPos = nil, keyboardPos = nil, homePos = nil }
-local VERSION = "v2.8"
+local VERSION = "v2.9"
 local stopAll = false
 local highlights = {}
 local nameTags = {}
 
 local function getPos()
     local c = LocalPlayer.Character
-    if c and c:FindFirstChild("HumanoidRootPart") then return c.HumanoidRootPart.Position end
+    if c and c:FindFirstChild("HumanoidRootPart") then
+        return c.HumanoidRootPart.Position
+    end
     return nil
+end
+
+-- 定位函数（单独写，确保能被调用）
+local function locateSoap()
+    local p = getPos()
+    if p then
+        savedPositions.soapPos = p
+        WI:Notify({Title = "成功", Content = "肥皂位置已定位", Duration = 1})
+    end
+end
+
+local function locateWater()
+    local p = getPos()
+    if p then
+        savedPositions.waterPos = p
+        WI:Notify({Title = "成功", Content = "肥皂水位置已定位", Duration = 1})
+    end
+end
+
+local function locateKeyboard()
+    local p = getPos()
+    if p then
+        savedPositions.keyboardPos = p
+        WI:Notify({Title = "成功", Content = "键盘位置已定位", Duration = 1})
+    end
+end
+
+local function locateHome()
+    local p = getPos()
+    if p then
+        savedPositions.homePos = p
+        WI:Notify({Title = "成功", Content = "家位置已定位", Duration = 1})
+    end
+end
+
+local function clearAll()
+    savedPositions.soapPos = nil
+    savedPositions.waterPos = nil
+    savedPositions.keyboardPos = nil
+    savedPositions.homePos = nil
+    WI:Notify({Title = "清除", Content = "所有定位已清除", Duration = 1})
 end
 
 local function tp(pos)
     local c = LocalPlayer.Character
-    if c and c:FindFirstChild("HumanoidRootPart") then c.HumanoidRootPart.CFrame = CFrame.new(pos) end
+    if c and c:FindFirstChild("HumanoidRootPart") then
+        c.HumanoidRootPart.CFrame = CFrame.new(pos)
+    end
 end
 
 local function setSpeed(s)
     local c = LocalPlayer.Character
-    if c and c:FindFirstChild("Humanoid") then c.Humanoid.WalkSpeed = s end
+    if c and c:FindFirstChild("Humanoid") then
+        c.Humanoid.WalkSpeed = s
+    end
 end
 
 local function walkAround()
@@ -136,7 +183,7 @@ end)
 
 RunService.Heartbeat:Connect(function() if Settings.WalkSpeed~=16 then setSpeed(Settings.WalkSpeed) end end)
 
--- UI - 高度440
+-- UI
 local Win = WI:CreateWindow({
     Title = "清洗键盘",
     Icon = "solar:keyboard-bold",
@@ -144,20 +191,19 @@ local Win = WI:CreateWindow({
     Acrylic = true,
 })
 
--- 公告
 Win:Tab({Title="公告",Icon="solar:home-bold"}):Paragraph({Title="黑脚本--功能说明",Desc="自动洗键盘 | 自动升级\n透视 | 调速度 | 延迟10秒\n\n版本："..VERSION})
 
--- 定位
+-- 定位（用独立函数名）
 local t1=Win:Tab({Title="定位",Icon="solar:map-point-bold"})
-t1:Button({Title="定位肥皂位置",Justify="Center",Color=Color3.fromHex("#FF9800"),Callback=function() local p=getPos() if p then savedPositions.soapPos=p end end})
+t1:Button({Title="定位肥皂位置",Justify="Center",Color=Color3.fromHex("#FF9800"),Callback=locateSoap})
 t1:Divider()
-t1:Button({Title="定位肥皂水位置",Justify="Center",Color=Color3.fromHex("#03A9F4"),Callback=function() local p=getPos() if p then savedPositions.waterPos=p end end})
+t1:Button({Title="定位肥皂水位置",Justify="Center",Color=Color3.fromHex("#03A9F4"),Callback=locateWater})
 t1:Divider()
-t1:Button({Title="定位键盘位置",Justify="Center",Color=Color3.fromHex("#4CAF50"),Callback=function() local p=getPos() if p then savedPositions.keyboardPos=p end end})
+t1:Button({Title="定位键盘位置",Justify="Center",Color=Color3.fromHex("#4CAF50"),Callback=locateKeyboard})
 t1:Divider()
-t1:Button({Title="定位家位置",Justify="Center",Color=Color3.fromHex("#9C27B0"),Callback=function() local p=getPos() if p then savedPositions.homePos=p end end})
+t1:Button({Title="定位家位置",Justify="Center",Color=Color3.fromHex("#9C27B0"),Callback=locateHome})
 t1:Divider()
-t1:Button({Title="清除所有定位",Justify="Center",Color=Color3.fromHex("#ff4444"),Callback=function() savedPositions.soapPos=nil savedPositions.waterPos=nil savedPositions.keyboardPos=nil savedPositions.homePos=nil end})
+t1:Button({Title="清除所有定位",Justify="Center",Color=Color3.fromHex("#ff4444"),Callback=clearAll})
 
 -- 自动
 local t2=Win:Tab({Title="自动",Icon="solar:play-bold"})
