@@ -1,0 +1,275 @@
+-- 快躲起来吧！脚本 v1.7
+-- 修复编译错误
+local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+if not WI then return end
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Settings = {
+    ESP_Enabled = false,
+    ESP_ShowHidden = false,
+    WalkSpeed = 16,
+    AutoEvade = false,
+}
+
+local VERSION = "v1.7"
+local espTags = {}
+local lastTeleport = 0
+
+-- 清除ESP
+local function clearESP()
+    for _, tag in pairs(espTags) do
+        pcall(function() tag:Destroy() end)
+    end
+    table.clear(espTags)
+end
+
+-- 创建名字标签
+local function createTag(player)
+    local bg = Instance.new("BillboardGui")
+    bg.Name = "ESP"
+    bg.Size = UDim2.new(0, 120, 0, 25)
+    bg.AlwaysOnTop = true
+    bg.MaxDistance = math.huge
+    
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.Text = player.Name
+    label.TextColor3 = Color3.fromRGB(255, 80, 80)
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 14
+    label.TextStrokeTransparency = 0.5
+    label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    label.Parent = bg
+    
+    return bg
+end
+
+-- ESP更新
+RunService.Heartbeat:Connect(function()
+    if not Settings.ESP_Enabled then
+        clearESP()
+        return
+    end
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player == LocalPlayer then
+            if espTags[player] then
+                pcall(function() espTags[player]:Destroy() end)
+                espTags[player] = nil
+            end
+        else
+            local char = player.Character
+            if char and char:FindFirstChild("Head") then
+                if Settings.ESP_ShowHidden then
+                    for _, part in pairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") and part.Transparency > 0.5 then
+                            part.Transparency = 0.5
+                        end
+                    end
+                end
+                
+                if not espTags[player] then
+                    espTags[player] = createTag(player)
+                end
+                if espTags[player] and espTags[player].Parent ~= char.Head then
+                    espTags[player].Parent = char.Head
+                end
+            else
+                if espTags[player] then
+                    pcall(function() espTags[player]:Destroy() end)
+                    espTags[player] = nil
+                end
+            end
+        end
+    end
+end)
+
+-- 玩家离开时清理
+Players.PlayerRemoving:Connect(function(player)
+    if espTags[player] then
+        pcall(function() espTags[player]:Destroy() end)
+        espTags[player] = nil
+    end
+end)
+
+-- 判断杀手
+local function isKiller(player)
+    local char = player.Character
+    if not char then return false end
+    for _, obj in pairs(char:GetChildren()) do
+        if obj:IsA("Tool") then
+            local n = obj.Name:lower()
+            if n:find("knife") or n:find("sword") or n:find("weapon") then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+-- 自动避杀手
+local function avoidKiller()
+    if not Settings.AutoEvade then return end
+    local char = LocalPlayer.Character
+    if not char then return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr == LocalPlayer then continue end
+        if not isKiller(plr) then continue end
+        
+        local tc = plr.Character
+        if not tc then continue end
+        local tr = tc:FindFirstChild("HumanoidRootPart")
+        if not tr then continue end
+        
+        local dist = (root.Position - tr.Position).Magnitude
+        if dist < 20 and tick() - lastTeleport > 3 then
+            local dir = (root.Position - tr.Position).Unit
+            root.CFrame = CFrame.new(root.Position + dir * 100)
+            lastTeleport = tick()
+        end
+    end
+end
+
+RunService.Heartbeat:Connect(avoidKiller)
+
+-- 速度
+local function setSpeed(s)
+    local c = LocalPlayer.Character
+    if c and c:FindFirstChild("Humanoid") then
+        c.Humanoid.WalkSpeed = s
+    end
+end
+
+-- 小鸡
+local function spawnChicken()
+    pcall(function()
+        local ev = ReplicatedStorage["ffrostflame_bridgenet2@1.0.0"].dataRemoteEvent
+        ev:FireServer({
+            Vector3.new(0.78280889987946, 6.1513269145053e-08, -0.62226217985153),
+            "\x1B"
+        })
+    end)
+end
+
+-- 创建窗口
+local Win = WI:CreateWindow({
+    Title = "快躲起来吧！",
+    Icon = "solar:eye-bold",
+    Size = UDim2.fromOffset(400, 420),
+    Acrylic = true,
+    ScrollBarEnabled = true,
+})
+
+-- 公告
+local t1 = Win:Tab({Title = "公告", Icon = "solar:home-bold"})
+t1:Paragraph({
+    Title = "黑脚本--功能说明",
+    Desc = "ESP透视名字标签\n显示隐身玩家\n自动避杀手20米\n生成小鸡\n调速度\n\n版本：" .. VERSION
+})
+
+-- ESP
+local t2 = Win:Tab({Title = "ESP", Icon = "solar:eye-bold"})
+t2:Toggle({
+    Title = "开启透视",
+    Value = false,
+    Callback = function(v)
+        Settings.ESP_Enabled = v
+        if not v then clearESP() end
+    end
+})
+t2:Divider()
+t2:Toggle({
+    Title = "显示隐身玩家",
+    Value = false,
+    Callback = function(v)
+        Settings.ESP_ShowHidden = v
+    end
+})
+t2:Paragraph({
+    Title = "说明",
+    Desc = "红色名字标签标记所有玩家"
+})
+
+-- 自动
+local t3 = Win:Tab({Title = "自动", Icon = "solar:shield-bold"})
+t3:Toggle({
+    Title = "自动避杀手[beta",
+    Value = false,
+    Callback = function(v)
+        Settings.AutoEvade = v
+    end
+})
+t3:Paragraph({
+    Title = "说明",
+    Desc = "20米内检测杀手\n自动传送到100米外\n冷却3秒"
+})
+
+-- 生成
+local t4 = Win:Tab({Title = "生成", Icon = "solar:magic-stick-bold"})
+t4:Button({
+    Title = "生成小鸡",
+    Justify = "Center",
+    Color = Color3.fromHex("#FFD700"),
+    Callback = function()
+        spawnChicken()
+    end
+})
+t4:Paragraph({
+    Title = "注意",
+    Desc = "可能有冷却时间"
+})
+
+-- 玩家
+local t5 = Win:Tab({Title = "玩家", Icon = "solar:user-bold"})
+t5:Input({
+    Title = "移动速度",
+    Value = "16",
+    Callback = function(v)
+        local n = tonumber(v)
+        if n and n >= 10 and n <= 100 then
+            Settings.WalkSpeed = n
+            setSpeed(n)
+        end
+    end
+})
+t5:Divider()
+t5:Button({
+    Title = "重置速度",
+    Justify = "Center",
+    Color = Color3.fromHex("#888888"),
+    Callback = function()
+        Settings.WalkSpeed = 16
+        setSpeed(16)
+    end
+})
+
+-- 设置
+local t6 = Win:Tab({Title = "设置", Icon = "solar:settings-bold"})
+t6:Button({
+    Title = "关闭脚本",
+    Justify = "Center",
+    Color = Color3.fromHex("#ff4444"),
+    Callback = function()
+        Settings.ESP_Enabled = false
+        Settings.AutoEvade = false
+        clearESP()
+        setSpeed(16)
+        Win:Close()
+    end
+})
+
+WI:Notify({
+    Title = "快躲起来吧！",
+    Content = VERSION .. " 加载完成",
+    Duration = 5
+})
+
+print("快躲起来吧！" .. VERSION .. " 已加载")
