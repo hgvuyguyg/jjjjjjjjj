@@ -1,4 +1,4 @@
--- NT 多功能工具 V3.3（带脚本执行 + 显示坐标 + 点击高亮模式）
+-- NT 多功能工具 V3.3（修复点击高亮）
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
@@ -7,14 +7,13 @@ local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
 local Mouse = LocalPlayer:GetMouse()
 
--- 创建界面
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "NT_MultiTool"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = CoreGui
 
--- 坐标显示（右上角）
+-- 坐标显示
 local coordFrame = Instance.new("Frame")
 coordFrame.Size = UDim2.new(0, 280, 0, 80)
 coordFrame.Position = UDim2.new(1, -290, 0, 10)
@@ -63,7 +62,6 @@ MainFrame.ClipsDescendants = true
 MainFrame.Parent = ScreenGui
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
--- 标题栏
 local TitleBar = Instance.new("Frame")
 TitleBar.Size = UDim2.new(1, 0, 0, 36)
 TitleBar.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
@@ -119,7 +117,6 @@ MinBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Tab 栏
 local TabBar = Instance.new("Frame")
 TabBar.Size = UDim2.new(1, 0, 0, 40)
 TabBar.Position = UDim2.new(0, 0, 0, 36)
@@ -159,14 +156,12 @@ Tab3Btn.TextSize = 12
 Tab3Btn.BorderSizePixel = 0
 Tab3Btn.Parent = TabBar
 
--- 内容区域
 local ContentArea = Instance.new("Frame")
 ContentArea.Size = UDim2.new(1, -20, 1, -96)
 ContentArea.Position = UDim2.new(0, 10, 0, 86)
 ContentArea.BackgroundTransparency = 1
 ContentArea.Parent = MainFrame
 
--- Tab1 内容
 local Tab1Content = Instance.new("ScrollingFrame")
 Tab1Content.Size = UDim2.new(1, 0, 1, 0)
 Tab1Content.BackgroundTransparency = 1
@@ -175,7 +170,6 @@ Tab1Content.ScrollBarThickness = 4
 Tab1Content.CanvasSize = UDim2.new(0, 0, 0, 350)
 Tab1Content.Parent = ContentArea
 
--- Tab2 内容
 local Tab2Content = Instance.new("ScrollingFrame")
 Tab2Content.Size = UDim2.new(1, 0, 1, 0)
 Tab2Content.BackgroundTransparency = 1
@@ -185,7 +179,6 @@ Tab2Content.CanvasSize = UDim2.new(0, 0, 0, 700)
 Tab2Content.Visible = false
 Tab2Content.Parent = ContentArea
 
--- Tab3 内容（脚本执行）
 local Tab3Content = Instance.new("Frame")
 Tab3Content.Size = UDim2.new(1, 0, 1, 0)
 Tab3Content.BackgroundTransparency = 1
@@ -323,35 +316,58 @@ local function UpdateNameLabels()
     end
 end
 
+-- ===== 修复：点击高亮检测 =====
+local function GetRootObject(part)
+    -- 从点击的部件向上查找
+    local current = part
+    while current do
+        -- 如果是 Model（玩家、实体等）
+        if current:IsA("Model") then
+            return current
+        end
+        -- 如果是 BasePart 且父级是 Model
+        if current:IsA("BasePart") and current.Parent and current.Parent:IsA("Model") then
+            return current.Parent
+        end
+        current = current.Parent
+    end
+    return part
+end
+
 Mouse.Button1Down:Connect(function()
     if not clickHighlightMode then return end
     if not showHighlight then return end
-    local target = Mouse.Target
-    if not target then return end
-    local rootObj = target
-    while rootObj.Parent and not rootObj:IsA("Model") and not rootObj:IsA("BasePart") do
-        rootObj = rootObj.Parent
-    end
-    local finalObj = rootObj
-    if rootObj:IsA("BasePart") and rootObj.Parent and rootObj.Parent:IsA("Model") then
-        finalObj = rootObj.Parent
-    end
+    
+    local clicked = Mouse.Target
+    if not clicked then return end
+    
+    -- 获取根对象
+    local rootObj = GetRootObject(clicked)
+    if not rootObj then return end
+    
+    -- 检查是否在范围内
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
         local pos = char.HumanoidRootPart.Position
         local objPos = nil
-        if finalObj:IsA("BasePart") then
-            objPos = finalObj.Position
-        elseif finalObj:IsA("Model") then
-            local p = finalObj.PrimaryPart or finalObj:FindFirstChildWhichIsA("BasePart")
+        if rootObj:IsA("BasePart") then
+            objPos = rootObj.Position
+        elseif rootObj:IsA("Model") then
+            local p = rootObj.PrimaryPart or rootObj:FindFirstChildWhichIsA("BasePart")
             if p then objPos = p.Position end
         end
-        if objPos and (pos - objPos).Magnitude > searchRadius then return end
+        if objPos and (pos - objPos).Magnitude > searchRadius then
+            return
+        end
     end
-    if clickHighlightTarget == finalObj then
+    
+    -- 切换高亮
+    if clickHighlightTarget == rootObj then
         clickHighlightTarget = nil
+        print("取消高亮: " .. rootObj.Name)
     else
-        clickHighlightTarget = finalObj
+        clickHighlightTarget = rootObj
+        print("高亮目标: " .. rootObj.Name .. " (" .. rootObj.ClassName .. ")")
     end
     UpdateNameLabels()
 end)
@@ -485,7 +501,7 @@ local function RefreshControlList()
     hintLabel.Position = UDim2.new(0, 8, 0, 56)
     hintLabel.BackgroundTransparency = 1
     hintLabel.TextColor3 = Color3.fromRGB(150, 150, 180)
-    hintLabel.Text = clickHighlightMode and "💡 点击场景中的物品进行高亮" or ""
+    hintLabel.Text = clickHighlightMode and "💡 点击场景中的物品/玩家进行高亮" or ""
     hintLabel.Font = Enum.Font.Gotham
     hintLabel.TextSize = 10
     hintLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -498,7 +514,7 @@ local function RefreshControlList()
         modeBtn4.BackgroundColor3 = clickHighlightMode and Color3.fromRGB(255, 200, 50) or Color3.fromRGB(80, 80, 90)
         if clickHighlightMode then
             modeLabel.Text = "🖱️ 点击高亮模式"
-            hintLabel.Text = "💡 点击场景中的物品进行高亮"
+            hintLabel.Text = "💡 点击场景中的物品/玩家进行高亮"
         elseif singleMode then
             modeLabel.Text = "单透视模式"
             hintLabel.Text = ""
@@ -987,4 +1003,4 @@ end)
 
 RefreshControlList()
 print("✅ NT 多功能工具 V3.3 加载完成!")
-print("💡 进入「控制」→「点击高亮」模式，点击场景物品高亮")
+print("💡 进入「控制」→「点击高亮」模式，点击场景中的任何物品/玩家即可高亮")
