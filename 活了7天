@@ -1,5 +1,5 @@
--- 活了7天 脚本 v1.7
--- WindUI版 | 高度430 | 透视2分钟刷新 | 飞行按钮 | 新建筑
+-- 活了7天 脚本 v1.9
+-- WindUI版 | 每30秒自动刷新透视 | 彻底修复
 local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 if not WI then return end
 
@@ -18,19 +18,15 @@ local Settings = {
 
 local savedWaypoints = {}
 local homePos = nil
-local VERSION = "v1.7"
+local VERSION = "v1.9"
 local stopAll = false
 local espObjects = {}
 
 local animalNames = {["moose"] = "驼鹿", ["boar"] = "野猪", ["bear"] = "熊", ["deer"] = "鹿"}
 local monsterNames = {"cat", "wolf", "zombie", "spider", "snake", "monster", "enemy", "beast", "creature", "demon", "ghost", "skeleton", "dragon", "goblin", "troll", "orc"}
 local buildingNames = {
-    ["beacon_house"] = "培根小屋",
-    ["Minecart"] = "矿车",
-    ["witch_house"] = "女巫小屋",
-    ["lost_key_shack"] = "失钥棚屋",
-    ["abandoned_shack"] = "废弃棚屋",
-    ["orbital_blocker"] = "轨道阻挡器",
+    ["beacon_house"] = "培根小屋", ["Minecart"] = "矿车", ["witch_house"] = "女巫小屋",
+    ["lost_key_shack"] = "失钥棚屋", ["abandoned_shack"] = "废弃棚屋", ["orbital_blocker"] = "轨道阻挡器",
 }
 
 local function tpHome()
@@ -51,7 +47,7 @@ local function getPos()
 end
 
 local function clearAllESP()
-    for _, data in pairs(espObjects) do
+    for id, data in pairs(espObjects) do
         if data.highlight then pcall(function() data.highlight:Destroy() end) end
         if data.tag then pcall(function() data.tag:Destroy() end) end
     end
@@ -80,6 +76,7 @@ local function createTag(model, name, color)
 end
 
 local function addESP(model, category, color, labelName)
+    if not model or not model.Parent then return end
     local id = model:GetFullName()
     if espObjects[id] then return end
     local h = Instance.new("Highlight")
@@ -107,7 +104,9 @@ local function getObjectInfo(model)
     return nil, nil
 end
 
-local function scanAndAddESP()
+local function fullRebuildESP()
+    clearAllESP()
+    if not Settings.ESP_Animal and not Settings.ESP_Monster and not Settings.ESP_Building then return end
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Model") then
             local objType, labelName = getObjectInfo(obj)
@@ -118,29 +117,12 @@ local function scanAndAddESP()
     end
 end
 
-local function refreshESP()
-    local toRemove = {}
-    for id, data in pairs(espObjects) do
-        local shouldShow = false
-        if data.category == "animal" and Settings.ESP_Animal then shouldShow = true end
-        if data.category == "monster" and Settings.ESP_Monster then shouldShow = true end
-        if data.category == "building" and Settings.ESP_Building then shouldShow = true end
-        if not shouldShow or not data.model.Parent then table.insert(toRemove, id) end
-    end
-    for _, id in ipairs(toRemove) do
-        if espObjects[id].highlight then pcall(function() espObjects[id].highlight:Destroy() end) end
-        if espObjects[id].tag then pcall(function() espObjects[id].tag:Destroy() end) end
-        espObjects[id] = nil
-    end
-    scanAndAddESP()
-end
-
--- 每2分钟强制刷新一次透视
+-- 每30秒自动刷新
 task.spawn(function()
     while true do
-        task.wait(120)
+        task.wait(30)
         if not stopAll and (Settings.ESP_Animal or Settings.ESP_Monster or Settings.ESP_Building) then
-            refreshESP()
+            fullRebuildESP()
         end
     end
 end)
@@ -169,40 +151,17 @@ workspace.DescendantAdded:Connect(function(obj)
     end
 end)
 
--- 夜视60秒刷新
-local nightVisionTimer = nil
+-- 夜视
 local function updateNightVision()
     if Settings.NightVision then
-        Lighting.Brightness = 3
-        Lighting.ClockTime = 14
-        Lighting.FogEnd = 500
-        Lighting.OutdoorAmbient = Color3.fromRGB(100, 100, 120)
-        if nightVisionTimer then nightVisionTimer:Disconnect() end
-        nightVisionTimer = task.spawn(function()
-            while Settings.NightVision and not stopAll do
-                task.wait(60)
-                if not Settings.NightVision or stopAll then break end
-                Lighting.Brightness = 1
-                task.wait(0.3)
-                Lighting.Brightness = 3
-                Lighting.ClockTime = 14
-                Lighting.FogEnd = 500
-                Lighting.OutdoorAmbient = Color3.fromRGB(100, 100, 120)
-            end
-        end)
+        Lighting.Brightness = 3; Lighting.ClockTime = 14; Lighting.FogEnd = 500; Lighting.OutdoorAmbient = Color3.fromRGB(100, 100, 120)
     else
-        Lighting.Brightness = 1
-        Lighting.FogEnd = 100
-        Lighting.OutdoorAmbient = Color3.fromRGB(0, 0, 0)
-        if nightVisionTimer then nightVisionTimer:Disconnect() nightVisionTimer = nil end
+        Lighting.Brightness = 1; Lighting.FogEnd = 100; Lighting.OutdoorAmbient = Color3.fromRGB(0, 0, 0)
     end
 end
 
--- 飞行按钮
 local function loadFly()
-    pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/飞饼"))()
-    end)
+    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/飞饼"))() end)
 end
 
 local function setSpeed(s)
@@ -225,49 +184,40 @@ end
 
 -- UI
 local Win = WI:CreateWindow({
-    Title = "活了7天",
-    Icon = "solar:skull-bold",
-    Size = UDim2.fromOffset(400, 430),
-    Acrylic = true,
+    Title = "活了7天", Icon = "solar:skull-bold",
+    Size = UDim2.fromOffset(400, 430), Acrylic = true,
 })
 
 Win:Tab({Title = "公告", Icon = "solar:home-bold"}):Paragraph({
-    Title = "黑脚本--功能说明",
-    Desc = "透视动物/怪物/建筑(10000米)\n2分钟刷新 | 夜视60秒 | 飞行\n\n版本：" .. VERSION
+    Title = "黑脚本--功能说明", Desc = "每30秒自动刷新透视\n动物/怪物/建筑(10000米)\n\n版本：" .. VERSION
 })
 
--- 主要
 local t1 = Win:Tab({Title = "主要", Icon = "solar:play-bold"})
-t1:Toggle({Title = "透视动物", Value = false, Callback = function(v) Settings.ESP_Animal = v refreshESP() end})
+t1:Toggle({Title = "透视动物", Value = false, Callback = function(v) Settings.ESP_Animal = v fullRebuildESP() end})
 t1:Divider()
-t1:Toggle({Title = "透视怪物", Value = false, Callback = function(v) Settings.ESP_Monster = v refreshESP() end})
+t1:Toggle({Title = "透视怪物", Value = false, Callback = function(v) Settings.ESP_Monster = v fullRebuildESP() end})
 t1:Divider()
-t1:Toggle({Title = "透视建筑", Value = false, Callback = function(v) Settings.ESP_Building = v refreshESP() end})
+t1:Toggle({Title = "透视建筑", Value = false, Callback = function(v) Settings.ESP_Building = v fullRebuildESP() end})
 t1:Divider()
-t1:Toggle({Title = "夜视(60秒刷新)", Value = false, Callback = function(v) Settings.NightVision = v updateNightVision() end})
+t1:Toggle({Title = "夜视", Value = false, Callback = function(v) Settings.NightVision = v updateNightVision() end})
 
--- 传送
 local t2 = Win:Tab({Title = "传送", Icon = "solar:map-arrow-up-bold"})
 t2:Button({Title = "定位家位置", Justify = "Center", Color = Color3.fromHex("#4CAF50"), Callback = function() local p = getPos() if p then homePos = p end end})
 t2:Divider()
 t2:Button({Title = "传送回家", Justify = "Center", Color = Color3.fromHex("#4CAF50"), Callback = tpHome})
 t2:Divider()
-
 local wpName = ""
 t2:Input({Title = "定位名称", Value = "", Callback = function(v) wpName = v end})
 t2:Divider()
 t2:Button({Title = "保存当前位置", Justify = "Center", Color = Color3.fromHex("#FF9800"), Callback = function()
     if wpName == "" then WI:Notify({Title = "错误", Content = "请输入名称！", Duration = 2}) return end
-    local p = getPos()
-    if p then savedWaypoints[wpName] = p end
+    local p = getPos() if p then savedWaypoints[wpName] = p end
 end})
-
 for name, pos in pairs(savedWaypoints) do
     t2:Divider()
     t2:Button({Title = "去 " .. name, Justify = "Center", Color = Color3.fromHex("#03A9F4"), Callback = function() tp(pos) end})
 end
 
--- 玩家
 local playerNames = getPlayerNames()
 local selectedPlayer = playerNames[1] or "无其他玩家"
 local t3 = Win:Tab({Title = "玩家", Icon = "solar:user-bold"})
@@ -281,7 +231,6 @@ t3:Input({Title = "移动速度", Value = "16", Callback = function(v) local n =
 t3:Divider()
 t3:Button({Title = "重置速度", Justify = "Center", Color = Color3.fromHex("#888888"), Callback = function() Settings.WalkSpeed = 16 end})
 
--- 设置
 Win:Tab({Title = "设置", Icon = "solar:settings-bold"}):Button({
     Title = "关闭脚本", Justify = "Center", Color = Color3.fromHex("#ff4444"),
     Callback = function()
