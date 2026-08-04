@@ -1,0 +1,353 @@
+-- 在末日中活下来 脚本 v2.7
+-- WindUI版 | 精确匹配物品名 | 自动前往 | 穿墙 | 分段传送
+local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+if not WI then return end
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local LocalPlayer = Players.LocalPlayer
+
+local Settings = {
+    ESP_Items = false,
+    ESP_Items_Dist = false,
+    ESP_Zombie = false,
+    ESP_Players = false,
+    ZombieHitbox = false,
+    HitboxSize = 5,
+    NoFog = false,
+    NightVision = false,
+    SpeedBoost = false,
+    WalkSpeed = 16,
+    NoClip = false,
+    AutoGo = false,
+    GoTarget = "废料",
+}
+
+local VERSION = "v2.7"
+local stopAll = false
+local stopTeleport = false
+local highlights = {}
+local playerHighlights = {}
+local playerTags = {}
+local itemPositions = {}
+local homePos = Vector3.new(0.7, 3.2, -8)
+
+-- ==================== 精确匹配物品名 ====================
+local itemNames = {
+    ["scrap"] = {cn = "废料", color = Color3.fromRGB(180, 180, 180)},
+    ["fuel"] = {cn = "燃料", color = Color3.fromRGB(255, 150, 50)},
+    ["battery"] = {cn = "电池", color = Color3.fromRGB(255, 255, 50)},
+    ["bloxiade"] = {cn = "运动饮料", color = Color3.fromRGB(50, 200, 255)},
+    ["long ammo"] = {cn = "长弹药", color = Color3.fromRGB(255, 200, 50)},
+    ["screws"] = {cn = "螺丝", color = Color3.fromRGB(150, 150, 150)},
+    ["pistol"] = {cn = "手枪", color = Color3.fromRGB(255, 100, 50)},
+    ["shells"] = {cn = "弹壳", color = Color3.fromRGB(200, 180, 50)},
+    ["spatula"] = {cn = "锅铲", color = Color3.fromRGB(200, 200, 200)},
+    ["beans"] = {cn = "豆子罐头", color = Color3.fromRGB(150, 200, 50)},
+    ["bloxy cola"] = {cn = "可乐", color = Color3.fromRGB(255, 50, 50)},
+    ["chips"] = {cn = "薯片", color = Color3.fromRGB(255, 200, 100)},
+    ["bandage"] = {cn = "绷带", color = Color3.fromRGB(255, 255, 255)},
+}
+
+-- ==================== 分段传送 ====================
+local function segmentedTP(targetPos)
+    stopTeleport = false
+    local c = LocalPlayer.Character
+    if not c then return end
+    local root = c:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    
+    local startPos = root.Position
+    local totalDist = (targetPos - startPos).Magnitude
+    local segments = math.max(11, math.ceil(totalDist / 30))
+    local stepDist = totalDist / segments
+    local direction = (targetPos - startPos).Unit
+    
+    for i = 1, segments do
+        if stopTeleport or stopAll then return end
+        local newPos = startPos + direction * (stepDist * i)
+        if i == segments then newPos = targetPos end
+        root.CFrame = CFrame.new(newPos)
+        task.wait(1)
+    end
+end
+
+local function cancelTeleport()
+    stopTeleport = true
+end
+
+-- ==================== 清理 ====================
+local function clearAllESP()
+    for _, data in pairs(highlights) do pcall(function() data:Destroy() end) end
+    table.clear(highlights)
+    table.clear(itemPositions)
+end
+
+local function clearPlayerESP()
+    for _, h in pairs(playerHighlights) do pcall(function() h:Destroy() end) end
+    for _, t in pairs(playerTags) do pcall(function() t:Destroy() end) end
+    table.clear(playerHighlights)
+    table.clear(playerTags)
+end
+
+-- ==================== 添加高亮（精确匹配） ====================
+local function addHighlight(obj, name, color)
+    local h = Instance.new("Highlight")
+    h.FillColor = color; h.FillTransparency = 0.4
+    h.OutlineColor = color; h.OutlineTransparency = 0.2
+    h.Parent = obj
+    table.insert(highlights, h)
+    
+    local part = obj:IsA("Model") and (obj:FindFirstChild("Head") or obj:FindFirstChildWhichIsA("BasePart") or obj.PrimaryPart) or obj
+    if part then
+        local bg = Instance.new("BillboardGui")
+        bg.Size = UDim2.new(0, 100, 0, 22); bg.AlwaysOnTop = true; bg.MaxDistance = math.huge; bg.Parent = part
+        local l = Instance.new("TextLabel")
+        l.Size = UDim2.new(1, 0, 1, 0); l.BackgroundTransparency = 1
+        l.Text = name; l.TextColor3 = color; l.Font = Enum.Font.GothamBold; l.TextSize = 12
+        l.TextStrokeTransparency = 0.5; l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0); l.Parent = bg
+        table.insert(highlights, bg)
+        itemPositions[part] = {name = name, color = color, label = l}
+    end
+end
+
+-- ==================== 精确匹配函数 ====================
+local function matchItem(name)
+    local lower = name:lower()
+    -- 先尝试精确匹配
+    for itemKey, itemData in pairs(itemNames) do
+        if lower == itemKey then
+            return itemData.cn, itemData.color
+        end
+    end
+    -- 再尝试带空格匹配（如"long ammo"、"bloxy cola"）
+    for itemKey, itemData in pairs(itemNames) do
+        if itemKey:find(" ") and lower == itemKey then
+            return itemData.cn, itemData.color
+        end
+    end
+    return nil, nil
+end
+
+-- ==================== 扫描 ====================
+local function scanAll()
+    clearAllESP()
+    
+    if Settings.ESP_Items then
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") or obj:IsA("Model") then
+                local cn, color = matchItem(obj.Name)
+                if cn then
+                    addHighlight(obj, cn, color)
+                end
+            end
+        end
+    end
+    
+    if Settings.ESP_Zombie then
+        for _, obj in pairs(workspace:GetDescendants()) do
+            if obj:IsA("Model") and obj.Name == "Zombie" then
+                addHighlight(obj, "僵尸", Color3.fromRGB(255, 80, 80))
+            end
+        end
+    end
+end
+
+-- ==================== 距离更新 ====================
+RunService.Heartbeat:Connect(function()
+    if not Settings.ESP_Items or not Settings.ESP_Items_Dist then return end
+    local c = LocalPlayer.Character
+    if not c then return end
+    local root = c:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    
+    for part, data in pairs(itemPositions) do
+        if part and part.Parent and data.label then
+            local dist = (root.Position - part.Position).Magnitude
+            data.label.Text = data.name .. "\n" .. math.floor(dist) .. "m"
+        end
+    end
+end)
+
+-- ==================== 透视玩家 ====================
+local function updatePlayerESP()
+    clearPlayerESP()
+    if not Settings.ESP_Players then return end
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr == LocalPlayer then continue end
+        local char = plr.Character
+        if not char or not char:FindFirstChild("Head") then continue end
+        local h = Instance.new("Highlight")
+        h.FillColor = Color3.fromRGB(70, 200, 70); h.FillTransparency = 0.4
+        h.OutlineColor = Color3.fromRGB(50, 180, 50); h.OutlineTransparency = 0.2; h.Parent = char
+        table.insert(playerHighlights, h)
+        local bg = Instance.new("BillboardGui")
+        bg.Size = UDim2.new(0, 120, 0, 22); bg.AlwaysOnTop = true; bg.MaxDistance = math.huge; bg.Parent = char.Head
+        local l = Instance.new("TextLabel")
+        l.Size = UDim2.new(1, 0, 1, 0); l.BackgroundTransparency = 1
+        l.Text = plr.Name; l.TextColor3 = Color3.fromRGB(70, 200, 70)
+        l.Font = Enum.Font.GothamBold; l.TextSize = 12
+        l.TextStrokeTransparency = 0.5; l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0); l.Parent = bg
+        table.insert(playerTags, bg)
+    end
+end
+
+-- ==================== 碰撞箱 ====================
+local function updateHitboxes()
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj.Name == "Zombie" then
+            local root = obj:FindFirstChild("HumanoidRootPart")
+            if root then
+                root.Size = Settings.ZombieHitbox and Vector3.new(Settings.HitboxSize, Settings.HitboxSize, Settings.HitboxSize) or Vector3.new(2, 2, 1)
+                root.Transparency = Settings.ZombieHitbox and 0.5 or 1
+            end
+        end
+    end
+end
+
+-- ==================== 去雾/夜视 ====================
+local function updateFog()
+    Lighting.FogEnd = Settings.NoFog and 100000 or 100
+    Lighting.FogStart = Settings.NoFog and 50000 or 0
+end
+local function updateNightVision()
+    Lighting.Brightness = Settings.NightVision and 3 or 1
+    Lighting.ClockTime = Settings.NightVision and 14 or 0
+    Lighting.OutdoorAmbient = Settings.NightVision and Color3.fromRGB(100, 100, 120) or Color3.fromRGB(0, 0, 0)
+end
+
+-- ==================== 穿墙 ====================
+local function setNoClip(v)
+    local char = LocalPlayer.Character
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then part.CanCollide = not v end
+        end
+    end
+end
+
+-- ==================== 调速 ====================
+local function setSpeed(s)
+    local c = LocalPlayer.Character
+    if c and c:FindFirstChild("Humanoid") then c.Humanoid.WalkSpeed = s end
+end
+task.spawn(function()
+    while true do
+        if Settings.SpeedBoost and Settings.WalkSpeed ~= 16 then
+            setSpeed(Settings.WalkSpeed); task.wait(0.3)
+            setSpeed(16); task.wait(0.3)
+        else
+            setSpeed(16); task.wait(0.5)
+        end
+    end
+end)
+
+-- ==================== 自动前往 ====================
+local function findItemPart(targetCN)
+    local targetKey = nil
+    for key, data in pairs(itemNames) do
+        if data.cn == targetCN then targetKey = key break end
+    end
+    if not targetKey then return nil end
+    
+    local myPos = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not myPos then return nil end
+    local myPosV = myPos.Position
+    
+    local best = nil
+    local bestDist = 1000
+    
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") or obj:IsA("Model") then
+            if obj.Name:lower() == targetKey then
+                local part = obj:IsA("Model") and (obj:FindFirstChildWhichIsA("BasePart") or obj.PrimaryPart) or obj
+                if part then
+                    local dist = (myPosV - part.Position).Magnitude
+                    if dist < bestDist and dist > 5 then
+                        bestDist = dist
+                        best = part
+                    end
+                end
+            end
+        end
+    end
+    return best
+end
+
+task.spawn(function()
+    while true do
+        if Settings.AutoGo and not stopAll then
+            local part = findItemPart(Settings.GoTarget)
+            if part then
+                segmentedTP(part.Position + Vector3.new(0, 3, 0))
+            end
+            task.wait(2)
+        else
+            task.wait(1)
+        end
+    end
+end)
+
+-- ==================== 列表 ====================
+local itemCNList = {}
+for _, data in pairs(itemNames) do table.insert(itemCNList, data.cn) end
+
+local function getPlayerNames()
+    local names = {}
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then table.insert(names, plr.Name) end
+    end
+    if #names == 0 then table.insert(names, "无其他玩家") end
+    return names
+end
+
+-- ==================== UI ====================
+local Win = WI:CreateWindow({
+    Title = "在末日中活下来", Icon = "solar:skull-bold",
+    Size = UDim2.fromOffset(400, 500), Acrylic = true,
+})
+
+Win:Tab({Title = "公告", Icon = "solar:home-bold"}):Paragraph({
+    Title = "黑脚本--功能说明", Desc = "精确匹配物品名\n透视物品+僵尸+玩家\n自动前往 | 穿墙 | 分段传送\n\n版本：" .. VERSION
+})
+
+-- 主要
+local t1 = Win:Tab({Title = "主要", Icon = "solar:play-bold"})
+t1:Toggle({Title = "透视物品", Value = false, Callback = function(v) Settings.ESP_Items = v scanAll() end})
+t1:Toggle({Title = "显示距离", Value = false, Callback = function(v) Settings.ESP_Items_Dist = v end})
+t1:Divider()
+t1:Toggle({Title = "透视僵尸", Value = false, Callback = function(v) Settings.ESP_Zombie = v scanAll() end})
+t1:Divider()
+t1:Toggle({Title = "僵尸碰撞箱", Value = false, Callback = function(v) Settings.ZombieHitbox = v updateHitboxes() end})
+t1:Input({Title = "碰撞箱大小", Value = "5", Callback = function(v) local n = tonumber(v) if n and n >= 1 then Settings.HitboxSize = n updateHitboxes() end end})
+t1:Divider()
+t1:Toggle({Title = "去雾", Value = false, Callback = function(v) Settings.NoFog = v updateFog() end})
+t1:Divider()
+t1:Toggle({Title = "夜视", Value = false, Callback = function(v) Settings.NightVision = v updateNightVision() end})
+t1:Divider()
+t1:Dropdown({Title = "前往物品", Values = itemCNList, Value = "废料", Callback = function(v) Settings.GoTarget = v end})
+t1:Toggle({Title = "自动前往", Value = false, Callback = function(v) Settings.AutoGo = v end})
+
+-- 传送
+local playerNames = getPlayerNames()
+local selectedPlayer = playerNames[1] or "无其他玩家"
+local t2 = Win:Tab({Title = "传送", Icon = "solar:map-arrow-up-bold"})
+t2:Button({Title = "传送回家", Justify = "Center", Color = Color3.fromHex("#4CAF50"), Callback = function() segmentedTP(homePos) end})
+t2:Button({Title = "终止传送", Justify = "Center", Color = Color3.fromHex("#ff4444"), Callback = cancelTeleport})
+t2:Divider()
+t2:Dropdown({Title = "选择玩家", Values = playerNames, Value = selectedPlayer, Callback = function(v) selectedPlayer = v end})
+t2:Divider()
+t2:Button({Title = "传送到该玩家", Justify = "Center", Color = Color3.fromHex("#03A9F4"), Callback = function() for _, plr in pairs(Players:GetPlayers()) do if plr.Name == selectedPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then segmentedTP(plr.Character.HumanoidRootPart.Position) return end end end})
+
+-- 玩家
+local t3 = Win:Tab({Title = "玩家", Icon = "solar:user-bold"})
+t3:Toggle({Title = "透视玩家", Value = false, Callback = function(v) Settings.ESP_Players = v updatePlayerESP() end})
+t3:Divider()
+t3:Toggle({Title = "穿墙", Value = false, Callback = function(v) Settings.NoClip = v setNoClip(v) end})
+t3:Divider()
+t3:Toggle({Title = "开启调速", Value = false, Callback = function(v) Settings.SpeedBoost = v if not v then setSpeed(16) end end})
+t3:Divider()
+t3:Input({Title = "移动速度", Value = "16", Callback = function(v) local n = tonumber(v) if n and n >= 0 and n <= 200 then Settings.WalkSpeed = n end end})
+
+WI:Notify({Title = "在末日中活下来", Content = VERSION .. " 加载完成", Duration = 5})
