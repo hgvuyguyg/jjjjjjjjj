@@ -1,383 +1,430 @@
--- 动物医院脚本 | V3.2
-
+-- 动物医院 脚本 v2.0
+-- WindUI版 | 防扣理智 | 自动前台 | 传送玩家 | 透视 | 调速度
 local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 if not WI then return end
 
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- ==================== 变量 ====================
-local speedValue = 16
-local speedEnabled = false
-local sanityBypass = false
-local sanityThread = nil
-local Event = nil
-local mtHook = nil
-local OldFireServer = nil
-local hookActive = false
-local interceptEnabled = false  -- 控制是否拦截
+local Settings = {
+    NoSanity = false,
+    AutoReception = false,
+    ESP_Enabled = false,
+    AnimalESP_Enabled = false,
+    AnimalESP_ShowDistance = false,
+    WalkSpeed = 16,
+}
 
--- ==================== 主窗口 ====================
-local MainWindow = WI:CreateWindow({
-    Title = "黑脚本--动物医院",
-    Icon = "solar:heart-bold",
-    Size = UDim2.fromOffset(500, 440),
-    ToggleKey = Enum.KeyCode.RightShift,
-    Acrylic = true,
-    ScrollBarEnabled = true
-})
+local VERSION = "v2.0"
+local stopAll = false
+local highlights = {}
+local nameTags = {}
+local animalHighlights = {}
+local animalNameTags = {}
 
--- ==================== 公告标签页 ====================
-local T1 = MainWindow:Tab({Title = "公告", Icon = "solar:info-bold"})
+-- ==================== 防止扣除理智 ====================
+local noSanityHooks = {}
 
-T1:Paragraph({
-    Title = "🏥 动物医院脚本",
-    Desc = "版本 V3.2\n\n功能列表：\n- 防止扣除理智 \n- 速度调节\n- 传送功能 \n\n使用说明：\n1. 打开主要功能标签页\n2. 开启防止扣除理智\n3. 在玩家标签页调节速度\n4. 在传送标签页快速传送"
-})
-
-T1:Button({
-    Title = "关闭面板",
-    Justify = "Center",
-    Color = Color3.fromHex("#888888"),
-    Callback = function()
-        MainWindow:Close()
-    end
-})
-
--- ==================== 主要功能标签页 ====================
-local T2 = MainWindow:Tab({Title = "主要功能", Icon = "solar:shield-bold"})
-
-T2:Paragraph({
-    Title = "🛡️ 主要功能",
-    Desc = "点击下方按钮开启/关闭功能\n开启后扣理智喝咖啡就行"
-})
-
-T2:Divider()
-
--- ==================== 获取事件 ====================
-local function GetSanityEvent()
-    local e = ReplicatedStorage:FindFirstChild("Util")
-    if e then
-        e = e:FindFirstChild("Net")
-        if e then
-            e = e:FindFirstChild("RE/PlayerLostSanity")
-        end
-    end
-    return e
-end
-
--- ==================== 永久拦截（只hook一次，用变量控制开关） ====================
-local function SetupPermanentHook()
-    if hookActive then return end
+local function setupNoSanity()
+    if noSanityHooks.mtHook then return end
     
-    Event = GetSanityEvent()
-    if not Event then
-        WI:Notify({
-            Title = "❌ 错误",
-            Content = "未找到远程事件",
-            Duration = 2,
-            Type = "error"
-        })
-        return
-    end
+    local Event = ReplicatedStorage.Util.Net["RE/PlayerLostSanity"]
     
-    interceptEnabled = true  -- 默认开启拦截
-    
-    -- 只hook一次，永久生效，用interceptEnabled控制开关
-    mtHook = hookmetamethod(game, "__namecall", function(...)
+    noSanityHooks.mtHook = hookmetamethod(game, "__namecall", function(...)
         local self = ...
-        if rawequal(self, Event) and getnamecallmethod() == "FireServer" then
-            if interceptEnabled then
-                print("✅ 拦截理智扣除")
-                return
-            else
-                print("⏸️ 拦截暂停，放行")
-                return mtHook(...)
-            end
+        local method = getnamecallmethod()
+        
+        if self == Event and method == "FireServer" and Settings.NoSanity then
+            return nil
         end
-        return mtHook(...)
+        
+        return noSanityHooks.mtHook(...)
     end)
     
-    OldFireServer = hookfunction(Event.FireServer, function(...)
+    noSanityHooks.oldFireServer = hookfunction(Event.FireServer, function(...)
         local self = ...
-        if rawequal(self, Event) then
-            if interceptEnabled then
-                print("✅ 拦截理智扣除")
-                return
-            else
-                print("⏸️ 拦截暂停，放行")
-                return OldFireServer(self, ...)
-            end
+        if self == Event and Settings.NoSanity then
+            return nil
         end
-        return OldFireServer(self, ...)
-    end)
-    
-    hookActive = true
-    print("🛡️ 永久拦截已开启")
-end
-
--- ==================== 30秒循环 ====================
-local function StartSanityLoop()
-    if sanityThread then return end
-    
-    sanityThread = task.spawn(function()
-        while sanityBypass do
-            -- 等待30秒
-            task.wait(30)
-            
-            -- 暂停拦截（放行扣理智包）
-            interceptEnabled = false
-            print("⏸️ 拦截暂停，准备扣理智")
-            task.wait(0.5)
-            
-            -- 执行扣理智事件
-            pcall(function()
-                local e = GetSanityEvent()
-                if e then
-                    e:FireServer(1, "Job Stress", true)
-                    print("💀 执行扣理智")
-                end
-            end)
-            
-            task.wait(0.5)
-            
-            -- 恢复拦截
-            interceptEnabled = true
-            print("🛡️ 拦截恢复")
-        end
+        return noSanityHooks.oldFireServer(self, ...)
     end)
 end
 
-local function StopSanityBypass()
-    sanityBypass = false
-    interceptEnabled = false
-    if sanityThread then
-        task.cancel(sanityThread)
-        sanityThread = nil
+-- ==================== 伪人检测关键词（英文） ====================
+local SKINWALKER_KEYWORDS = {
+    "skinwalker", "skin walker", "monster", "entity", "creature", 
+    "fake", "impostor", "imposter", "mimic", "horror", "scary", 
+    "beast", "demon", "cryptid", "anomaly", "nightmare", "terror",
+    "shapeshifter", "shape shifter", "possessed", "haunted", "evil",
+    "fiend", "specter", "spectre", "wraith", "phantom", "shadow",
+    "abomination", "mutant", "aberration", "crawler", "stalker",
+    "flesh", "gore", "blood", "scream", "whisper", "unknown",
+    "thing", "being", "presence", "intruder", "invader", "predator",
+    "nonhuman", "non human", "inhuman", "paranormal", "supernatural",
+    "slender", "sirenhead", "siren head", "cartoon cat", "scp",
+    "alternate", "doppelganger", "doppel", "changeling",
+}
+
+local function isSkinwalker(name)
+    local lowerName = name:lower()
+    for _, keyword in pairs(SKINWALKER_KEYWORDS) do
+        if lowerName:find(keyword) then
+            return true
+        end
     end
-    print("⏹️ 理智循环已停止")
+    return false
 end
 
-T2:Button({
-    Title = "🧠 防止扣除理智bata",
-    Justify = "Center",
-    Color = Color3.fromRGB(76, 175, 80),
-    Callback = function()
-        sanityBypass = not sanityBypass
-        if sanityBypass then
-            SetupPermanentHook()
-            StartSanityLoop()
-            WI:Notify({
-                Title = "✅ 已开启",
-                Content = "永久拦截 + 30秒扣理智循环",
-                Duration = 2,
-                Type = "success"
-            })
-        else
-            StopSanityBypass()
-            WI:Notify({
-                Title = "⏹️ 已关闭",
-                Content = "理智循环已停止",
-                Duration = 2,
-                Type = "warning"
-            })
-        end
+-- ==================== 获取位置 ====================
+local function getPos()
+    local c = LocalPlayer.Character
+    if c and c:FindFirstChild("HumanoidRootPart") then return c.HumanoidRootPart.Position end
+    return nil
+end
+
+local function tp(pos)
+    local c = LocalPlayer.Character
+    if c and c:FindFirstChild("HumanoidRootPart") then
+        c.HumanoidRootPart.CFrame = CFrame.new(pos)
     end
-})
+end
 
--- ==================== 玩家标签页 ====================
-local T3 = MainWindow:Tab({Title = "玩家", Icon = "solar:user-bold"})
-
-T3:Paragraph({
-    Title = "👤 玩家设置",
-    Desc = "调节玩家属性"
-})
-
-T3:Divider()
-
-T3:Toggle({
-    Title = "开启速度调节",
-    Value = false,
-    Callback = function(v)
-        speedEnabled = v
-        if not v then
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("Humanoid") then
-                char.Humanoid.WalkSpeed = 16
-            end
-        end
-        print("速度调节: "..(v and "开启" or "关闭"))
+local function forcePressE(duration)
+    local c = LocalPlayer.Character
+    if not c then return end
+    
+    task.wait(0.5)
+    
+    local startTime = tick()
+    while tick() - startTime < duration do
+        if not Settings.AutoReception or stopAll then break end
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, nil)
+        task.wait(0.3)
+        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, nil)
+        task.wait(0.3)
     end
-})
+end
 
-T3:Input({
-    Title = "速度数值",
-    Description = "输入数字后点击更新",
-    Value = "16",
-    Callback = function(v)
-        local num = tonumber(v)
-        if num and num > 0 and num <= 100 then
-            speedValue = num
-            print("✅ 速度已设置为: "..num)
-            WI:Notify({
-                Title = "✅ 已更新",
-                Content = "速度已设为 "..num,
-                Duration = 2,
-                Type = "success"
-            })
-            if speedEnabled then
-                local char = LocalPlayer.Character
-                if char and char:FindFirstChild("Humanoid") then
-                    char.Humanoid.WalkSpeed = speedValue
+local function hasAnimalNear(pos)
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("Head") then
+            local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
+            if root then
+                local dist = (pos - root.Position).Magnitude
+                if dist <= 20 then
+                    local isPlayer = false
+                    for _, plr in pairs(Players:GetPlayers()) do
+                        if plr.Character == obj then isPlayer = true break end
+                    end
+                    if not isPlayer then return true end
                 end
             end
-        else
-            WI:Notify({
-                Title = "❌ 错误",
-                Content = "请输入1-100之间的数字",
-                Duration = 2,
-                Type = "error"
-            })
         end
     end
-})
-
-T3:Button({
-    Title = "🔄 更新速度",
-    Justify = "Center",
-    Color = Color3.fromRGB(255, 200, 50),
-    Callback = function()
-        if speedEnabled then
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("Humanoid") then
-                char.Humanoid.WalkSpeed = speedValue
-                WI:Notify({
-                    Title = "✅ 已更新",
-                    Content = "速度已设为 "..speedValue,
-                    Duration = 2,
-                    Type = "success"
-                })
-            end
-        else
-            WI:Notify({
-                Title = "⚠️ 提示",
-                Content = "请先开启速度调节",
-                Duration = 2,
-                Type = "warning"
-            })
-        end
-    end
-})
-
--- ==================== 传送标签页 ====================
-local T4 = MainWindow:Tab({Title = "传送", Icon = "solar:map-bold"})
-
-T4:Paragraph({
-    Title = "🚀 传送区",
-    Desc = "点击下方按钮传送到对应位置"
-})
-
-T4:Divider()
-
-local function TeleportTo(x, y, z, name)
-    local char = LocalPlayer.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        char.HumanoidRootPart.CFrame = CFrame.new(x, y, z)
-        WI:Notify({
-            Title = "✅ 传送成功",
-            Content = "已传送到 "..name,
-            Duration = 2,
-            Type = "success"
-        })
-    else
-        WI:Notify({
-            Title = "❌ 传送失败",
-            Content = "未找到角色",
-            Duration = 2,
-            Type = "error"
-        })
-    end
+    return false
 end
 
-T4:Button({
-    Title = "🏢 传送至前台",
-    Justify = "Center",
-    Color = Color3.fromRGB(100, 200, 255),
-    Callback = function()
-        TeleportTo(-103, 3.4, 3.3, "前台")
-    end
-})
-
-T4:Button({
-    Title = "🏥 传送至一号病房",
-    Justify = "Center",
-    Color = Color3.fromRGB(255, 200, 50),
-    Callback = function()
-        TeleportTo(-168, 3.5, -53, "一号病房")
-    end
-})
-
-T4:Button({
-    Title = "🏥 传送至二号病房",
-    Justify = "Center",
-    Color = Color3.fromRGB(255, 200, 50),
-    Callback = function()
-        TeleportTo(-120, 3.5, -48, "二号病房")
-    end
-})
-
-T4:Button({
-    Title = "🏥 传送至三号病房",
-    Justify = "Center",
-    Color = Color3.fromRGB(255, 200, 50),
-    Callback = function()
-        TeleportTo(-168, 3.5, -89, "三号病房")
-    end
-})
-
-T4:Button({
-    Title = "🏥 传送至四号病房",
-    Justify = "Center",
-    Color = Color3.fromRGB(255, 200, 50),
-    Callback = function()
-        TeleportTo(-121, 3.5, -89, "四号病房")
-    end
-})
-
-T4:Button({
-    Title = "🏥 传送至五号病房",
-    Justify = "Center",
-    Color = Color3.fromRGB(255, 200, 50),
-    Callback = function()
-        TeleportTo(-142, 3.5, -116, "五号病房")
-    end
-})
-
--- ==================== 速度循环 ====================
-spawn(function()
+-- ==================== 自动前台 ====================
+task.spawn(function()
     while true do
-        if speedEnabled then
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("Humanoid") then
-                char.Humanoid.WalkSpeed = speedValue
+        if Settings.AutoReception and not stopAll then
+            local pos1 = Vector3.new(-104, 3.4, 1.3)
+            local pos2 = Vector3.new(-107.5, 3.4, 1.3)
+            local pos3 = Vector3.new(-99, 3.4, 0.9)
+            local pos4 = Vector3.new(-99, 3.4, 1.6)
+            local waitPos = Vector3.new(-114, 3.4, -1.3)
+            
+            if hasAnimalNear(pos1) then
+                tp(pos1)
+                task.wait(2.5)
+                forcePressE(2)
+                if not Settings.AutoReception or stopAll then continue end
+                
+                tp(pos2)
+                task.wait(2.5)
+                forcePressE(2)
+                if not Settings.AutoReception or stopAll then continue end
+                
+                tp(pos3)
+                task.wait(2.5)
+                forcePressE(2)
+                if not Settings.AutoReception or stopAll then continue end
+                
+                tp(pos4)
+                task.wait(7.5)
+                forcePressE(3)
+                task.wait(1.5)
+                forcePressE(3)
+            else
+                tp(waitPos)
+                task.wait(2.5)
+                forcePressE(2)
+                task.wait(10)
             end
+            
+            task.wait(0.5)
+        else
+            task.wait(1)
         end
-        task.wait(0.1)
     end
 end)
 
--- ==================== 启动弹窗 ====================
-WI:Popup({
-    Title = "动物医院脚本",
-    Content = "加载完成\n按 RightShift 开关面板\n\n版本 V3.2\n✅ 用变量控制拦截开关，不销毁hook",
-    Buttons = {{
-        Title = "确定",
-        Variant = "Primary",
-        Callback = function() end
-    }}
+-- ==================== 动物ESP ====================
+local function getAnimalModels()
+    local animals = {}
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("Head") then
+            local isPlayer = false
+            for _, plr in pairs(Players:GetPlayers()) do
+                if plr.Character == obj then isPlayer = true break end
+            end
+            if not isPlayer then
+                table.insert(animals, obj)
+            end
+        end
+    end
+    return animals
+end
+
+local function clearAnimalESP()
+    for _, h in pairs(animalHighlights) do pcall(function() h:Destroy() end) end
+    for _, t in pairs(animalNameTags) do pcall(function() t:Destroy() end) end
+    table.clear(animalHighlights)
+    table.clear(animalNameTags)
+end
+
+RunService.Heartbeat:Connect(function()
+    if not Settings.AnimalESP_Enabled then clearAnimalESP() return end
+    
+    local activeAnimals = {}
+    for _, animal in pairs(getAnimalModels()) do
+        activeAnimals[animal] = true
+    end
+    
+    for animal, _ in pairs(animalHighlights) do
+        if not activeAnimals[animal] then
+            if animalHighlights[animal] then pcall(function() animalHighlights[animal]:Destroy() end) animalHighlights[animal] = nil end
+            if animalNameTags[animal] then pcall(function() animalNameTags[animal]:Destroy() end) animalNameTags[animal] = nil end
+        end
+    end
+    
+    for _, animal in pairs(getAnimalModels()) do
+        local head = animal:FindFirstChild("Head")
+        local root = animal:FindFirstChild("HumanoidRootPart") or animal.PrimaryPart
+        if head then
+            local isSkin = isSkinwalker(animal.Name)
+            local dist = ""
+            if Settings.AnimalESP_ShowDistance and root then
+                local d = 0
+                local c = LocalPlayer.Character
+                if c and c:FindFirstChild("HumanoidRootPart") then
+                    d = (root.Position - c.HumanoidRootPart.Position).Magnitude
+                end
+                dist = "\n[" .. math.floor(d) .. "m]"
+            end
+            
+            local displayName = animal.Name
+            if isSkin then
+                displayName = "[伪人] " .. animal.Name
+            end
+            displayName = displayName .. dist
+            
+            local nameColor = isSkin and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(100, 255, 100)
+            local fillColor = isSkin and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(100, 255, 100)
+            local outlineColor = isSkin and Color3.fromRGB(200, 0, 0) or Color3.fromRGB(50, 255, 50)
+            
+            if not animalHighlights[animal] then
+                local h = Instance.new("Highlight")
+                h.FillColor = fillColor; h.FillTransparency = 0.5
+                h.OutlineColor = outlineColor; h.OutlineTransparency = 0.3
+                h.Parent = animal
+                animalHighlights[animal] = h
+            else
+                animalHighlights[animal].FillColor = fillColor
+                animalHighlights[animal].OutlineColor = outlineColor
+            end
+            
+            if not animalNameTags[animal] then
+                local bg = Instance.new("BillboardGui")
+                bg.Size = UDim2.new(0, 200, 0, 40); bg.AlwaysOnTop = true; bg.MaxDistance = math.huge
+                bg.Parent = head
+                local l = Instance.new("TextLabel")
+                l.Size = UDim2.new(1, 0, 1, 0); l.BackgroundTransparency = 1
+                l.Text = displayName; l.TextColor3 = nameColor
+                l.Font = Enum.Font.GothamBold; l.TextSize = 14
+                l.TextStrokeTransparency = 0.5; l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                l.Parent = bg
+                animalNameTags[animal] = bg
+            else
+                local label = animalNameTags[animal]:FindFirstChild("TextLabel")
+                if label then
+                    label.Text = displayName
+                    label.TextColor3 = nameColor
+                end
+            end
+        end
+    end
+end)
+
+-- ==================== 玩家ESP ====================
+local function clearESP()
+    for _, h in pairs(highlights) do pcall(function() h:Destroy() end) end
+    for _, t in pairs(nameTags) do pcall(function() t:Destroy() end) end
+    table.clear(highlights)
+    table.clear(nameTags)
+end
+
+RunService.Heartbeat:Connect(function()
+    if not Settings.ESP_Enabled then clearESP() return end
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr == LocalPlayer then
+            if highlights[plr] then pcall(function() highlights[plr]:Destroy() end) highlights[plr] = nil end
+            if nameTags[plr] then pcall(function() nameTags[plr]:Destroy() end) nameTags[plr] = nil end
+        else
+            local char = plr.Character
+            if char and char:FindFirstChild("Head") then
+                local isSkin = isSkinwalker(plr.Name)
+                local displayName = isSkin and "[伪人] " .. plr.Name or plr.Name
+                local nameColor = isSkin and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(255, 255, 255)
+                local fillColor = isSkin and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(255, 100, 100)
+                local outlineColor = isSkin and Color3.fromRGB(200, 0, 0) or Color3.fromRGB(255, 50, 50)
+                
+                if not highlights[plr] then
+                    local h = Instance.new("Highlight")
+                    h.FillColor = fillColor; h.FillTransparency = 0.5
+                    h.OutlineColor = outlineColor; h.OutlineTransparency = 0.3
+                    highlights[plr] = h
+                else
+                    highlights[plr].FillColor = fillColor
+                    highlights[plr].OutlineColor = outlineColor
+                end
+                if highlights[plr] and highlights[plr].Parent ~= char then highlights[plr].Parent = char end
+                
+                if not nameTags[plr] then
+                    local bg = Instance.new("BillboardGui")
+                    bg.Size = UDim2.new(0, 200, 0, 25); bg.AlwaysOnTop = true; bg.MaxDistance = math.huge
+                    local l = Instance.new("TextLabel")
+                    l.Size = UDim2.new(1, 0, 1, 0); l.BackgroundTransparency = 1
+                    l.Text = displayName; l.TextColor3 = nameColor
+                    l.Font = Enum.Font.GothamBold; l.TextSize = 14
+                    l.TextStrokeTransparency = 0.5; l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                    l.Parent = bg; nameTags[plr] = bg
+                else
+                    local label = nameTags[plr]:FindFirstChild("TextLabel")
+                    if label then
+                        label.Text = displayName
+                        label.TextColor3 = nameColor
+                    end
+                end
+                if nameTags[plr] and nameTags[plr].Parent ~= char.Head then nameTags[plr].Parent = char.Head end
+            end
+        end
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(plr)
+    if highlights[plr] then pcall(function() highlights[plr]:Destroy() end) highlights[plr] = nil end
+    if nameTags[plr] then pcall(function() nameTags[plr]:Destroy() end) nameTags[plr] = nil end
+end)
+
+local function setSpeed(s)
+    local c = LocalPlayer.Character
+    if c and c:FindFirstChild("Humanoid") then c.Humanoid.WalkSpeed = s end
+end
+RunService.Heartbeat:Connect(function()
+    if Settings.WalkSpeed ~= 16 then setSpeed(Settings.WalkSpeed) end
+end)
+
+local function getPlayerNames()
+    local names = {}
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then table.insert(names, plr.Name) end
+    end
+    if #names == 0 then table.insert(names, "无其他玩家") end
+    return names
+end
+
+-- ==================== UI ====================
+local Win = WI:CreateWindow({
+    Title = "动物医院", Icon = "solar:medical-kit-bold",
+    Size = UDim2.fromOffset(400, 480), Acrylic = true,
 })
 
-print("✅ 动物医院脚本 V3.2 加载完成")
+Win:Tab({Title = "公告", Icon = "solar:home-bold"}):Paragraph({
+    Title = "黑脚本--功能说明", Desc = "8月4日重大更新  \n 防止扣除理智 | 自动前台\n动物透视 | 传送点\n传送玩家 | 透视\n\n版本：" .. VERSION
+})
+
+-- 主要
+local t1 = Win:Tab({Title = "主要", Icon = "solar:play-bold"})
+t1:Toggle({Title = "防止扣除理智", Value = false, Callback = function(v) 
+    Settings.NoSanity = v 
+    if v then 
+        setupNoSanity() 
+        WI:Notify({Title = "成功", Content = "防理智已开启", Duration = 2})
+    else 
+        WI:Notify({Title = "提示", Content = "防理智已关闭", Duration = 2})
+    end
+end})
+t1:Paragraph({Title = "说明", Desc = "开启后扣理智是正常现象，喝咖啡即可恢复所有已扣理智"})
+t1:Divider()
+t1:Toggle({Title = "自动前台【bata】", Value = false, Callback = function(v) Settings.AutoReception = v end})
+t1:Divider()
+t1:Toggle({Title = "动物透视", Value = false, Callback = function(v) 
+    Settings.AnimalESP_Enabled = v 
+    if not v then clearAnimalESP() end
+end})
+t1:Toggle({Title = "显示动物距离", Value = false, Callback = function(v) Settings.AnimalESP_ShowDistance = v end})
+
+-- 传送
+local playerNames = getPlayerNames()
+local selectedPlayer = playerNames[1] or "无其他玩家"
+local t3 = Win:Tab({Title = "传送", Icon = "solar:map-arrow-up-bold"})
+t3:Button({Title = "传送前台", Justify = "Center", Color = Color3.fromHex("#4CAF50"), Callback = function() tp(Vector3.new(-103, 3.4, 4.2)) end})
+t3:Divider()
+t3:Button({Title = "房间一", Justify = "Center", Color = Color3.fromHex("#2196F3"), Callback = function() tp(Vector3.new(-167, 3.5, -54.4)) end})
+t3:Button({Title = "房间二", Justify = "Center", Color = Color3.fromHex("#2196F3"), Callback = function() tp(Vector3.new(-126, 3.5, -49.8)) end})
+t3:Button({Title = "房间三", Justify = "Center", Color = Color3.fromHex("#2196F3"), Callback = function() tp(Vector3.new(-167, 3.5, -91.6)) end})
+t3:Button({Title = "房间四", Justify = "Center", Color = Color3.fromHex("#2196F3"), Callback = function() tp(Vector3.new(-121, 3.5, -86.5)) end})
+t3:Button({Title = "房间五", Justify = "Center", Color = Color3.fromHex("#2196F3"), Callback = function() tp(Vector3.new(-144, 3.5, -117)) end})
+t3:Button({Title = "房间六", Justify = "Center", Color = Color3.fromHex("#2196F3"), Callback = function() tp(Vector3.new(-125, 3.5, 51.7)) end})
+t3:Button({Title = "房间七", Justify = "Center", Color = Color3.fromHex("#2196F3"), Callback = function() tp(Vector3.new(-166, 3.5, 54)) end})
+t3:Divider()
+t3:Button({Title = "手术室", Justify = "Center", Color = Color3.fromHex("#f44336"), Callback = function() tp(Vector3.new(-145, 3.5, 83.1)) end})
+t3:Divider()
+t3:Dropdown({Title = "选择玩家", Values = playerNames, Value = selectedPlayer, Callback = function(v) selectedPlayer = v end})
+t3:Divider()
+t3:Button({Title = "传送到该玩家", Justify = "Center", Color = Color3.fromHex("#03A9F4"), Callback = function() 
+    for _, plr in pairs(Players:GetPlayers()) do 
+        if plr.Name == selectedPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then 
+            tp(plr.Character.HumanoidRootPart.Position) 
+            WI:Notify({Title = "成功", Content = "已传送到" .. selectedPlayer, Duration = 2})
+            return 
+        end 
+    end 
+    WI:Notify({Title = "失败", Content = "找不到该玩家", Duration = 2})
+end})
+
+-- 玩家
+local t4 = Win:Tab({Title = "玩家", Icon = "solar:user-bold"})
+t4:Toggle({Title = "开启透视", Value = false, Callback = function(v) Settings.ESP_Enabled = v if not v then clearESP() end end})
+t4:Divider()
+t4:Input({Title = "移动速度", Value = "16", Callback = function(v) local n = tonumber(v) if n and n >= 10 and n <= 100 then Settings.WalkSpeed = n end end})
+t4:Divider()
+t4:Button({Title = "重置速度", Justify = "Center", Color = Color3.fromHex("#888888"), Callback = function() Settings.WalkSpeed = 16 end})
+t4:Divider()
+t4:Button({Title = "关闭脚本", Justify = "Center", Color = Color3.fromHex("#ff4444"),
+    Callback = function()
+        stopAll = true
+        Settings.NoSanity = false
+        Settings.AnimalESP_Enabled = false
+        clearAnimalESP()
+        setSpeed(16)
+        Win:Close()
+    end
+})
+
+WI:Notify({Title = "动物医院", Content = VERSION .. " 加载完成", Duration = 5})
+print("动物医院 " .. VERSION .. " 已加载")
