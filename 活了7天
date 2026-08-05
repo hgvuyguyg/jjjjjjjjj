@@ -378,7 +378,7 @@ local Window = WindUI:CreateWindow({
 Window:Tab({Title = "公告", Icon = "info"}):Paragraph({
     Title = "v4.1",
     Desc = [[
-    捡废料需卡密: 黑脚本牛逼666
+    捡废料需卡密: 卡密问作者获取
     
     更新:
     ✅ 透视动物/怪物/建筑/废料
