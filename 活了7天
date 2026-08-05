@@ -1,5 +1,5 @@
--- 活了7天 脚本 v4.1 完美版
--- WindUI版 | 按钮捡废料 | 透视玩家 | 修复动物名 | 更新日志
+-- 活了7天 脚本 v4.1
+-- WindUI版 | 捡废料需卡密 | 全图透视
 
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 if not WindUI then return end
@@ -20,7 +20,6 @@ local Lighting = game:GetService("Lighting")
 
 local Settings = {
     ESP_Animal = false, ESP_Monster = false, ESP_Building = false, ESP_Scrap = false, ESP_Player = false,
-    AutoScrap = false,
     NightVision = false, WalkSpeed = 16,
 }
 
@@ -28,12 +27,20 @@ local savedWaypoints = {}
 local homePos = nil
 local VERSION = "v4.1"
 
-local animalNames = {"moose", "boar", "bear", "deer", "wolf", "rabbit", "fox", "chicken", "cow", "pig", "sheep", "goat", "duck", "squirrel", "raccoon"}
+-- 卡密
+local VALID_KEY = "黑脚本牛逼666"
+local scrapUnlocked = false
+local keyInputBox = nil
+local keyPopup = nil
+
 local animalNameMap = {
     ["moose"] = "驼鹿", ["boar"] = "野猪", ["bear"] = "熊", ["deer"] = "鹿", ["wolf"] = "狼",
     ["rabbit"] = "兔子", ["fox"] = "狐狸", ["chicken"] = "鸡", ["cow"] = "牛", ["pig"] = "猪",
     ["sheep"] = "羊", ["goat"] = "山羊", ["duck"] = "鸭子", ["squirrel"] = "松鼠", ["raccoon"] = "浣熊",
 }
+local animalNames = {}
+for k, _ in pairs(animalNameMap) do table.insert(animalNames, k) end
+
 local monsterNames = {"cat", "zombie", "monster", "enemy", "beast", "creature", "demon", "ghost", "skeleton", "goblin", "troll", "orc", "spider", "snake", "dragon", "boss", "mutant"}
 
 local buildingNameMap = {
@@ -82,11 +89,9 @@ local function classifyModel(model)
         end
         return nil, nil
     end
-    -- 精确匹配动物名
     for aName, aLabel in pairs(animalNameMap) do
         if name == aName then return "animal", aLabel end
     end
-    -- 包含匹配动物名
     for _, aName in ipairs(animalNames) do
         if name:find(aName) then return "animal", animalNameMap[aName] or "动物" end
     end
@@ -179,7 +184,6 @@ local function scanEverything()
         table.insert(allObjects, {obj = obj, objType = "building", labelName = labelName})
     end
     
-    -- 添加透视玩家
     if Settings.ESP_Player then
         for _, plr in pairs(Players:GetPlayers()) do
             if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") then
@@ -199,13 +203,94 @@ local function scanEverything()
     end
 end
 
--- ==================== 捡废料（按钮版） ====================
+-- ==================== 卡密弹窗 ====================
+local function showKeyPopup()
+    if keyPopup then keyPopup.Enabled = true; return end
+    
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "KeyPopup"
+    gui.Parent = game:GetService("CoreGui")
+    gui.ResetOnSpawn = false
+    keyPopup = gui
+    
+    local bg = Instance.new("Frame")
+    bg.Size = UDim2.new(0, 280, 0, 160)
+    bg.Position = UDim2.new(0.5, -140, 0.5, -80)
+    bg.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    bg.BorderSizePixel = 0
+    bg.ZIndex = 999
+    bg.Parent = gui
+    Instance.new("UICorner", bg).CornerRadius = UDim.new(0, 12)
+    
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 30)
+    title.BackgroundTransparency = 1
+    title.Text = "黑脚本--🔐 验证卡密"
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 16
+    title.ZIndex = 1000
+    title.Parent = bg
+    
+    keyInputBox = Instance.new("TextBox")
+    keyInputBox.Size = UDim2.new(1, -30, 0, 36)
+    keyInputBox.Position = UDim2.new(0, 15, 0, 40)
+    keyInputBox.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+    keyInputBox.Text = ""
+    keyInputBox.PlaceholderText = "输入卡密..."
+    keyInputBox.PlaceholderColor3 = Color3.fromRGB(140, 140, 150)
+    keyInputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    keyInputBox.Font = Enum.Font.GothamMedium
+    keyInputBox.TextSize = 14
+    keyInputBox.BorderSizePixel = 0
+    keyInputBox.ZIndex = 1000
+    keyInputBox.Parent = bg
+    Instance.new("UICorner", keyInputBox).CornerRadius = UDim.new(0, 8)
+    
+    local hint = Instance.new("TextLabel")
+    hint.Size = UDim2.new(1, 0, 0, 18)
+    hint.Position = UDim2.new(0, 0, 0, 82)
+    hint.BackgroundTransparency = 1
+    hint.Text = ""
+    hint.TextColor3 = Color3.fromRGB(255, 90, 90)
+    hint.Font = Enum.Font.GothamMedium
+    hint.TextSize = 11
+    hint.ZIndex = 1000
+    hint.Parent = bg
+    
+    local confirmBtn = Instance.new("TextButton")
+    confirmBtn.Size = UDim2.new(1, -30, 0, 34)
+    confirmBtn.Position = UDim2.new(0, 15, 0, 110)
+    confirmBtn.BackgroundColor3 = Color3.fromRGB(70, 150, 255)
+    confirmBtn.Text = "验证"
+    confirmBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    confirmBtn.Font = Enum.Font.GothamBold
+    confirmBtn.TextSize = 14
+    confirmBtn.BorderSizePixel = 0
+    confirmBtn.ZIndex = 1000
+    confirmBtn.Parent = bg
+    Instance.new("UICorner", confirmBtn).CornerRadius = UDim.new(0, 8)
+    
+    confirmBtn.MouseButton1Click:Connect(function()
+        if keyInputBox.Text == VALID_KEY then
+            scrapUnlocked = true
+            gui.Enabled = false
+            WindUI:Notify({Title = "✅ 验证成功", Content = "捡废料功能已解锁！", Duration = 3})
+        else
+            hint.Text = "❌ 卡密错误！"
+        end
+    end)
+end
+
+-- ==================== 捡废料 ====================
 local function collectOneScrap()
-    local c = LocalPlayer.Character
-    if not c or not c:FindFirstChild("HumanoidRootPart") then
-        WindUI:Notify({Title = "错误", Content = "角色未加载", Duration = 2})
+    if not scrapUnlocked then
+        showKeyPopup()
         return
     end
+    
+    local c = LocalPlayer.Character
+    if not c or not c:FindFirstChild("HumanoidRootPart") then return end
     local myRoot = c.HumanoidRootPart
     local nearest = nil
     local nearestDist = math.huge
@@ -291,24 +376,17 @@ local Window = WindUI:CreateWindow({
 })
 
 Window:Tab({Title = "公告", Icon = "info"}):Paragraph({
-    Title = "黑脚本--v4.1 更新日志",
+    Title = "v4.1",
     Desc = [[
-    v1.9 → v4.1 更新内容：
+    捡废料需卡密: 黑脚本牛逼666
     
-    ✅ 修复透视不显示/远处不透视
-    ✅ 修复玩家/NPC误识别为怪物
-    ✅ cat正确识别为怪物
-    ✅ 建筑去重(同名20m只显一个)
-    ✅ 动物显示真实名字(狼/熊/鹿等)
-    ✅ 新增透视玩家(绿色)
-    ✅ 自动捡废料(按钮点击)
-    ✅ 传送防虚空+射线检测
+    更新:
+    ✅ 透视动物/怪物/建筑/废料
+    ✅ 透视玩家(绿色)
+    ✅ 建筑去重20m
+    ✅ 动物真实名字
+    ✅ 传送防虚空
     ✅ 蓝白半透明主题
-    ✅ 缩放不影响功能
-    
-    捡废料：点击按钮→传送到最近scrap
-    →自动按F→捡完提示
-    捡完后可能走不动，等一会即可
     ]],
 })
 
@@ -319,8 +397,8 @@ Tab1:Toggle({Title = "透视建筑", Value = false, Callback = function(v) Setti
 Tab1:Toggle({Title = "透视废料", Value = false, Callback = function(v) Settings.ESP_Scrap = v; scanEverything() end})
 Tab1:Toggle({Title = "夜视", Value = false, Callback = function(v) Settings.NightVision = v; updateNightVision() end})
 Tab1:Divider()
-Tab1:Button({Title = "捡废料(点击)", Callback = collectOneScrap})
-Tab1:Paragraph({Title = "说明", Desc = "点击传送到最近scrap→自动按F\n捡完提示 | 低头捡可能走不动需等"})
+Tab1:Button({Title = "捡废料(需卡密)", Callback = collectOneScrap})
+Tab1:Paragraph({Title = "说明", Desc = "首次点击需输入卡密\n验证后解锁捡废料功能"})
 
 local Tab2 = Window:Tab({Title = "传送", Icon = "map-pin"})
 Tab2:Button({Title = "定位家位置", Callback = function() local p = getPos() if p then homePos = p end end})
@@ -347,4 +425,4 @@ Tab3:Button({Title = "重置速度", Callback = function() Settings.WalkSpeed = 
 Window:Tab({Title = "设置", Icon = "settings"}):Button({Title = "关闭脚本", Callback = function() clearAll(); updateNightVision(); setSpeed(16); Window:Close() end})
 Window:OnClose(function() clearAll(); updateNightVision(); setSpeed(16) end)
 
-WindUI:Notify({Title = "活了7天", Content = VERSION .. " 完美版加载完成", Duration = 3})
+WindUI:Notify({Title = "活了7天", Content = VERSION .. " 加载完成", Duration = 3})
