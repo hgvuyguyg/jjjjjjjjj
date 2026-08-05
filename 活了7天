@@ -1,44 +1,45 @@
--- 活了7天 脚本 v1.9
--- WindUI版 | 每30秒自动刷新透视 | 彻底修复
-local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
-if not WI then return end
+-- 活了7天 脚本 v4.1 完美版
+-- WindUI版 | 按钮捡废料 | 透视玩家 | 修复动物名 | 更新日志
+
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+if not WindUI then return end
+
+WindUI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF",
+})
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 local Lighting = game:GetService("Lighting")
 
 local Settings = {
-    ESP_Animal = false,
-    ESP_Monster = false,
-    ESP_Building = false,
-    NightVision = false,
-    WalkSpeed = 16,
+    ESP_Animal = false, ESP_Monster = false, ESP_Building = false, ESP_Scrap = false, ESP_Player = false,
+    AutoScrap = false,
+    NightVision = false, WalkSpeed = 16,
 }
 
 local savedWaypoints = {}
 local homePos = nil
-local VERSION = "v1.9"
-local stopAll = false
-local espObjects = {}
+local VERSION = "v4.1"
 
-local animalNames = {["moose"] = "驼鹿", ["boar"] = "野猪", ["bear"] = "熊", ["deer"] = "鹿"}
-local monsterNames = {"cat", "wolf", "zombie", "spider", "snake", "monster", "enemy", "beast", "creature", "demon", "ghost", "skeleton", "dragon", "goblin", "troll", "orc"}
-local buildingNames = {
+local animalNames = {"moose", "boar", "bear", "deer", "wolf", "rabbit", "fox", "chicken", "cow", "pig", "sheep", "goat", "duck", "squirrel", "raccoon"}
+local animalNameMap = {
+    ["moose"] = "驼鹿", ["boar"] = "野猪", ["bear"] = "熊", ["deer"] = "鹿", ["wolf"] = "狼",
+    ["rabbit"] = "兔子", ["fox"] = "狐狸", ["chicken"] = "鸡", ["cow"] = "牛", ["pig"] = "猪",
+    ["sheep"] = "羊", ["goat"] = "山羊", ["duck"] = "鸭子", ["squirrel"] = "松鼠", ["raccoon"] = "浣熊",
+}
+local monsterNames = {"cat", "zombie", "monster", "enemy", "beast", "creature", "demon", "ghost", "skeleton", "goblin", "troll", "orc", "spider", "snake", "dragon", "boss", "mutant"}
+
+local buildingNameMap = {
     ["beacon_house"] = "培根小屋", ["Minecart"] = "矿车", ["witch_house"] = "女巫小屋",
     ["lost_key_shack"] = "失钥棚屋", ["abandoned_shack"] = "废弃棚屋", ["orbital_blocker"] = "轨道阻挡器",
 }
-
-local function tpHome()
-    if not homePos then WI:Notify({Title = "错误", Content = "请先在传送页定位家！", Duration = 3}) return end
-    local c = LocalPlayer.Character
-    if c and c:FindFirstChild("HumanoidRootPart") then c.HumanoidRootPart.CFrame = CFrame.new(homePos) end
-end
-
-local function tp(pos)
-    local c = LocalPlayer.Character
-    if c and c:FindFirstChild("HumanoidRootPart") then c.HumanoidRootPart.CFrame = CFrame.new(pos) end
-end
 
 local function getPos()
     local c = LocalPlayer.Character
@@ -46,115 +47,222 @@ local function getPos()
     return nil
 end
 
-local function clearAllESP()
-    for id, data in pairs(espObjects) do
-        if data.highlight then pcall(function() data.highlight:Destroy() end) end
-        if data.tag then pcall(function() data.tag:Destroy() end) end
-    end
-    table.clear(espObjects)
+local function tp(pos)
+    local c = LocalPlayer.Character
+    if not c then return end
+    local root = c:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    if pos.Y < -100 or pos.Y > 5000 then return end
+    root.CFrame = CFrame.new(pos)
 end
 
-local function createTag(model, name, color)
-    local part = model:FindFirstChild("Head") or model:FindFirstChild("HumanoidRootPart") or model:FindFirstChildWhichIsA("BasePart")
-    if not part then return nil end
-    local bg = Instance.new("BillboardGui")
-    bg.Size = UDim2.new(0, 150, 0, 30)
-    bg.AlwaysOnTop = true
-    bg.MaxDistance = 10000
-    bg.Parent = part
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, 0, 1, 0)
-    label.BackgroundTransparency = 1
-    label.Text = name
-    label.TextColor3 = color
-    label.Font = Enum.Font.GothamBold
-    label.TextSize = 14
-    label.TextStrokeTransparency = 0.5
-    label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    label.Parent = bg
-    return bg
+local function clearAll()
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if (obj:IsA("Highlight") and obj.Name == "ESP_HL") or (obj:IsA("BillboardGui") and obj.Name == "ESP_Tag") then
+            pcall(function() obj:Destroy() end)
+        end
+    end
 end
 
-local function addESP(model, category, color, labelName)
-    if not model or not model.Parent then return end
-    local id = model:GetFullName()
-    if espObjects[id] then return end
-    local h = Instance.new("Highlight")
-    h.FillColor = color
-    h.FillTransparency = 0.4
-    h.OutlineColor = color
-    h.OutlineTransparency = 0.2
-    h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    h.Parent = model
-    local tag = createTag(model, labelName, color)
-    espObjects[id] = {highlight = h, tag = tag, model = model, category = category, labelName = labelName}
+local function isPlayerModel(model)
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr.Character == model then return true end
+        if plr.Character and model:IsDescendantOf(plr.Character) then return true end
+    end
+    return false
 end
 
-local function getObjectInfo(model)
-    local name = model.Name
-    if animalNames[name] then return "animal", animalNames[name] end
-    if buildingNames[name] then return "building", buildingNames[name] end
-    local lowerName = name:lower()
-    for _, keyword in ipairs(monsterNames) do
-        if lowerName == keyword or lowerName:find(keyword) then return "monster", "怪物" end
+local function classifyModel(model)
+    local name = model.Name:lower()
+    local hum = model:FindFirstChild("Humanoid")
+    if not hum or hum.Health <= 0 then
+        if name == "scrap" then return "scrap", "废料" end
+        for key, label in pairs(buildingNameMap) do
+            if model.Name == key then return "building", label end
+        end
+        return nil, nil
     end
-    if model:FindFirstChild("Humanoid") and model:FindFirstChild("HumanoidRootPart") then
-        if model.Humanoid.Health > 0 and model.Humanoid.MaxHealth > 50 then return "monster", "怪物" end
+    -- 精确匹配动物名
+    for aName, aLabel in pairs(animalNameMap) do
+        if name == aName then return "animal", aLabel end
     end
+    -- 包含匹配动物名
+    for _, aName in ipairs(animalNames) do
+        if name:find(aName) then return "animal", animalNameMap[aName] or "动物" end
+    end
+    for _, mName in ipairs(monsterNames) do if name:find(mName) then return "monster", "怪物" end end
     return nil, nil
 end
 
-local function fullRebuildESP()
-    clearAllESP()
-    if not Settings.ESP_Animal and not Settings.ESP_Monster and not Settings.ESP_Building then return end
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") then
-            local objType, labelName = getObjectInfo(obj)
-            if objType == "animal" and Settings.ESP_Animal then addESP(obj, "animal", Color3.fromRGB(255, 200, 50), labelName) end
-            if objType == "monster" and Settings.ESP_Monster then addESP(obj, "monster", Color3.fromRGB(255, 80, 80), labelName) end
-            if objType == "building" and Settings.ESP_Building then addESP(obj, "building", Color3.fromRGB(100, 200, 255), labelName) end
+local function deduplicateBuildings(buildings)
+    local result = {}
+    local myPos = getPos()
+    if not myPos then return buildings end
+    
+    table.sort(buildings, function(a, b)
+        local pa = a:IsA("Model") and (a:FindFirstChildWhichIsA("BasePart") or a.PrimaryPart) or a
+        local pb = b:IsA("Model") and (b:FindFirstChildWhichIsA("BasePart") or b.PrimaryPart) or b
+        local da = pa and (myPos - pa.Position).Magnitude or 9999
+        local db = pb and (myPos - pb.Position).Magnitude or 9999
+        return da < db
+    end)
+    
+    for _, obj in ipairs(buildings) do
+        local labelName = buildingNameMap[obj.Name]
+        if labelName then
+            local part = obj:IsA("Model") and (obj:FindFirstChildWhichIsA("BasePart") or obj.PrimaryPart) or obj
+            if part then
+                local tooClose = false
+                for _, existing in ipairs(result) do
+                    local existingName = buildingNameMap[existing.Name]
+                    if existingName == labelName then
+                        local existingPart = existing:IsA("Model") and (existing:FindFirstChildWhichIsA("BasePart") or existing.PrimaryPart) or existing
+                        if existingPart and (existingPart.Position - part.Position).Magnitude < 20 then
+                            tooClose = true; break
+                        end
+                    end
+                end
+                if not tooClose then table.insert(result, obj) end
+            end
+        else
+            table.insert(result, obj)
         end
+    end
+    return result
+end
+
+local function addESP(obj, objType, labelName, part)
+    local color
+    if objType == "animal" then color = Color3.fromRGB(255, 200, 50)
+    elseif objType == "monster" then color = Color3.fromRGB(255, 80, 80)
+    elseif objType == "building" then color = Color3.fromRGB(100, 200, 255)
+    elseif objType == "scrap" then color = Color3.fromRGB(180, 180, 180)
+    elseif objType == "player" then color = Color3.fromRGB(70, 255, 70)
+    end
+    
+    if not obj:FindFirstChild("ESP_HL") then
+        local h = Instance.new("Highlight")
+        h.Name = "ESP_HL"; h.FillColor = color; h.FillTransparency = 0.4
+        h.OutlineColor = color; h.OutlineTransparency = 0.2
+        h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop; h.Parent = obj
+    end
+    
+    if part and not part:FindFirstChild("ESP_Tag") then
+        local bg = Instance.new("BillboardGui")
+        bg.Name = "ESP_Tag"; bg.Size = UDim2.new(0, 150, 0, 30)
+        bg.AlwaysOnTop = true; bg.MaxDistance = math.huge; bg.Parent = part
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, 0, 1, 0); label.BackgroundTransparency = 1
+        label.Text = labelName; label.TextColor3 = color
+        label.Font = Enum.Font.GothamBold; label.TextSize = 14
+        label.TextStrokeTransparency = 0.5; label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        label.Parent = bg
     end
 end
 
--- 每30秒自动刷新
-task.spawn(function()
-    while true do
-        task.wait(30)
-        if not stopAll and (Settings.ESP_Animal or Settings.ESP_Monster or Settings.ESP_Building) then
-            fullRebuildESP()
-        end
+local function scanEverything()
+    local allObjects = {}
+    local buildings = {}
+    
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if not obj:IsA("Model") and not obj:IsA("BasePart") then continue end
+        if isPlayerModel(obj) then continue end
+        local objType, labelName = classifyModel(obj)
+        if not objType then continue end
+        if objType == "building" then table.insert(buildings, obj)
+        else table.insert(allObjects, {obj = obj, objType = objType, labelName = labelName}) end
     end
-end)
-
-RunService.Heartbeat:Connect(function()
-    local c = LocalPlayer.Character
-    if not c or not c:FindFirstChild("HumanoidRootPart") then return end
-    local root = c.HumanoidRootPart
-    for id, data in pairs(espObjects) do
-        if data.tag and data.tag.Parent and data.model and data.model.Parent then
-            local label = data.tag:FindFirstChildWhichIsA("TextLabel")
-            if label then
-                local dist = (root.Position - data.model:GetPivot().Position).Magnitude
-                label.Text = data.labelName .. " " .. math.floor(dist) .. "m"
+    
+    buildings = deduplicateBuildings(buildings)
+    for _, obj in ipairs(buildings) do
+        local _, labelName = classifyModel(obj)
+        table.insert(allObjects, {obj = obj, objType = "building", labelName = labelName})
+    end
+    
+    -- 添加透视玩家
+    if Settings.ESP_Player then
+        for _, plr in pairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") then
+                table.insert(allObjects, {obj = plr.Character, objType = "player", labelName = plr.Name})
             end
         end
     end
-end)
+    
+    for _, data in ipairs(allObjects) do
+        if data.objType == "animal" and not Settings.ESP_Animal then continue end
+        if data.objType == "monster" and not Settings.ESP_Monster then continue end
+        if data.objType == "building" and not Settings.ESP_Building then continue end
+        if data.objType == "scrap" and not Settings.ESP_Scrap then continue end
+        if data.objType == "player" and not Settings.ESP_Player then continue end
+        local part = data.obj:IsA("Model") and (data.obj:FindFirstChild("Head") or data.obj:FindFirstChild("HumanoidRootPart") or data.obj:FindFirstChildWhichIsA("BasePart") or data.obj.PrimaryPart) or data.obj
+        if part then addESP(data.obj, data.objType, data.labelName, part) end
+    end
+end
 
-workspace.DescendantAdded:Connect(function(obj)
-    if obj:IsA("Model") then
-        local objType, labelName = getObjectInfo(obj)
-        if objType == "animal" and Settings.ESP_Animal then addESP(obj, "animal", Color3.fromRGB(255, 200, 50), labelName) end
-        if objType == "monster" and Settings.ESP_Monster then addESP(obj, "monster", Color3.fromRGB(255, 80, 80), labelName) end
-        if objType == "building" and Settings.ESP_Building then addESP(obj, "building", Color3.fromRGB(100, 200, 255), labelName) end
+-- ==================== 捡废料（按钮版） ====================
+local function collectOneScrap()
+    local c = LocalPlayer.Character
+    if not c or not c:FindFirstChild("HumanoidRootPart") then
+        WindUI:Notify({Title = "错误", Content = "角色未加载", Duration = 2})
+        return
+    end
+    local myRoot = c.HumanoidRootPart
+    local nearest = nil
+    local nearestDist = math.huge
+    
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") or obj:IsA("BasePart") then
+            if obj.Name:lower() == "scrap" then
+                local part = obj:IsA("Model") and (obj:FindFirstChildWhichIsA("BasePart") or obj.PrimaryPart) or obj
+                if part and part.Position.Y > -50 and part.Position.Y < 3000 then
+                    local dist = (myRoot.Position - part.Position).Magnitude
+                    if dist < nearestDist and dist > 2 then
+                        nearestDist = dist; nearest = part
+                    end
+                end
+            end
+        end
+    end
+    
+    if nearest then
+        tp(nearest.Position + Vector3.new(0, 3, 0))
+        task.wait(0.3)
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, nil)
+        task.wait(0.1)
+        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F, false, nil)
+        WindUI:Notify({Title = "成功", Content = "已捡一个废料", Duration = 1})
+    else
+        WindUI:Notify({Title = "提示", Content = "已捡完所有废料！", Duration = 3})
+    end
+end
+
+task.spawn(function() while true do scanEverything(); task.wait(3) end end)
+
+task.spawn(function()
+    while true do
+        local c = LocalPlayer.Character
+        if c and c:FindFirstChild("HumanoidRootPart") then
+            local myRoot = c.HumanoidRootPart
+            for _, tag in pairs(workspace:GetDescendants()) do
+                if tag:IsA("BillboardGui") and tag.Name == "ESP_Tag" then
+                    local label = tag:FindFirstChildWhichIsA("TextLabel")
+                    local parent = tag.Parent
+                    if label and parent then
+                        local dist = (myRoot.Position - parent.Position).Magnitude
+                        local baseName = label.Text:match("^(.-) %d")
+                        if baseName then label.Text = baseName .. " " .. math.floor(dist) .. "m" end
+                    end
+                end
+            end
+        end
+        task.wait(0.5)
     end
 end)
 
--- 夜视
 local function updateNightVision()
     if Settings.NightVision then
-        Lighting.Brightness = 3; Lighting.ClockTime = 14; Lighting.FogEnd = 500; Lighting.OutdoorAmbient = Color3.fromRGB(100, 100, 120)
+        Lighting.Brightness = 5; Lighting.ClockTime = 14
+        Lighting.FogEnd = 10000; Lighting.OutdoorAmbient = Color3.fromRGB(150, 150, 180)
     else
         Lighting.Brightness = 1; Lighting.FogEnd = 100; Lighting.OutdoorAmbient = Color3.fromRGB(0, 0, 0)
     end
@@ -168,77 +276,75 @@ local function setSpeed(s)
     local c = LocalPlayer.Character
     if c and c:FindFirstChild("Humanoid") then c.Humanoid.WalkSpeed = s end
 end
-
-RunService.Heartbeat:Connect(function()
-    if Settings.WalkSpeed ~= 16 then setSpeed(Settings.WalkSpeed) end
-end)
+RunService.Heartbeat:Connect(function() if Settings.WalkSpeed ~= 16 then setSpeed(Settings.WalkSpeed) end end)
 
 local function getPlayerNames()
     local names = {}
-    for _, plr in pairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer then table.insert(names, plr.Name) end
-    end
+    for _, plr in pairs(Players:GetPlayers()) do if plr ~= LocalPlayer then table.insert(names, plr.Name) end end
     if #names == 0 then table.insert(names, "无其他玩家") end
     return names
 end
 
--- UI
-local Win = WI:CreateWindow({
-    Title = "活了7天", Icon = "solar:skull-bold",
-    Size = UDim2.fromOffset(400, 430), Acrylic = true,
+local Window = WindUI:CreateWindow({
+    Title = "活了7天", Icon = "rbxassetid://129260712070622", IconThemed = true,
+    Size = UDim2.fromOffset(400, 460), Theme = "冰白", Transparent = true,
 })
 
-Win:Tab({Title = "公告", Icon = "solar:home-bold"}):Paragraph({
-    Title = "黑脚本--功能说明", Desc = "每30秒自动刷新透视\n动物/怪物/建筑(10000米)\n\n版本：" .. VERSION
+Window:Tab({Title = "公告", Icon = "info"}):Paragraph({
+    Title = "黑脚本--v4.1 更新日志",
+    Desc = [[
+    v1.9 → v4.1 更新内容：
+    
+    ✅ 修复透视不显示/远处不透视
+    ✅ 修复玩家/NPC误识别为怪物
+    ✅ cat正确识别为怪物
+    ✅ 建筑去重(同名20m只显一个)
+    ✅ 动物显示真实名字(狼/熊/鹿等)
+    ✅ 新增透视玩家(绿色)
+    ✅ 自动捡废料(按钮点击)
+    ✅ 传送防虚空+射线检测
+    ✅ 蓝白半透明主题
+    ✅ 缩放不影响功能
+    
+    捡废料：点击按钮→传送到最近scrap
+    →自动按F→捡完提示
+    捡完后可能走不动，等一会即可
+    ]],
 })
 
-local t1 = Win:Tab({Title = "主要", Icon = "solar:play-bold"})
-t1:Toggle({Title = "透视动物", Value = false, Callback = function(v) Settings.ESP_Animal = v fullRebuildESP() end})
-t1:Divider()
-t1:Toggle({Title = "透视怪物", Value = false, Callback = function(v) Settings.ESP_Monster = v fullRebuildESP() end})
-t1:Divider()
-t1:Toggle({Title = "透视建筑", Value = false, Callback = function(v) Settings.ESP_Building = v fullRebuildESP() end})
-t1:Divider()
-t1:Toggle({Title = "夜视", Value = false, Callback = function(v) Settings.NightVision = v updateNightVision() end})
+local Tab1 = Window:Tab({Title = "主要", Icon = "play"})
+Tab1:Toggle({Title = "透视动物", Value = false, Callback = function(v) Settings.ESP_Animal = v; scanEverything() end})
+Tab1:Toggle({Title = "透视怪物", Value = false, Callback = function(v) Settings.ESP_Monster = v; scanEverything() end})
+Tab1:Toggle({Title = "透视建筑", Value = false, Callback = function(v) Settings.ESP_Building = v; scanEverything() end})
+Tab1:Toggle({Title = "透视废料", Value = false, Callback = function(v) Settings.ESP_Scrap = v; scanEverything() end})
+Tab1:Toggle({Title = "夜视", Value = false, Callback = function(v) Settings.NightVision = v; updateNightVision() end})
+Tab1:Divider()
+Tab1:Button({Title = "捡废料(点击)", Callback = collectOneScrap})
+Tab1:Paragraph({Title = "说明", Desc = "点击传送到最近scrap→自动按F\n捡完提示 | 低头捡可能走不动需等"})
 
-local t2 = Win:Tab({Title = "传送", Icon = "solar:map-arrow-up-bold"})
-t2:Button({Title = "定位家位置", Justify = "Center", Color = Color3.fromHex("#4CAF50"), Callback = function() local p = getPos() if p then homePos = p end end})
-t2:Divider()
-t2:Button({Title = "传送回家", Justify = "Center", Color = Color3.fromHex("#4CAF50"), Callback = tpHome})
-t2:Divider()
+local Tab2 = Window:Tab({Title = "传送", Icon = "map-pin"})
+Tab2:Button({Title = "定位家位置", Callback = function() local p = getPos() if p then homePos = p end end})
+Tab2:Button({Title = "传送回家", Callback = function() if homePos then tp(homePos) end end})
+Tab2:Divider()
 local wpName = ""
-t2:Input({Title = "定位名称", Value = "", Callback = function(v) wpName = v end})
-t2:Divider()
-t2:Button({Title = "保存当前位置", Justify = "Center", Color = Color3.fromHex("#FF9800"), Callback = function()
-    if wpName == "" then WI:Notify({Title = "错误", Content = "请输入名称！", Duration = 2}) return end
-    local p = getPos() if p then savedWaypoints[wpName] = p end
+Tab2:Input({Title = "定位名称", Value = "", Placeholder = "输入名称...", Callback = function(v) wpName = v end})
+Tab2:Button({Title = "保存当前位置", Callback = function()
+    if wpName == "" then return end
+    local p = getPos() if p then savedWaypoints[wpName] = p; Tab2:Divider(); Tab2:Button({Title = "去 " .. wpName, Callback = function() tp(p) end}) end
 end})
-for name, pos in pairs(savedWaypoints) do
-    t2:Divider()
-    t2:Button({Title = "去 " .. name, Justify = "Center", Color = Color3.fromHex("#03A9F4"), Callback = function() tp(pos) end})
-end
+for name, pos in pairs(savedWaypoints) do Tab2:Divider(); Tab2:Button({Title = "去 " .. name, Callback = function() tp(pos) end}) end
 
 local playerNames = getPlayerNames()
 local selectedPlayer = playerNames[1] or "无其他玩家"
-local t3 = Win:Tab({Title = "玩家", Icon = "solar:user-bold"})
-t3:Button({Title = "点击开启飞行", Justify = "Center", Color = Color3.fromHex("#03A9F4"), Callback = loadFly})
-t3:Divider()
-t3:Dropdown({Title = "选择玩家", Values = playerNames, Value = selectedPlayer, Callback = function(v) selectedPlayer = v end})
-t3:Divider()
-t3:Button({Title = "传送到该玩家", Justify = "Center", Color = Color3.fromHex("#03A9F4"), Callback = function() for _, plr in pairs(Players:GetPlayers()) do if plr.Name == selectedPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then tp(plr.Character.HumanoidRootPart.Position) return end end end})
-t3:Divider()
-t3:Input({Title = "移动速度", Value = "16", Callback = function(v) local n = tonumber(v) if n and n >= 10 and n <= 50 then Settings.WalkSpeed = n end end})
-t3:Divider()
-t3:Button({Title = "重置速度", Justify = "Center", Color = Color3.fromHex("#888888"), Callback = function() Settings.WalkSpeed = 16 end})
+local Tab3 = Window:Tab({Title = "玩家", Icon = "users"})
+Tab3:Toggle({Title = "透视玩家", Value = false, Callback = function(v) Settings.ESP_Player = v; scanEverything() end})
+Tab3:Button({Title = "飞行", Callback = loadFly})
+Tab3:Dropdown({Title = "选择玩家", Values = playerNames, Value = selectedPlayer, Callback = function(v) selectedPlayer = v end})
+Tab3:Button({Title = "传送到该玩家", Callback = function() for _, plr in pairs(Players:GetPlayers()) do if plr.Name == selectedPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then tp(plr.Character.HumanoidRootPart.Position) end end end})
+Tab3:Input({Title = "移动速度", Value = "16", Callback = function(v) local n = tonumber(v) if n and n >= 10 and n <= 50 then Settings.WalkSpeed = n end end})
+Tab3:Button({Title = "重置速度", Callback = function() Settings.WalkSpeed = 16 end})
 
-Win:Tab({Title = "设置", Icon = "solar:settings-bold"}):Button({
-    Title = "关闭脚本", Justify = "Center", Color = Color3.fromHex("#ff4444"),
-    Callback = function()
-        stopAll = true
-        for k, _ in pairs(Settings) do if type(Settings[k]) == "boolean" then Settings[k] = false end end
-        clearAllESP() updateNightVision() setSpeed(16)
-        pcall(function() local g = game:GetService("CoreGui"):FindFirstChild("WindUI") if g then g:Destroy() end end)
-    end
-})
+Window:Tab({Title = "设置", Icon = "settings"}):Button({Title = "关闭脚本", Callback = function() clearAll(); updateNightVision(); setSpeed(16); Window:Close() end})
+Window:OnClose(function() clearAll(); updateNightVision(); setSpeed(16) end)
 
-WI:Notify({Title = "活了7天", Content = VERSION .. " 加载完成", Duration = 5})
+WindUI:Notify({Title = "活了7天", Content = VERSION .. " 完美版加载完成", Duration = 3})
