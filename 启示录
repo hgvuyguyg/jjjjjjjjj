@@ -1,0 +1,282 @@
+-- 启示录 脚本 v1.4
+-- WindUI蓝白版 | 传送玩家+透视+飞行 | 开箱等2秒再C | 高度430
+
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+if not WindUI then return end
+
+WindUI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF",
+})
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local LocalPlayer = Players.LocalPlayer
+local Lighting = game:GetService("Lighting")
+
+local Settings = {
+    ESP_TutorialLoot = false, ESP_CommonLoot = false, ESP_UncommonLoot = false,
+    ESP_Zombie = false, ESP_Collision = false, ESP_DronePad = false,
+    ESP_ShowDist = false, ESP_Players = false,
+    AutoLoot = false, LootMode = "全部宝箱",
+    NightVision = false, WalkSpeed = 16,
+}
+
+local VERSION = "v1.4"
+
+local lootNames = {
+    ["TutorialLoot"] = {cn = "教程箱", color = Color3.fromRGB(255, 200, 50)},
+    ["CommonLoot"] = {cn = "普通箱", color = Color3.fromRGB(150, 150, 150)},
+    ["UncommonLoot"] = {cn = "铜箱", color = Color3.fromRGB(200, 150, 50)},
+}
+
+local function getPos()
+    local c = LocalPlayer.Character
+    if c and c:FindFirstChild("HumanoidRootPart") then return c.HumanoidRootPart.Position end
+    return nil
+end
+
+local function tp(pos)
+    local c = LocalPlayer.Character
+    if not c then return end
+    local root = c:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    root.CFrame = CFrame.new(pos)
+end
+
+local function clearAll()
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj.Name == "ESP_HL" or obj.Name == "ESP_Tag" then
+            pcall(function() obj:Destroy() end)
+        end
+    end
+end
+
+local function addESP(obj, name, color)
+    local oldHL = obj:FindFirstChild("ESP_HL")
+    if oldHL then pcall(function() oldHL:Destroy() end) end
+    local h = Instance.new("Highlight")
+    h.Name = "ESP_HL"; h.FillColor = color; h.FillTransparency = 0.4
+    h.OutlineColor = color; h.OutlineTransparency = 0.2
+    h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop; h.Parent = obj
+    
+    local part = obj:IsA("Model") and (obj:FindFirstChildWhichIsA("BasePart") or obj.PrimaryPart) or obj
+    if part then
+        local oldTag = part:FindFirstChild("ESP_Tag")
+        if oldTag then pcall(function() oldTag:Destroy() end) end
+        local bg = Instance.new("BillboardGui")
+        bg.Name = "ESP_Tag"; bg.Size = UDim2.new(0, 150, 0, 30)
+        bg.AlwaysOnTop = true; bg.MaxDistance = math.huge; bg.Parent = part
+        local label = Instance.new("TextLabel")
+        label.Size = UDim2.new(1, 0, 1, 0); label.BackgroundTransparency = 1
+        label.Text = name; label.TextColor3 = color
+        label.Font = Enum.Font.GothamBold; label.TextSize = 14
+        label.TextStrokeTransparency = 0.5; label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        label.Parent = bg
+    end
+end
+
+local function deduplicateZombies(zombies)
+    local result = {}
+    for _, obj in ipairs(zombies) do
+        local part = obj:IsA("Model") and (obj:FindFirstChildWhichIsA("BasePart") or obj.PrimaryPart) or obj
+        if part then
+            local tooClose = false
+            for _, existing in ipairs(result) do
+                local ep = existing:IsA("Model") and (existing:FindFirstChildWhichIsA("BasePart") or existing.PrimaryPart) or existing
+                if ep and (ep.Position - part.Position).Magnitude < 10 then tooClose = true; break end
+            end
+            if not tooClose then table.insert(result, obj) end
+        end
+    end
+    return result
+end
+
+local function scanAll()
+    clearAll()
+    local zombies = {}
+    local otherObjects = {}
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if not obj:IsA("Model") and not obj:IsA("BasePart") then continue end
+        local name = obj.Name
+        if name:lower():find("zombie") and Settings.ESP_Zombie then table.insert(zombies, obj)
+        else
+            for lootName, lootData in pairs(lootNames) do
+                if name == lootName then
+                    if (lootName == "TutorialLoot" and Settings.ESP_TutorialLoot) or
+                       (lootName == "CommonLoot" and Settings.ESP_CommonLoot) or
+                       (lootName == "UncommonLoot" and Settings.ESP_UncommonLoot) then
+                        table.insert(otherObjects, {obj = obj, cn = lootData.cn, color = lootData.color})
+                    end
+                end
+            end
+            if name:lower():find("collision") and Settings.ESP_Collision then
+                table.insert(otherObjects, {obj = obj, cn = "汽车残骸", color = Color3.fromRGB(180, 120, 60)})
+            end
+            if name:lower():find("drone") and Settings.ESP_DronePad then
+                table.insert(otherObjects, {obj = obj, cn = "无人机坪", color = Color3.fromRGB(100, 200, 255)})
+            end
+        end
+    end
+    -- 玩家透视
+    if Settings.ESP_Players then
+        for _, plr in pairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") then
+                table.insert(otherObjects, {obj = plr.Character, cn = plr.Name, color = Color3.fromRGB(70, 255, 70)})
+            end
+        end
+    end
+    zombies = deduplicateZombies(zombies)
+    for _, obj in ipairs(zombies) do addESP(obj, "僵尸", Color3.fromRGB(255, 80, 80)) end
+    for _, data in ipairs(otherObjects) do addESP(data.obj, data.cn, data.color) end
+end
+
+task.spawn(function()
+    while true do
+        if Settings.ESP_ShowDist then
+            local c = LocalPlayer.Character
+            if c and c:FindFirstChild("HumanoidRootPart") then
+                local myRoot = c.HumanoidRootPart
+                for _, tag in pairs(workspace:GetDescendants()) do
+                    if tag:IsA("BillboardGui") and tag.Name == "ESP_Tag" then
+                        local label = tag:FindFirstChildWhichIsA("TextLabel")
+                        local parent = tag.Parent
+                        if label and parent then
+                            local dist = (myRoot.Position - parent.Position).Magnitude
+                            local text = label.Text:gsub(" %d+m$", "")
+                            label.Text = text .. " " .. math.floor(dist) .. "m"
+                        end
+                    end
+                end
+            end
+        end
+        task.wait(0.3)
+    end
+end)
+
+-- 自动开宝箱（F后等2秒再C）
+task.spawn(function()
+    while true do
+        if Settings.AutoLoot then
+            local nameList = {}
+            if Settings.LootMode == "全部宝箱" then nameList = {"TutorialLoot", "CommonLoot", "UncommonLoot"}
+            elseif Settings.LootMode == "教程箱" then nameList = {"TutorialLoot"}
+            elseif Settings.LootMode == "普通箱" then nameList = {"CommonLoot"}
+            elseif Settings.LootMode == "铜箱" then nameList = {"UncommonLoot"} end
+            
+            local targets = {}
+            local usedPos = {}
+            for _, obj in pairs(workspace:GetDescendants()) do
+                if obj:IsA("Model") or obj:IsA("BasePart") then
+                    for _, n in ipairs(nameList) do
+                        if obj.Name == n then
+                            local part = obj:IsA("Model") and (obj:FindFirstChildWhichIsA("BasePart") or obj.PrimaryPart) or obj
+                            if part then
+                                local pos = part.Position
+                                local dup = false
+                                for _, up in ipairs(usedPos) do
+                                    if (pos - up).Magnitude < 10 then dup = true; break end
+                                end
+                                if not dup then
+                                    table.insert(targets, {part = part, pos = pos})
+                                    table.insert(usedPos, pos)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            
+            for _, t in ipairs(targets) do
+                if not Settings.AutoLoot then break end
+                tp(t.pos + Vector3.new(0, 3, 0))
+                task.wait(0.3)
+                -- 按F
+                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, nil)
+                task.wait(0.15)
+                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F, false, nil)
+                -- 等2秒再按C
+                task.wait(2)
+                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.C, false, nil)
+                task.wait(0.15)
+                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.C, false, nil)
+                task.wait(0.3)
+            end
+            Settings.AutoLoot = false
+            WindUI:Notify({Title = "完成", Content = "宝箱已开完", Duration = 2})
+        end
+        task.wait(0.5)
+    end
+end)
+
+task.spawn(function() while true do scanAll(); task.wait(3) end end)
+
+local function updateNightVision()
+    if Settings.NightVision then
+        Lighting.Brightness = 5; Lighting.ClockTime = 14
+        Lighting.FogEnd = 10000; Lighting.OutdoorAmbient = Color3.fromRGB(150, 150, 180)
+    else
+        Lighting.Brightness = 1; Lighting.FogEnd = 100; Lighting.OutdoorAmbient = Color3.fromRGB(0, 0, 0)
+    end
+end
+
+local function loadFly()
+    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/飞饼"))() end)
+end
+
+local function setSpeed(s)
+    local c = LocalPlayer.Character
+    if c and c:FindFirstChild("Humanoid") then c.Humanoid.WalkSpeed = s end
+end
+RunService.Heartbeat:Connect(function() if Settings.WalkSpeed ~= 16 then setSpeed(Settings.WalkSpeed) end end)
+
+local function getPlayerNames()
+    local names = {}
+    for _, plr in pairs(Players:GetPlayers()) do if plr ~= LocalPlayer then table.insert(names, plr.Name) end end
+    if #names == 0 then table.insert(names, "无其他玩家") end
+    return names
+end
+
+local Window = WindUI:CreateWindow({
+    Title = "启示录", Icon = "rbxassetid://129260712070622", IconThemed = true,
+    Size = UDim2.fromOffset(400, 430), Theme = "冰白", Transparent = true,
+})
+
+Window:Tab({Title = "公告", Icon = "info"}):Paragraph({
+    Title = "黑脚本--启示录",
+    Desc = "透视宝箱/僵尸/汽车/杂项\n自动开宝箱  | 夜视 | ⚠️自动开宝箱x号自己点",
+})
+
+local Tab1 = Window:Tab({Title = "透视", Icon = "eye"})
+Tab1:Toggle({Title = "透视教程箱", Value = false, Callback = function(v) Settings.ESP_TutorialLoot = v; scanAll() end})
+Tab1:Toggle({Title = "透视普通箱", Value = false, Callback = function(v) Settings.ESP_CommonLoot = v; scanAll() end})
+Tab1:Toggle({Title = "透视铜箱", Value = false, Callback = function(v) Settings.ESP_UncommonLoot = v; scanAll() end})
+Tab1:Toggle({Title = "透视僵尸", Value = false, Callback = function(v) Settings.ESP_Zombie = v; scanAll() end})
+Tab1:Toggle({Title = "透视汽车残骸", Value = false, Callback = function(v) Settings.ESP_Collision = v; scanAll() end})
+Tab1:Toggle({Title = "透视无人机坪", Value = false, Callback = function(v) Settings.ESP_DronePad = v; scanAll() end})
+Tab1:Divider()
+Tab1:Toggle({Title = "显示距离", Value = false, Callback = function(v) Settings.ESP_ShowDist = v end})
+Tab1:Toggle({Title = "夜视", Value = false, Callback = function(v) Settings.NightVision = v; updateNightVision() end})
+
+local Tab2 = Window:Tab({Title = "自动", Icon = "play"})
+Tab2:Dropdown({Title = "开箱类型", Values = {"全部宝箱", "教程箱", "普通箱", "铜箱"}, Value = "全部宝箱", Callback = function(v) Settings.LootMode = v end})
+Tab2:Toggle({Title = "自动开宝箱", Value = false, Callback = function(v) Settings.AutoLoot = v end})
+
+local playerNames = getPlayerNames()
+local selectedPlayer = playerNames[1] or "无其他玩家"
+local Tab3 = Window:Tab({Title = "玩家", Icon = "users"})
+Tab3:Toggle({Title = "透视玩家", Value = false, Callback = function(v) Settings.ESP_Players = v; scanAll() end})
+Tab3:Button({Title = "飞行", Callback = loadFly})
+Tab3:Dropdown({Title = "选择玩家", Values = playerNames, Value = selectedPlayer, Callback = function(v) selectedPlayer = v end})
+Tab3:Button({Title = "传送到该玩家", Callback = function() for _, plr in pairs(Players:GetPlayers()) do if plr.Name == selectedPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then tp(plr.Character.HumanoidRootPart.Position) end end end})
+Tab3:Input({Title = "移动速度", Value = "16", Callback = function(v) local n = tonumber(v) if n and n >= 10 and n <= 50 then Settings.WalkSpeed = n end end})
+Tab3:Button({Title = "重置速度", Callback = function() Settings.WalkSpeed = 16 end})
+
+Window:Tab({Title = "设置", Icon = "settings"}):Button({Title = "关闭脚本", Callback = function() Settings.AutoLoot = false; clearAll(); updateNightVision(); setSpeed(16); Window:Close() end})
+Window:OnClose(function() clearAll(); updateNightVision(); setSpeed(16) end)
+
+WindUI:Notify({Title = "启示录", Content = VERSION .. " 加载完成", Duration = 3})
