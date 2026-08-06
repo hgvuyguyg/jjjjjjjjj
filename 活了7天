@@ -1,5 +1,5 @@
--- 活了7天 脚本 v4.3 终极全图版
--- WindUI版 | 全图扫描所有废料 | 全自动捡 | 卡密验证
+-- 活了7天 脚本 v4.7 稳定版
+-- WindUI版 | 彻底修复传送 | 蓝莓斜前方 | 流畅透视
 
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 if not WindUI then return end
@@ -20,18 +20,17 @@ local Lighting = game:GetService("Lighting")
 
 local Settings = {
     ESP_Animal = false, ESP_Monster = false, ESP_Building = false, ESP_Scrap = false, ESP_Player = false,
-    AutoScrap = false,
+    AutoScrap = false, AutoBerry = false,
     NightVision = false, WalkSpeed = 16,
 }
 
 local savedWaypoints = {}
 local homePos = nil
-local VERSION = "v4.3"
+local VERSION = "v4.7"
 
 local VALID_KEY = "黑脚本牛逼666"
 local scrapUnlocked = false
 local keyPopup = nil
-local collectedCount = 0
 
 local animalNameMap = {
     ["moose"] = "驼鹿", ["boar"] = "野猪", ["bear"] = "熊", ["deer"] = "鹿", ["wolf"] = "狼",
@@ -59,13 +58,15 @@ local function tp(pos)
     if not c then return end
     local root = c:FindFirstChild("HumanoidRootPart")
     if not root then return end
-    if pos.Y < -100 or pos.Y > 5000 then return end
+    -- 只做基本的Y轴检查
+    if pos.Y < -20 then return end
+    if pos.Y > 5000 then return end
     root.CFrame = CFrame.new(pos)
 end
 
 local function clearAll()
     for _, obj in pairs(workspace:GetDescendants()) do
-        if (obj:IsA("Highlight") and obj.Name == "ESP_HL") or (obj:IsA("BillboardGui") and obj.Name == "ESP_Tag") then
+        if obj.Name == "ESP_HL" or obj.Name == "ESP_Tag" then
             pcall(function() obj:Destroy() end)
         end
     end
@@ -89,51 +90,10 @@ local function classifyModel(model)
         end
         return nil, nil
     end
-    for aName, aLabel in pairs(animalNameMap) do
-        if name == aName then return "animal", aLabel end
-    end
-    for _, aName in ipairs(animalNames) do
-        if name:find(aName) then return "animal", animalNameMap[aName] or "动物" end
-    end
+    for aName, aLabel in pairs(animalNameMap) do if name == aName then return "animal", aLabel end end
+    for _, aName in ipairs(animalNames) do if name:find(aName) then return "animal", animalNameMap[aName] or "动物" end end
     for _, mName in ipairs(monsterNames) do if name:find(mName) then return "monster", "怪物" end end
     return nil, nil
-end
-
-local function deduplicateBuildings(buildings)
-    local result = {}
-    local myPos = getPos()
-    if not myPos then return buildings end
-    
-    table.sort(buildings, function(a, b)
-        local pa = a:IsA("Model") and (a:FindFirstChildWhichIsA("BasePart") or a.PrimaryPart) or a
-        local pb = b:IsA("Model") and (b:FindFirstChildWhichIsA("BasePart") or b.PrimaryPart) or b
-        local da = pa and (myPos - pa.Position).Magnitude or 9999
-        local db = pb and (myPos - pb.Position).Magnitude or 9999
-        return da < db
-    end)
-    
-    for _, obj in ipairs(buildings) do
-        local labelName = buildingNameMap[obj.Name]
-        if labelName then
-            local part = obj:IsA("Model") and (obj:FindFirstChildWhichIsA("BasePart") or obj.PrimaryPart) or obj
-            if part then
-                local tooClose = false
-                for _, existing in ipairs(result) do
-                    local existingName = buildingNameMap[existing.Name]
-                    if existingName == labelName then
-                        local existingPart = existing:IsA("Model") and (existing:FindFirstChildWhichIsA("BasePart") or existing.PrimaryPart) or existing
-                        if existingPart and (existingPart.Position - part.Position).Magnitude < 20 then
-                            tooClose = true; break
-                        end
-                    end
-                end
-                if not tooClose then table.insert(result, obj) end
-            end
-        else
-            table.insert(result, obj)
-        end
-    end
-    return result
 end
 
 local function addESP(obj, objType, labelName, part)
@@ -143,10 +103,7 @@ local function addESP(obj, objType, labelName, part)
     elseif objType == "building" then color = Color3.fromRGB(100, 200, 255)
     elseif objType == "scrap" then color = Color3.fromRGB(180, 180, 180)
     elseif objType == "player" then color = Color3.fromRGB(70, 255, 70)
-    end
-    
-    local oldHL = obj:FindFirstChild("ESP_HL")
-    if oldHL then pcall(function() oldHL:Destroy() end) end
+    else return end
     
     local h = Instance.new("Highlight")
     h.Name = "ESP_HL"; h.FillColor = color; h.FillTransparency = 0.4
@@ -154,9 +111,6 @@ local function addESP(obj, objType, labelName, part)
     h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop; h.Parent = obj
     
     if part then
-        local oldTag = part:FindFirstChild("ESP_Tag")
-        if oldTag then pcall(function() oldTag:Destroy() end) end
-        
         local bg = Instance.new("BillboardGui")
         bg.Name = "ESP_Tag"; bg.Size = UDim2.new(0, 150, 0, 30)
         bg.AlwaysOnTop = true; bg.MaxDistance = math.huge; bg.Parent = part
@@ -170,62 +124,32 @@ local function addESP(obj, objType, labelName, part)
 end
 
 local function scanEverything()
-    clearAll()
-    local allObjects = {}
-    local buildings = {}
-    
     for _, obj in pairs(workspace:GetDescendants()) do
         if not obj:IsA("Model") and not obj:IsA("BasePart") then continue end
         if isPlayerModel(obj) then continue end
+        if obj:FindFirstChild("ESP_HL") then continue end
         local objType, labelName = classifyModel(obj)
         if not objType then continue end
-        if objType == "building" then table.insert(buildings, obj)
-        else table.insert(allObjects, {obj = obj, objType = objType, labelName = labelName}) end
+        if objType == "animal" and not Settings.ESP_Animal then continue end
+        if objType == "monster" and not Settings.ESP_Monster then continue end
+        if objType == "building" and not Settings.ESP_Building then continue end
+        if objType == "scrap" and not Settings.ESP_Scrap then continue end
+        local part = obj:IsA("Model") and (obj:FindFirstChild("Head") or obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart") or obj.PrimaryPart) or obj
+        if part then addESP(obj, objType, labelName, part) end
     end
-    
-    buildings = deduplicateBuildings(buildings)
-    for _, obj in ipairs(buildings) do
-        local _, labelName = classifyModel(obj)
-        table.insert(allObjects, {obj = obj, objType = "building", labelName = labelName})
-    end
-    
     if Settings.ESP_Player then
         for _, plr in pairs(Players:GetPlayers()) do
             if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") then
-                table.insert(allObjects, {obj = plr.Character, objType = "player", labelName = plr.Name})
-            end
-        end
-    end
-    
-    for _, data in ipairs(allObjects) do
-        if data.objType == "animal" and not Settings.ESP_Animal then continue end
-        if data.objType == "monster" and not Settings.ESP_Monster then continue end
-        if data.objType == "building" and not Settings.ESP_Building then continue end
-        if data.objType == "scrap" and not Settings.ESP_Scrap then continue end
-        if data.objType == "player" and not Settings.ESP_Player then continue end
-        local part = data.obj:IsA("Model") and (data.obj:FindFirstChild("Head") or data.obj:FindFirstChild("HumanoidRootPart") or data.obj:FindFirstChildWhichIsA("BasePart") or data.obj.PrimaryPart) or data.obj
-        if part then addESP(data.obj, data.objType, data.labelName, part) end
-    end
-end
-
--- 扫描所有废料（全图，不限距离，不过滤）
-local function getAllScraps()
-    local scraps = {}
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") or obj:IsA("BasePart") then
-            if obj.Name:lower() == "scrap" then
-                local part = obj:IsA("Model") and (obj:FindFirstChildWhichIsA("BasePart") or obj.PrimaryPart) or obj
-                if part and part.Position.Y > -500 then  -- 只要不是虚空就行
-                    table.insert(scraps, part)
+                if not plr.Character:FindFirstChild("ESP_HL") then
+                    addESP(plr.Character, "player", plr.Name, plr.Character.Head)
                 end
             end
         end
     end
-    return scraps
 end
 
--- ==================== 卡密弹窗 ====================
 local function showKeyPopup()
+    if scrapUnlocked then return end
     if keyPopup then keyPopup.Enabled = true; return end
     
     local gui = Instance.new("ScreenGui")
@@ -237,59 +161,76 @@ local function showKeyPopup()
     bg.BackgroundColor3 = Color3.fromRGB(25, 25, 35); bg.BorderSizePixel = 0; bg.ZIndex = 999; bg.Parent = gui
     Instance.new("UICorner", bg).CornerRadius = UDim.new(0, 12)
     
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 30); title.BackgroundTransparency = 1
-    title.Text = "🔐 验证卡密"; title.TextColor3 = Color3.fromRGB(255,255,255)
-    title.Font = Enum.Font.GothamBold; title.TextSize = 16; title.ZIndex = 1000; title.Parent = bg
+    local t = Instance.new("TextLabel")
+    t.Size = UDim2.new(1, 0, 0, 30); t.BackgroundTransparency = 1; t.Text = "🔐 验证卡密"
+    t.TextColor3 = Color3.fromRGB(255,255,255); t.Font = Enum.Font.GothamBold; t.TextSize = 16; t.ZIndex = 1000; t.Parent = bg
     
-    local inputBox = Instance.new("TextBox")
-    inputBox.Size = UDim2.new(1, -30, 0, 36); inputBox.Position = UDim2.new(0, 15, 0, 40)
-    inputBox.BackgroundColor3 = Color3.fromRGB(45, 45, 55); inputBox.Text = ""
-    inputBox.PlaceholderText = "输入卡密..."; inputBox.PlaceholderColor3 = Color3.fromRGB(140,140,150)
-    inputBox.TextColor3 = Color3.fromRGB(255,255,255); inputBox.Font = Enum.Font.GothamMedium; inputBox.TextSize = 14
-    inputBox.BorderSizePixel = 0; inputBox.ZIndex = 1000; inputBox.Parent = bg
-    Instance.new("UICorner", inputBox).CornerRadius = UDim.new(0, 8)
+    local ib = Instance.new("TextBox")
+    ib.Size = UDim2.new(1, -30, 0, 36); ib.Position = UDim2.new(0, 15, 0, 40)
+    ib.BackgroundColor3 = Color3.fromRGB(45, 45, 55); ib.Text = ""
+    ib.PlaceholderText = "输入卡密..."; ib.PlaceholderColor3 = Color3.fromRGB(140,140,150)
+    ib.TextColor3 = Color3.fromRGB(255,255,255); ib.Font = Enum.Font.GothamMedium; ib.TextSize = 14
+    ib.BorderSizePixel = 0; ib.ZIndex = 1000; ib.Parent = bg
+    Instance.new("UICorner", ib).CornerRadius = UDim.new(0, 8)
     
-    local hint = Instance.new("TextLabel")
-    hint.Size = UDim2.new(1, 0, 0, 18); hint.Position = UDim2.new(0, 0, 0, 82)
-    hint.BackgroundTransparency = 1; hint.Text = ""; hint.TextColor3 = Color3.fromRGB(255,90,90)
-    hint.Font = Enum.Font.GothamMedium; hint.TextSize = 11; hint.ZIndex = 1000; hint.Parent = bg
+    local h = Instance.new("TextLabel")
+    h.Size = UDim2.new(1, 0, 0, 18); h.Position = UDim2.new(0, 0, 0, 82)
+    h.BackgroundTransparency = 1; h.Text = ""; h.TextColor3 = Color3.fromRGB(255,90,90)
+    h.Font = Enum.Font.GothamMedium; h.TextSize = 11; h.ZIndex = 1000; h.Parent = bg
     
-    local confirmBtn = Instance.new("TextButton")
-    confirmBtn.Size = UDim2.new(1, -30, 0, 34); confirmBtn.Position = UDim2.new(0, 15, 0, 110)
-    confirmBtn.BackgroundColor3 = Color3.fromRGB(70, 150, 255); confirmBtn.Text = "验证"
-    confirmBtn.TextColor3 = Color3.fromRGB(255,255,255); confirmBtn.Font = Enum.Font.GothamBold; confirmBtn.TextSize = 14
-    confirmBtn.BorderSizePixel = 0; confirmBtn.ZIndex = 1000; confirmBtn.Parent = bg
-    Instance.new("UICorner", confirmBtn).CornerRadius = UDim.new(0, 8)
+    local cb = Instance.new("TextButton")
+    cb.Size = UDim2.new(1, -30, 0, 34); cb.Position = UDim2.new(0, 15, 0, 110)
+    cb.BackgroundColor3 = Color3.fromRGB(70, 150, 255); cb.Text = "验证"
+    cb.TextColor3 = Color3.fromRGB(255,255,255); cb.Font = Enum.Font.GothamBold; cb.TextSize = 14
+    cb.BorderSizePixel = 0; cb.ZIndex = 1000; cb.Parent = bg
+    Instance.new("UICorner", cb).CornerRadius = UDim.new(0, 8)
     
-    confirmBtn.MouseButton1Click:Connect(function()
-        if inputBox.Text == VALID_KEY then
+    cb.MouseButton1Click:Connect(function()
+        if ib.Text == VALID_KEY then
             scrapUnlocked = true; gui.Enabled = false
-            WindUI:Notify({Title = "✅ 验证成功", Content = "全自动捡废料已解锁！", Duration = 3})
-        else
-            hint.Text = "❌ 卡密错误！"
-        end
+            WindUI:Notify({Title = "✅ 验证成功", Content = "已解锁！", Duration = 3})
+        else h.Text = "❌ 卡密错误！" end
     end)
 end
 
--- ==================== 全自动捡废料（全图扫描） ====================
+-- 收集目标（简单去重，不过滤）
+local function getTargets(nameMatch)
+    local targets = {}
+    local usedPos = {}
+    
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") or obj:IsA("BasePart") then
+            if obj.Name:lower():find(nameMatch) then
+                local part = obj:IsA("Model") and (obj:FindFirstChildWhichIsA("BasePart") or obj.PrimaryPart) or obj
+                if part then
+                    local pos = part.Position
+                    if pos.Y < -100 then continue end
+                    
+                    local dup = false
+                    for _, up in ipairs(usedPos) do
+                        if (pos - up).Magnitude < 8 then dup = true; break end
+                    end
+                    if dup then continue end
+                    
+                    table.insert(targets, part)
+                    table.insert(usedPos, pos)
+                end
+            end
+        end
+    end
+    return targets
+end
+
+-- ==================== 捡废料 ====================
 task.spawn(function()
     while true do
         if Settings.AutoScrap and scrapUnlocked then
-            local allScraps = getAllScraps()
-            collectedCount = 0
-            
-            if #allScraps > 0 then
-                WindUI:Notify({Title = "开始捡废料", Content = "全图扫描到 " .. #allScraps .. " 个废料", Duration = 2})
-                
-                for _, part in ipairs(allScraps) do
-                    if not Settings.AutoScrap then break end
-                    if not part or not part.Parent then continue end
-                    
+            local targets = getTargets("^scrap$")  -- 精确匹配scrap
+            for _, part in ipairs(targets) do
+                if not Settings.AutoScrap then break end
+                if part and part.Parent then
                     tp(part.Position + Vector3.new(0, 3, 0))
                     task.wait(0.15)
-                    
-                    -- 疯狂点F 3次确保捡到
                     for i = 1, 3 do
                         if not Settings.AutoScrap then break end
                         VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, nil)
@@ -297,46 +238,43 @@ task.spawn(function()
                         VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F, false, nil)
                         task.wait(0.05)
                     end
-                    
-                    collectedCount = collectedCount + 1
-                    task.wait(0.1)
-                end
-                
-                WindUI:Notify({Title = "完成", Content = "本轮捡了 " .. collectedCount .. " / " .. #allScraps .. " 个废料", Duration = 3})
-                Settings.AutoScrap = false
-            else
-                WindUI:Notify({Title = "提示", Content = "全图未找到任何废料", Duration = 2})
-                Settings.AutoScrap = false
-            end
-            task.wait(0.5)
-        else
-            task.wait(1)
-        end
-    end
-end)
-
-task.spawn(function() while true do scanEverything(); task.wait(2) end end)
-
-task.spawn(function()
-    while true do
-        local c = LocalPlayer.Character
-        if c and c:FindFirstChild("HumanoidRootPart") then
-            local myRoot = c.HumanoidRootPart
-            for _, tag in pairs(workspace:GetDescendants()) do
-                if tag:IsA("BillboardGui") and tag.Name == "ESP_Tag" then
-                    local label = tag:FindFirstChildWhichIsA("TextLabel")
-                    local parent = tag.Parent
-                    if label and parent then
-                        local dist = (myRoot.Position - parent.Position).Magnitude
-                        local baseName = label.Text:match("^(.-) %d")
-                        if baseName then label.Text = baseName .. " " .. math.floor(dist) .. "m" end
-                    end
                 end
             end
+            Settings.AutoScrap = false
         end
         task.wait(0.5)
     end
 end)
+
+-- ==================== 捡蓝莓（斜前方位置） ====================
+task.spawn(function()
+    while true do
+        if Settings.AutoBerry and scrapUnlocked then
+            local targets = getTargets("berry")
+            for _, part in ipairs(targets) do
+                if not Settings.AutoBerry then break end
+                if part and part.Parent then
+                    -- 传送到蓝莓斜前方（偏移2格，方便点到）
+                    local offsetPos = part.Position + Vector3.new(2, 3, -2)
+                    tp(offsetPos)
+                    task.wait(0.2)
+                    local t = tick()
+                    while tick() - t < 3 do
+                        if not Settings.AutoBerry then break end
+                        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, nil)
+                        task.wait(0.08)
+                        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F, false, nil)
+                        task.wait(0.08)
+                    end
+                end
+            end
+            Settings.AutoBerry = false
+        end
+        task.wait(0.5)
+    end
+end)
+
+task.spawn(function() while true do scanEverything(); task.wait(5) end end)
 
 local function updateNightVision()
     if Settings.NightVision then
@@ -366,19 +304,12 @@ end
 
 local Window = WindUI:CreateWindow({
     Title = "活了7天", Icon = "rbxassetid://129260712070622", IconThemed = true,
-    Size = UDim2.fromOffset(400, 460), Theme = "冰白", Transparent = true,
+    Size = UDim2.fromOffset(400, 470), Theme = "冰白", Transparent = true,
 })
 
 Window:Tab({Title = "公告", Icon = "info"}):Paragraph({
-    Title = "黑脚本--v4.3 plus",
-    Desc = [[
-    全自动捡废料(需卡密)
-    全图扫描所有废料
-    
-   
-    
-    卡密请向作者获取
-    ]],
+    Title = "黑脚本--v4.7 Ultra",
+    Desc = "废料精确匹配 | 精准强大无敌 | 流畅不卡",
 })
 
 local Tab1 = Window:Tab({Title = "主要", Icon = "play"})
@@ -388,15 +319,14 @@ Tab1:Toggle({Title = "透视建筑", Value = false, Callback = function(v) Setti
 Tab1:Toggle({Title = "透视废料", Value = false, Callback = function(v) Settings.ESP_Scrap = v; scanEverything() end})
 Tab1:Toggle({Title = "夜视", Value = false, Callback = function(v) Settings.NightVision = v; updateNightVision() end})
 Tab1:Divider()
-Tab1:Toggle({Title = "全自动捡废料(需卡密)", Value = false, Callback = function(v)
-    if v and not scrapUnlocked then
-        showKeyPopup()
-        Settings.AutoScrap = false
-        return
-    end
+Tab1:Toggle({Title = "自动捡废料", Value = false, Callback = function(v)
+    if v and not scrapUnlocked then showKeyPopup(); Settings.AutoScrap = false; return end
     Settings.AutoScrap = v
 end})
-Tab1:Paragraph({Title = "说明", Desc = "开启时要低头"})
+Tab1:Toggle({Title = "自动捡蓝莓", Value = false, Callback = function(v)
+    if v and not scrapUnlocked then showKeyPopup(); Settings.AutoBerry = false; return end
+    Settings.AutoBerry = v
+end})
 
 local Tab2 = Window:Tab({Title = "传送", Icon = "map-pin"})
 Tab2:Button({Title = "定位家位置", Callback = function() local p = getPos() if p then homePos = p end end})
@@ -423,4 +353,4 @@ Tab3:Button({Title = "重置速度", Callback = function() Settings.WalkSpeed = 
 Window:Tab({Title = "设置", Icon = "settings"}):Button({Title = "关闭脚本", Callback = function() clearAll(); updateNightVision(); setSpeed(16); Window:Close() end})
 Window:OnClose(function() clearAll(); updateNightVision(); setSpeed(16) end)
 
-WindUI:Notify({Title = "活了7天", Content = VERSION .. " 全图扫描版加载完成", Duration = 3})
+WindUI:Notify({Title = "活了7天", Content = VERSION .. " 加载完成", Duration = 3})
