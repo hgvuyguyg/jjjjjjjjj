@@ -1,7 +1,16 @@
--- 河北唐县 脚本 v1.2
--- WindUI版 | 远程买车(不触发键盘检测) | 冰淇淋刷钱 | 传送玩家 | 透视 | 调速度
-local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
-if not WI then return end
+-- 河北唐县 脚本 v2.0
+-- WindUI蓝白版 | 远程买车 | 冰淇淋刷钱 | 传送玩家 | 透视 | 调速度
+
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+if not WindUI then return end
+
+WindUI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF",
+})
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -14,127 +23,78 @@ local Settings = {
     WalkSpeed = 16,
 }
 
-local VERSION = "v1.2"
+local VERSION = "v2.0"
 local stopAll = false
+local firstRun = true
 local highlights = {}
 local nameTags = {}
-local firstRun = true
 
--- ==================== 获取位置 ====================
 local function getPos()
     local c = LocalPlayer.Character
-    if c and c:FindFirstChild("HumanoidRootPart") then
-        return c.HumanoidRootPart.Position
-    end
+    if c and c:FindFirstChild("HumanoidRootPart") then return c.HumanoidRootPart.Position end
     return nil
 end
 
--- ==================== 瞬移 ====================
 local function tp(pos)
     local c = LocalPlayer.Character
-    if c and c:FindFirstChild("HumanoidRootPart") then
-        c.HumanoidRootPart.CFrame = CFrame.new(pos)
-    end
+    if c and c:FindFirstChild("HumanoidRootPart") then c.HumanoidRootPart.CFrame = CFrame.new(pos) end
 end
 
--- ==================== 触发附近交互（不触发键盘检测） ====================
 local function interactNearby()
     local char = LocalPlayer.Character
     if not char then return end
     local root = char:FindFirstChild("HumanoidRootPart")
     if not root then return end
-    
-    -- 触发ProximityPrompt
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("ProximityPrompt") and obj.Enabled then
-            local parent = obj.Parent
-            if parent and parent:IsA("BasePart") then
-                local dist = (root.Position - parent.Position).Magnitude
-                if dist < 20 then
-                    pcall(function() fireproximityprompt(obj) end)
-                end
+            local p = obj.Parent
+            if p and p:IsA("BasePart") and (root.Position - p.Position).Magnitude < 20 then
+                pcall(function() fireproximityprompt(obj) end)
             end
         end
-    end
-    
-    -- 触发ClickDetector
-    for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("ClickDetector") then
-            local parent = obj.Parent
-            if parent and parent:IsA("BasePart") then
-                local dist = (root.Position - parent.Position).Magnitude
-                if dist < 20 then
-                    pcall(function() fireclickdetector(obj) end)
-                end
+            local p = obj.Parent
+            if p and p:IsA("BasePart") and (root.Position - p.Position).Magnitude < 20 then
+                pcall(function() fireclickdetector(obj) end)
             end
         end
     end
 end
 
--- ==================== 远程买车 ====================
 local function buyCar()
     local returnPos = getPos()
     if not returnPos then return end
-    
-    -- 传送到买车坐标
     tp(Vector3.new(-3307, 11.8, 3799))
-    
-    -- 停留2秒
     task.wait(2)
-    
-    -- 疯狂触发交互2秒（不触发键盘检测）
     local t = tick()
-    while tick() - t < 2 do
-        interactNearby()
-        task.wait(0.05)
-    end
-    
+    while tick() - t < 2 do interactNearby(); task.wait(0.05) end
     task.wait(0.3)
-    
-    -- 传送回原来位置
     tp(returnPos)
 end
 
--- ==================== 冰淇淋刷钱 ====================
 task.spawn(function()
     while true do
         if Settings.AutoIceCream and not stopAll then
-            
             if firstRun then
-                pcall(function()
-                    ReplicatedStorage.Feature_RemoteEvent.TeamSwitch:FireServer("Mixue Ice Cream")
-                end)
+                pcall(function() ReplicatedStorage.Feature_RemoteEvent.TeamSwitch:FireServer("Mixue Ice Cream") end)
                 task.wait(2)
                 firstRun = false
             end
-            
             if not Settings.AutoIceCream or stopAll then continue end
-            
-            pcall(function()
-                ReplicatedStorage.JobDataEvent:FireServer("GrabCone")
-            end)
+            pcall(function() ReplicatedStorage.JobDataEvent:FireServer("GrabCone") end)
             task.wait(0.3)
-            
             if not Settings.AutoIceCream or stopAll then continue end
-            
-            pcall(function()
-                ReplicatedStorage.JobDataEvent:FireServer("FillCone")
-            end)
+            pcall(function() ReplicatedStorage.JobDataEvent:FireServer("FillCone") end)
             task.wait(0.3)
-            
             if not Settings.AutoIceCream or stopAll then continue end
-            
             pcall(function()
                 local function GetNil(Name, DebugId)
                     for _, Object in getnilinstances() do
-                        if Object.Name == Name and Object:GetDebugId() == DebugId then
-                            return Object
-                        end
+                        if Object.Name == Name and Object:GetDebugId() == DebugId then return Object end
                     end
                 end
                 ReplicatedStorage.JobDataEvent:FireServer("ServeCustomer", GetNil("Customer5", "0_471794"))
             end)
-            
             task.wait(0.5)
         else
             task.wait(1)
@@ -142,7 +102,6 @@ task.spawn(function()
     end
 end)
 
--- ==================== ESP ====================
 local function clearESP()
     for _, h in pairs(highlights) do pcall(function() h:Destroy() end) end
     for _, t in pairs(nameTags) do pcall(function() t:Destroy() end) end
@@ -153,108 +112,64 @@ end
 RunService.Heartbeat:Connect(function()
     if not Settings.ESP_Enabled then clearESP() return end
     for _, plr in pairs(Players:GetPlayers()) do
-        if plr == LocalPlayer then
-            if highlights[plr] then pcall(function() highlights[plr]:Destroy() end) highlights[plr] = nil end
-            if nameTags[plr] then pcall(function() nameTags[plr]:Destroy() end) nameTags[plr] = nil end
-        else
-            local char = plr.Character
-            if char and char:FindFirstChild("Head") then
-                if not highlights[plr] then
-                    local h = Instance.new("Highlight")
-                    h.FillColor = Color3.fromRGB(255, 100, 100)
-                    h.FillTransparency = 0.5
-                    h.OutlineColor = Color3.fromRGB(255, 50, 50)
-                    h.OutlineTransparency = 0.3
-                    highlights[plr] = h
-                end
-                if highlights[plr] and highlights[plr].Parent ~= char then highlights[plr].Parent = char end
-                if not nameTags[plr] then
-                    local bg = Instance.new("BillboardGui")
-                    bg.Size = UDim2.new(0, 120, 0, 25)
-                    bg.AlwaysOnTop = true
-                    bg.MaxDistance = math.huge
-                    local l = Instance.new("TextLabel")
-                    l.Size = UDim2.new(1, 0, 1, 0)
-                    l.BackgroundTransparency = 1
-                    l.Text = plr.Name
-                    l.TextColor3 = Color3.fromRGB(255, 255, 255)
-                    l.Font = Enum.Font.GothamBold
-                    l.TextSize = 14
-                    l.TextStrokeTransparency = 0.5
-                    l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                    l.Parent = bg
-                    nameTags[plr] = bg
-                end
-                if nameTags[plr] and nameTags[plr].Parent ~= char.Head then nameTags[plr].Parent = char.Head end
-            end
-        end
+        if plr == LocalPlayer then continue end
+        local char = plr.Character
+        if not char or not char:FindFirstChild("Head") then continue end
+        local h = Instance.new("Highlight")
+        h.FillColor = Color3.fromRGB(255, 100, 100); h.FillTransparency = 0.5
+        h.OutlineColor = Color3.fromRGB(255, 50, 50); h.OutlineTransparency = 0.3; h.Parent = char
+        table.insert(highlights, h)
+        local bg = Instance.new("BillboardGui")
+        bg.Size = UDim2.new(0, 120, 0, 25); bg.AlwaysOnTop = true; bg.MaxDistance = math.huge; bg.Parent = char.Head
+        local l = Instance.new("TextLabel")
+        l.Size = UDim2.new(1, 0, 1, 0); l.BackgroundTransparency = 1
+        l.Text = plr.Name; l.TextColor3 = Color3.fromRGB(255, 255, 255)
+        l.Font = Enum.Font.GothamBold; l.TextSize = 14
+        l.TextStrokeTransparency = 0.5; l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0); l.Parent = bg
+        table.insert(nameTags, bg)
     end
 end)
 
-Players.PlayerRemoving:Connect(function(plr)
-    if highlights[plr] then pcall(function() highlights[plr]:Destroy() end) highlights[plr] = nil end
-    if nameTags[plr] then pcall(function() nameTags[plr]:Destroy() end) nameTags[plr] = nil end
-end)
-
--- ==================== 调速 ====================
 local function setSpeed(s)
     local c = LocalPlayer.Character
     if c and c:FindFirstChild("Humanoid") then c.Humanoid.WalkSpeed = s end
 end
+task.spawn(function() while true do if Settings.WalkSpeed ~= 16 then setSpeed(Settings.WalkSpeed) end task.wait(0.05) end end)
 
-task.spawn(function()
-    while true do
-        if Settings.WalkSpeed ~= 16 then setSpeed(Settings.WalkSpeed) end
-        task.wait(0.05)
-    end
-end)
-
--- ==================== 玩家列表 ====================
 local function getPlayerNames()
     local names = {}
-    for _, plr in pairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer then table.insert(names, plr.Name) end
-    end
+    for _, plr in pairs(Players:GetPlayers()) do if plr ~= LocalPlayer then table.insert(names, plr.Name) end end
     if #names == 0 then table.insert(names, "无其他玩家") end
     return names
 end
 
--- ==================== UI ====================
-local Win = WI:CreateWindow({
-    Title = "河北唐县",
-    Icon = "solar:car-bold",
-    Size = UDim2.fromOffset(400, 440),
-    Acrylic = true,
+local Window = WindUI:CreateWindow({
+    Title = "河北唐县", Icon = "rbxassetid://129260712070622", IconThemed = true,
+    Size = UDim2.fromOffset(400, 440), Theme = "冰白", Transparent = true,
 })
 
-Win:Tab({Title = "公告", Icon = "solar:home-bold"}):Paragraph({
+Window:Tab({Title = "公告", Icon = "info"}):Paragraph({
     Title = "黑脚本--功能说明",
-    Desc = "远程买车(不触发键盘检测)\n冰淇淋刷钱 | 传送玩家\n透视 | 调速度\n\n版本：" .. VERSION
+    Desc = "远程买车 | 冰淇淋刷钱\n传送玩家 | 透视 | 调速度\n\n版本：" .. VERSION,
 })
 
-local t1 = Win:Tab({Title = "主要", Icon = "solar:play-bold"})
-t1:Button({Title = "远程买车", Justify = "Center", Color = Color3.fromHex("#03A9F4"), Callback = buyCar})
-t1:Paragraph({Title = "说明", Desc = "传到买车点→停2秒→触发交互2秒→传回原地\n不触发键盘检测"})
-t1:Divider()
-t1:Toggle({Title = "冰淇淋刷钱", Value = false, Callback = function(v) Settings.AutoIceCream = v if v then firstRun = true end end})
-t1:Paragraph({Title = "说明", Desc = "首次加入Mixue队伍\n循环：拿甜筒→装满→服务顾客"})
+local Tab1 = Window:Tab({Title = "主要", Icon = "play"})
+Tab1:Button({Title = "远程买车", Callback = buyCar})
+Tab1:Paragraph({Title = "说明", Desc = "远程买车很好用"})
+Tab1:Divider()
+Tab1:Toggle({Title = "冰淇淋刷钱", Value = false, Callback = function(v) Settings.AutoIceCream = v; if v then firstRun = true end end})
+Tab1:Paragraph({Title = "说明", Desc = "首次加入Mixue→拿甜筒→装满→服务顾客"})
 
 local playerNames = getPlayerNames()
 local selectedPlayer = playerNames[1] or "无其他玩家"
-local t2 = Win:Tab({Title = "玩家", Icon = "solar:user-bold"})
-t2:Toggle({Title = "开启透视", Value = false, Callback = function(v) Settings.ESP_Enabled = v if not v then clearESP() end end})
-t2:Divider()
-t2:Dropdown({Title = "选择玩家", Values = playerNames, Value = selectedPlayer, Callback = function(v) selectedPlayer = v end})
-t2:Divider()
-t2:Button({Title = "传送到该玩家", Justify = "Center", Color = Color3.fromHex("#03A9F4"), Callback = function() for _, plr in pairs(Players:GetPlayers()) do if plr.Name == selectedPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then tp(plr.Character.HumanoidRootPart.Position) return end end end})
-t2:Divider()
-t2:Input({Title = "移动速度", Value = "16", Callback = function(v) local n = tonumber(v) if n and n >= 0 and n <= 100 then Settings.WalkSpeed = n end end})
-t2:Divider()
-t2:Button({Title = "重置速度", Justify = "Center", Color = Color3.fromHex("#888888"), Callback = function() Settings.WalkSpeed = 16 setSpeed(16) end})
+local Tab2 = Window:Tab({Title = "玩家", Icon = "users"})
+Tab2:Toggle({Title = "开启透视", Value = false, Callback = function(v) Settings.ESP_Enabled = v; if not v then clearESP() end end})
+Tab2:Dropdown({Title = "选择玩家", Values = playerNames, Value = selectedPlayer, Callback = function(v) selectedPlayer = v end})
+Tab2:Button({Title = "传送到该玩家", Callback = function() for _, plr in pairs(Players:GetPlayers()) do if plr.Name == selectedPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then tp(plr.Character.HumanoidRootPart.Position) end end end})
+Tab2:Input({Title = "移动速度", Value = "16", Callback = function(v) local n = tonumber(v) if n and n >= 0 and n <= 100 then Settings.WalkSpeed = n end end})
+Tab2:Button({Title = "重置速度", Callback = function() Settings.WalkSpeed = 16 end})
 
-Win:Tab({Title = "设置", Icon = "solar:settings-bold"}):Button({
-    Title = "关闭脚本", Justify = "Center", Color = Color3.fromHex("#ff4444"),
-    Callback = function() stopAll = true Settings.AutoIceCream = false Settings.ESP_Enabled = false clearESP() setSpeed(16) pcall(function() local g = game:GetService("CoreGui"):FindFirstChild("WindUI") if g then g:Destroy() end end) end
-})
+Window:Tab({Title = "设置", Icon = "settings"}):Button({Title = "关闭脚本", Callback = function() stopAll = true; Settings.AutoIceCream = false; Settings.ESP_Enabled = false; clearESP(); setSpeed(16); Window:Close() end})
+Window:OnClose(function() stopAll = true; Settings.AutoIceCream = false; Settings.ESP_Enabled = false; clearESP(); setSpeed(16) end)
 
-WI:Notify({Title = "河北唐县", Content = VERSION .. " 加载完成", Duration = 5})
+WindUI:Notify({Title = "河北唐县", Content = VERSION .. " 加载完成", Duration = 3})
