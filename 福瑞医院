@@ -1,7 +1,16 @@
--- 动物医院 脚本 v2.0
--- WindUI版 | 防扣理智 | 自动前台 | 传送玩家 | 透视 | 调速度
-local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
-if not WI then return end
+-- 动物医院 脚本 v3.0
+-- WindUI蓝白版 | 防扣理智 | 自动前台 | 动物透视 | 传送 | 透视玩家
+
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+if not WindUI then return end
+
+WindUI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF",
+})
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -10,75 +19,34 @@ local LocalPlayer = Players.LocalPlayer
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Settings = {
-    NoSanity = false,
-    AutoReception = false,
-    ESP_Enabled = false,
-    AnimalESP_Enabled = false,
-    AnimalESP_ShowDistance = false,
+    NoSanity = false, AutoReception = false,
+    ESP_Enabled = false, AnimalESP_Enabled = false, AnimalESP_ShowDistance = false,
     WalkSpeed = 16,
 }
 
-local VERSION = "v2.0"
+local VERSION = "v3.0"
 local stopAll = false
-local highlights = {}
-local nameTags = {}
-local animalHighlights = {}
-local animalNameTags = {}
-
--- ==================== 防止扣除理智 ====================
+local highlights = {}; local nameTags = {}
+local animalHighlights = {}; local animalNameTags = {}
 local noSanityHooks = {}
 
-local function setupNoSanity()
-    if noSanityHooks.mtHook then return end
-    
-    local Event = ReplicatedStorage.Util.Net["RE/PlayerLostSanity"]
-    
-    noSanityHooks.mtHook = hookmetamethod(game, "__namecall", function(...)
-        local self = ...
-        local method = getnamecallmethod()
-        
-        if self == Event and method == "FireServer" and Settings.NoSanity then
-            return nil
-        end
-        
-        return noSanityHooks.mtHook(...)
-    end)
-    
-    noSanityHooks.oldFireServer = hookfunction(Event.FireServer, function(...)
-        local self = ...
-        if self == Event and Settings.NoSanity then
-            return nil
-        end
-        return noSanityHooks.oldFireServer(self, ...)
-    end)
-end
-
--- ==================== 伪人检测关键词（英文） ====================
 local SKINWALKER_KEYWORDS = {
-    "skinwalker", "skin walker", "monster", "entity", "creature", 
-    "fake", "impostor", "imposter", "mimic", "horror", "scary", 
-    "beast", "demon", "cryptid", "anomaly", "nightmare", "terror",
-    "shapeshifter", "shape shifter", "possessed", "haunted", "evil",
-    "fiend", "specter", "spectre", "wraith", "phantom", "shadow",
-    "abomination", "mutant", "aberration", "crawler", "stalker",
-    "flesh", "gore", "blood", "scream", "whisper", "unknown",
-    "thing", "being", "presence", "intruder", "invader", "predator",
-    "nonhuman", "non human", "inhuman", "paranormal", "supernatural",
-    "slender", "sirenhead", "siren head", "cartoon cat", "scp",
-    "alternate", "doppelganger", "doppel", "changeling",
+    "skinwalker", "skin walker", "monster", "entity", "creature", "fake", "impostor", "imposter",
+    "mimic", "horror", "beast", "demon", "cryptid", "anomaly", "nightmare", "shapeshifter",
+    "possessed", "haunted", "evil", "specter", "wraith", "phantom", "shadow", "abomination",
+    "mutant", "stalker", "flesh", "gore", "blood", "scream", "unknown", "thing", "being",
+    "presence", "intruder", "invader", "predator", "nonhuman", "paranormal", "supernatural",
+    "slender", "sirenhead", "scp", "alternate", "doppelganger", "changeling",
 }
 
 local function isSkinwalker(name)
     local lowerName = name:lower()
     for _, keyword in pairs(SKINWALKER_KEYWORDS) do
-        if lowerName:find(keyword) then
-            return true
-        end
+        if lowerName:find(keyword) then return true end
     end
     return false
 end
 
--- ==================== 获取位置 ====================
 local function getPos()
     local c = LocalPlayer.Character
     if c and c:FindFirstChild("HumanoidRootPart") then return c.HumanoidRootPart.Position end
@@ -87,103 +55,72 @@ end
 
 local function tp(pos)
     local c = LocalPlayer.Character
-    if c and c:FindFirstChild("HumanoidRootPart") then
-        c.HumanoidRootPart.CFrame = CFrame.new(pos)
-    end
+    if c and c:FindFirstChild("HumanoidRootPart") then c.HumanoidRootPart.CFrame = CFrame.new(pos) end
 end
 
-local function forcePressE(duration)
-    local c = LocalPlayer.Character
-    if not c then return end
-    
-    task.wait(0.5)
-    
-    local startTime = tick()
-    while tick() - startTime < duration do
-        if not Settings.AutoReception or stopAll then break end
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, nil)
-        task.wait(0.3)
-        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, nil)
-        task.wait(0.3)
-    end
+local function setupNoSanity()
+    if noSanityHooks.mtHook then return end
+    local Event = ReplicatedStorage.Util.Net["RE/PlayerLostSanity"]
+    noSanityHooks.mtHook = hookmetamethod(game, "__namecall", function(...)
+        local self = ...; local method = getnamecallmethod()
+        if self == Event and method == "FireServer" and Settings.NoSanity then return nil end
+        return noSanityHooks.mtHook(...)
+    end)
+    noSanityHooks.oldFireServer = hookfunction(Event.FireServer, function(...)
+        local self = ...
+        if self == Event and Settings.NoSanity then return nil end
+        return noSanityHooks.oldFireServer(self, ...)
+    end)
 end
 
 local function hasAnimalNear(pos)
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("Head") then
             local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart
-            if root then
-                local dist = (pos - root.Position).Magnitude
-                if dist <= 20 then
-                    local isPlayer = false
-                    for _, plr in pairs(Players:GetPlayers()) do
-                        if plr.Character == obj then isPlayer = true break end
-                    end
-                    if not isPlayer then return true end
+            if root and (pos - root.Position).Magnitude <= 20 then
+                local isPlayer = false
+                for _, plr in pairs(Players:GetPlayers()) do
+                    if plr.Character == obj then isPlayer = true; break end
                 end
+                if not isPlayer then return true end
             end
         end
     end
     return false
 end
 
--- ==================== 自动前台 ====================
+-- 自动前台
 task.spawn(function()
     while true do
         if Settings.AutoReception and not stopAll then
-            local pos1 = Vector3.new(-104, 3.4, 1.3)
-            local pos2 = Vector3.new(-107.5, 3.4, 1.3)
-            local pos3 = Vector3.new(-99, 3.4, 0.9)
-            local pos4 = Vector3.new(-99, 3.4, 1.6)
+            local pos1 = Vector3.new(-104, 3.4, 1.3); local pos2 = Vector3.new(-107.5, 3.4, 1.3)
+            local pos3 = Vector3.new(-99, 3.4, 0.9); local pos4 = Vector3.new(-99, 3.4, 1.6)
             local waitPos = Vector3.new(-114, 3.4, -1.3)
-            
             if hasAnimalNear(pos1) then
-                tp(pos1)
-                task.wait(2.5)
-                forcePressE(2)
+                tp(pos1); task.wait(2.5); VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, nil); task.wait(2); VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, nil)
                 if not Settings.AutoReception or stopAll then continue end
-                
-                tp(pos2)
-                task.wait(2.5)
-                forcePressE(2)
+                tp(pos2); task.wait(2.5); VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, nil); task.wait(2); VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, nil)
                 if not Settings.AutoReception or stopAll then continue end
-                
-                tp(pos3)
-                task.wait(2.5)
-                forcePressE(2)
+                tp(pos3); task.wait(2.5); VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, nil); task.wait(2); VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, nil)
                 if not Settings.AutoReception or stopAll then continue end
-                
-                tp(pos4)
-                task.wait(7.5)
-                forcePressE(3)
-                task.wait(1.5)
-                forcePressE(3)
+                tp(pos4); task.wait(7.5); VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, nil); task.wait(3); VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, nil)
             else
-                tp(waitPos)
-                task.wait(2.5)
-                forcePressE(2)
-                task.wait(10)
+                tp(waitPos); task.wait(2.5); VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, nil); task.wait(2); VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, nil); task.wait(10)
             end
-            
-            task.wait(0.5)
-        else
-            task.wait(1)
-        end
+        else task.wait(1) end
     end
 end)
 
--- ==================== 动物ESP ====================
+-- 动物ESP
 local function getAnimalModels()
     local animals = {}
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("Model") and obj:FindFirstChild("Humanoid") and obj:FindFirstChild("Head") then
             local isPlayer = false
             for _, plr in pairs(Players:GetPlayers()) do
-                if plr.Character == obj then isPlayer = true break end
+                if plr.Character == obj then isPlayer = true; break end
             end
-            if not isPlayer then
-                table.insert(animals, obj)
-            end
+            if not isPlayer then table.insert(animals, obj) end
         end
     end
     return animals
@@ -192,25 +129,19 @@ end
 local function clearAnimalESP()
     for _, h in pairs(animalHighlights) do pcall(function() h:Destroy() end) end
     for _, t in pairs(animalNameTags) do pcall(function() t:Destroy() end) end
-    table.clear(animalHighlights)
-    table.clear(animalNameTags)
+    table.clear(animalHighlights); table.clear(animalNameTags)
 end
 
 RunService.Heartbeat:Connect(function()
-    if not Settings.AnimalESP_Enabled then clearAnimalESP() return end
-    
+    if not Settings.AnimalESP_Enabled then clearAnimalESP(); return end
     local activeAnimals = {}
-    for _, animal in pairs(getAnimalModels()) do
-        activeAnimals[animal] = true
-    end
-    
+    for _, animal in pairs(getAnimalModels()) do activeAnimals[animal] = true end
     for animal, _ in pairs(animalHighlights) do
         if not activeAnimals[animal] then
-            if animalHighlights[animal] then pcall(function() animalHighlights[animal]:Destroy() end) animalHighlights[animal] = nil end
-            if animalNameTags[animal] then pcall(function() animalNameTags[animal]:Destroy() end) animalNameTags[animal] = nil end
+            if animalHighlights[animal] then pcall(function() animalHighlights[animal]:Destroy() end); animalHighlights[animal] = nil end
+            if animalNameTags[animal] then pcall(function() animalNameTags[animal]:Destroy() end); animalNameTags[animal] = nil end
         end
     end
-    
     for _, animal in pairs(getAnimalModels()) do
         local head = animal:FindFirstChild("Head")
         local root = animal:FindFirstChild("HumanoidRootPart") or animal.PrimaryPart
@@ -218,213 +149,128 @@ RunService.Heartbeat:Connect(function()
             local isSkin = isSkinwalker(animal.Name)
             local dist = ""
             if Settings.AnimalESP_ShowDistance and root then
-                local d = 0
-                local c = LocalPlayer.Character
-                if c and c:FindFirstChild("HumanoidRootPart") then
-                    d = (root.Position - c.HumanoidRootPart.Position).Magnitude
-                end
+                local d = 0; local c = LocalPlayer.Character
+                if c and c:FindFirstChild("HumanoidRootPart") then d = (root.Position - c.HumanoidRootPart.Position).Magnitude end
                 dist = "\n[" .. math.floor(d) .. "m]"
             end
-            
-            local displayName = animal.Name
-            if isSkin then
-                displayName = "[伪人] " .. animal.Name
-            end
-            displayName = displayName .. dist
-            
+            local displayName = (isSkin and "[伪人] " or "") .. animal.Name .. dist
             local nameColor = isSkin and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(100, 255, 100)
             local fillColor = isSkin and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(100, 255, 100)
-            local outlineColor = isSkin and Color3.fromRGB(200, 0, 0) or Color3.fromRGB(50, 255, 50)
-            
             if not animalHighlights[animal] then
-                local h = Instance.new("Highlight")
-                h.FillColor = fillColor; h.FillTransparency = 0.5
-                h.OutlineColor = outlineColor; h.OutlineTransparency = 0.3
-                h.Parent = animal
-                animalHighlights[animal] = h
-            else
-                animalHighlights[animal].FillColor = fillColor
-                animalHighlights[animal].OutlineColor = outlineColor
-            end
-            
+                local h = Instance.new("Highlight"); h.FillColor = fillColor; h.FillTransparency = 0.5
+                h.OutlineColor = fillColor; h.OutlineTransparency = 0.3; h.Parent = animal; animalHighlights[animal] = h
+            else animalHighlights[animal].FillColor = fillColor end
             if not animalNameTags[animal] then
-                local bg = Instance.new("BillboardGui")
-                bg.Size = UDim2.new(0, 200, 0, 40); bg.AlwaysOnTop = true; bg.MaxDistance = math.huge
-                bg.Parent = head
-                local l = Instance.new("TextLabel")
-                l.Size = UDim2.new(1, 0, 1, 0); l.BackgroundTransparency = 1
-                l.Text = displayName; l.TextColor3 = nameColor
-                l.Font = Enum.Font.GothamBold; l.TextSize = 14
-                l.TextStrokeTransparency = 0.5; l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                l.Parent = bg
+                local bg = Instance.new("BillboardGui"); bg.Size = UDim2.new(0, 200, 0, 40)
+                bg.AlwaysOnTop = true; bg.MaxDistance = math.huge; bg.Parent = head
+                local l = Instance.new("TextLabel"); l.Size = UDim2.new(1, 0, 1, 0); l.BackgroundTransparency = 1
+                l.Text = displayName; l.TextColor3 = nameColor; l.Font = Enum.Font.GothamBold; l.TextSize = 14
+                l.TextStrokeTransparency = 0.5; l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0); l.Parent = bg
                 animalNameTags[animal] = bg
             else
                 local label = animalNameTags[animal]:FindFirstChild("TextLabel")
-                if label then
-                    label.Text = displayName
-                    label.TextColor3 = nameColor
-                end
+                if label then label.Text = displayName; label.TextColor3 = nameColor end
             end
         end
     end
 end)
 
--- ==================== 玩家ESP ====================
+-- 玩家ESP
 local function clearESP()
     for _, h in pairs(highlights) do pcall(function() h:Destroy() end) end
     for _, t in pairs(nameTags) do pcall(function() t:Destroy() end) end
-    table.clear(highlights)
-    table.clear(nameTags)
+    table.clear(highlights); table.clear(nameTags)
 end
 
 RunService.Heartbeat:Connect(function()
-    if not Settings.ESP_Enabled then clearESP() return end
+    if not Settings.ESP_Enabled then clearESP(); return end
     for _, plr in pairs(Players:GetPlayers()) do
-        if plr == LocalPlayer then
-            if highlights[plr] then pcall(function() highlights[plr]:Destroy() end) highlights[plr] = nil end
-            if nameTags[plr] then pcall(function() nameTags[plr]:Destroy() end) nameTags[plr] = nil end
+        if plr == LocalPlayer then continue end
+        local char = plr.Character
+        if not char or not char:FindFirstChild("Head") then continue end
+        local isSkin = isSkinwalker(plr.Name)
+        local displayName = (isSkin and "[伪人] " or "") .. plr.Name
+        local fillColor = isSkin and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(255, 100, 100)
+        local nameColor = isSkin and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(255, 255, 255)
+        if not highlights[plr] then
+            local h = Instance.new("Highlight"); h.FillColor = fillColor; h.FillTransparency = 0.5
+            h.OutlineColor = fillColor; h.OutlineTransparency = 0.3; h.Parent = char; highlights[plr] = h
+        else highlights[plr].FillColor = fillColor end
+        if highlights[plr] and highlights[plr].Parent ~= char then highlights[plr].Parent = char end
+        if not nameTags[plr] then
+            local bg = Instance.new("BillboardGui"); bg.Size = UDim2.new(0, 200, 0, 25)
+            bg.AlwaysOnTop = true; bg.MaxDistance = math.huge; bg.Parent = char.Head
+            local l = Instance.new("TextLabel"); l.Size = UDim2.new(1, 0, 1, 0); l.BackgroundTransparency = 1
+            l.Text = displayName; l.TextColor3 = nameColor; l.Font = Enum.Font.GothamBold; l.TextSize = 14
+            l.TextStrokeTransparency = 0.5; l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0); l.Parent = bg
+            nameTags[plr] = bg
         else
-            local char = plr.Character
-            if char and char:FindFirstChild("Head") then
-                local isSkin = isSkinwalker(plr.Name)
-                local displayName = isSkin and "[伪人] " .. plr.Name or plr.Name
-                local nameColor = isSkin and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(255, 255, 255)
-                local fillColor = isSkin and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(255, 100, 100)
-                local outlineColor = isSkin and Color3.fromRGB(200, 0, 0) or Color3.fromRGB(255, 50, 50)
-                
-                if not highlights[plr] then
-                    local h = Instance.new("Highlight")
-                    h.FillColor = fillColor; h.FillTransparency = 0.5
-                    h.OutlineColor = outlineColor; h.OutlineTransparency = 0.3
-                    highlights[plr] = h
-                else
-                    highlights[plr].FillColor = fillColor
-                    highlights[plr].OutlineColor = outlineColor
-                end
-                if highlights[plr] and highlights[plr].Parent ~= char then highlights[plr].Parent = char end
-                
-                if not nameTags[plr] then
-                    local bg = Instance.new("BillboardGui")
-                    bg.Size = UDim2.new(0, 200, 0, 25); bg.AlwaysOnTop = true; bg.MaxDistance = math.huge
-                    local l = Instance.new("TextLabel")
-                    l.Size = UDim2.new(1, 0, 1, 0); l.BackgroundTransparency = 1
-                    l.Text = displayName; l.TextColor3 = nameColor
-                    l.Font = Enum.Font.GothamBold; l.TextSize = 14
-                    l.TextStrokeTransparency = 0.5; l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                    l.Parent = bg; nameTags[plr] = bg
-                else
-                    local label = nameTags[plr]:FindFirstChild("TextLabel")
-                    if label then
-                        label.Text = displayName
-                        label.TextColor3 = nameColor
-                    end
-                end
-                if nameTags[plr] and nameTags[plr].Parent ~= char.Head then nameTags[plr].Parent = char.Head end
-            end
+            local label = nameTags[plr]:FindFirstChild("TextLabel")
+            if label then label.Text = displayName; label.TextColor3 = nameColor end
         end
+        if nameTags[plr] and nameTags[plr].Parent ~= char.Head then nameTags[plr].Parent = char.Head end
     end
 end)
 
 Players.PlayerRemoving:Connect(function(plr)
-    if highlights[plr] then pcall(function() highlights[plr]:Destroy() end) highlights[plr] = nil end
-    if nameTags[plr] then pcall(function() nameTags[plr]:Destroy() end) nameTags[plr] = nil end
+    if highlights[plr] then pcall(function() highlights[plr]:Destroy() end); highlights[plr] = nil end
+    if nameTags[plr] then pcall(function() nameTags[plr]:Destroy() end); nameTags[plr] = nil end
 end)
 
 local function setSpeed(s)
     local c = LocalPlayer.Character
     if c and c:FindFirstChild("Humanoid") then c.Humanoid.WalkSpeed = s end
 end
-RunService.Heartbeat:Connect(function()
-    if Settings.WalkSpeed ~= 16 then setSpeed(Settings.WalkSpeed) end
-end)
+RunService.Heartbeat:Connect(function() if Settings.WalkSpeed ~= 16 then setSpeed(Settings.WalkSpeed) end end)
 
 local function getPlayerNames()
     local names = {}
-    for _, plr in pairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer then table.insert(names, plr.Name) end
-    end
+    for _, plr in pairs(Players:GetPlayers()) do if plr ~= LocalPlayer then table.insert(names, plr.Name) end end
     if #names == 0 then table.insert(names, "无其他玩家") end
     return names
 end
 
--- ==================== UI ====================
-local Win = WI:CreateWindow({
-    Title = "动物医院", Icon = "solar:medical-kit-bold",
-    Size = UDim2.fromOffset(400, 480), Acrylic = true,
+local Window = WindUI:CreateWindow({
+    Title = "动物医院", Icon = "rbxassetid://129260712070622", IconThemed = true,
+    Size = UDim2.fromOffset(400, 500), Theme = "冰白", Transparent = true,
 })
 
-Win:Tab({Title = "公告", Icon = "solar:home-bold"}):Paragraph({
-    Title = "黑脚本--功能说明", Desc = "8月4日重大更新  \n 防止扣除理智 | 自动前台\n动物透视 | 传送点\n传送玩家 | 透视\n\n版本：" .. VERSION
+Window:Tab({Title = "公告", Icon = "info"}):Paragraph({
+    Title = "黑脚本--功能说明",
+    Desc = "防扣理智 | 自动前台 | 动物透视\n传送房间 | 透视玩家\n\n版本：" .. VERSION,
 })
 
--- 主要
-local t1 = Win:Tab({Title = "主要", Icon = "solar:play-bold"})
-t1:Toggle({Title = "防止扣除理智", Value = false, Callback = function(v) 
-    Settings.NoSanity = v 
-    if v then 
-        setupNoSanity() 
-        WI:Notify({Title = "成功", Content = "防理智已开启", Duration = 2})
-    else 
-        WI:Notify({Title = "提示", Content = "防理智已关闭", Duration = 2})
-    end
-end})
-t1:Paragraph({Title = "说明", Desc = "开启后扣理智是正常现象，喝咖啡即可恢复所有已扣理智"})
-t1:Divider()
-t1:Toggle({Title = "自动前台【bata】", Value = false, Callback = function(v) Settings.AutoReception = v end})
-t1:Divider()
-t1:Toggle({Title = "动物透视", Value = false, Callback = function(v) 
-    Settings.AnimalESP_Enabled = v 
-    if not v then clearAnimalESP() end
-end})
-t1:Toggle({Title = "显示动物距离", Value = false, Callback = function(v) Settings.AnimalESP_ShowDistance = v end})
+local Tab1 = Window:Tab({Title = "主要", Icon = "play"})
+Tab1:Toggle({Title = "防止扣除理智", Value = false, Callback = function(v) Settings.NoSanity = v; if v then setupNoSanity() end end})
+Tab1:Paragraph({Title = "说明", Desc = "开启后扣理智正常，喝咖啡恢复"})
+Tab1:Divider()
+Tab1:Toggle({Title = "自动前台", Value = false, Callback = function(v) Settings.AutoReception = v end})
+Tab1:Divider()
+Tab1:Toggle({Title = "动物透视", Value = false, Callback = function(v) Settings.AnimalESP_Enabled = v; if not v then clearAnimalESP() end end})
+Tab1:Toggle({Title = "显示动物距离", Value = false, Callback = function(v) Settings.AnimalESP_ShowDistance = v end})
 
--- 传送
+local Tab2 = Window:Tab({Title = "传送", Icon = "map-pin"})
+Tab2:Button({Title = "传送前台", Callback = function() tp(Vector3.new(-103, 3.4, 4.2)) end})
+Tab2:Button({Title = "房间一", Callback = function() tp(Vector3.new(-167, 3.5, -54.4)) end})
+Tab2:Button({Title = "房间二", Callback = function() tp(Vector3.new(-126, 3.5, -49.8)) end})
+Tab2:Button({Title = "房间三", Callback = function() tp(Vector3.new(-167, 3.5, -91.6)) end})
+Tab2:Button({Title = "房间四", Callback = function() tp(Vector3.new(-121, 3.5, -86.5)) end})
+Tab2:Button({Title = "房间五", Callback = function() tp(Vector3.new(-144, 3.5, -117)) end})
+Tab2:Button({Title = "房间六", Callback = function() tp(Vector3.new(-125, 3.5, 51.7)) end})
+Tab2:Button({Title = "房间七", Callback = function() tp(Vector3.new(-166, 3.5, 54)) end})
+Tab2:Button({Title = "手术室", Callback = function() tp(Vector3.new(-145, 3.5, 83.1)) end})
+Tab2:Divider()
 local playerNames = getPlayerNames()
 local selectedPlayer = playerNames[1] or "无其他玩家"
-local t3 = Win:Tab({Title = "传送", Icon = "solar:map-arrow-up-bold"})
-t3:Button({Title = "传送前台", Justify = "Center", Color = Color3.fromHex("#4CAF50"), Callback = function() tp(Vector3.new(-103, 3.4, 4.2)) end})
-t3:Divider()
-t3:Button({Title = "房间一", Justify = "Center", Color = Color3.fromHex("#2196F3"), Callback = function() tp(Vector3.new(-167, 3.5, -54.4)) end})
-t3:Button({Title = "房间二", Justify = "Center", Color = Color3.fromHex("#2196F3"), Callback = function() tp(Vector3.new(-126, 3.5, -49.8)) end})
-t3:Button({Title = "房间三", Justify = "Center", Color = Color3.fromHex("#2196F3"), Callback = function() tp(Vector3.new(-167, 3.5, -91.6)) end})
-t3:Button({Title = "房间四", Justify = "Center", Color = Color3.fromHex("#2196F3"), Callback = function() tp(Vector3.new(-121, 3.5, -86.5)) end})
-t3:Button({Title = "房间五", Justify = "Center", Color = Color3.fromHex("#2196F3"), Callback = function() tp(Vector3.new(-144, 3.5, -117)) end})
-t3:Button({Title = "房间六", Justify = "Center", Color = Color3.fromHex("#2196F3"), Callback = function() tp(Vector3.new(-125, 3.5, 51.7)) end})
-t3:Button({Title = "房间七", Justify = "Center", Color = Color3.fromHex("#2196F3"), Callback = function() tp(Vector3.new(-166, 3.5, 54)) end})
-t3:Divider()
-t3:Button({Title = "手术室", Justify = "Center", Color = Color3.fromHex("#f44336"), Callback = function() tp(Vector3.new(-145, 3.5, 83.1)) end})
-t3:Divider()
-t3:Dropdown({Title = "选择玩家", Values = playerNames, Value = selectedPlayer, Callback = function(v) selectedPlayer = v end})
-t3:Divider()
-t3:Button({Title = "传送到该玩家", Justify = "Center", Color = Color3.fromHex("#03A9F4"), Callback = function() 
-    for _, plr in pairs(Players:GetPlayers()) do 
-        if plr.Name == selectedPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then 
-            tp(plr.Character.HumanoidRootPart.Position) 
-            WI:Notify({Title = "成功", Content = "已传送到" .. selectedPlayer, Duration = 2})
-            return 
-        end 
-    end 
-    WI:Notify({Title = "失败", Content = "找不到该玩家", Duration = 2})
-end})
+Tab2:Dropdown({Title = "选择玩家", Values = playerNames, Value = selectedPlayer, Callback = function(v) selectedPlayer = v end})
+Tab2:Button({Title = "传送到该玩家", Callback = function() for _, plr in pairs(Players:GetPlayers()) do if plr.Name == selectedPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then tp(plr.Character.HumanoidRootPart.Position) end end end})
 
--- 玩家
-local t4 = Win:Tab({Title = "玩家", Icon = "solar:user-bold"})
-t4:Toggle({Title = "开启透视", Value = false, Callback = function(v) Settings.ESP_Enabled = v if not v then clearESP() end end})
-t4:Divider()
-t4:Input({Title = "移动速度", Value = "16", Callback = function(v) local n = tonumber(v) if n and n >= 10 and n <= 100 then Settings.WalkSpeed = n end end})
-t4:Divider()
-t4:Button({Title = "重置速度", Justify = "Center", Color = Color3.fromHex("#888888"), Callback = function() Settings.WalkSpeed = 16 end})
-t4:Divider()
-t4:Button({Title = "关闭脚本", Justify = "Center", Color = Color3.fromHex("#ff4444"),
-    Callback = function()
-        stopAll = true
-        Settings.NoSanity = false
-        Settings.AnimalESP_Enabled = false
-        clearAnimalESP()
-        setSpeed(16)
-        Win:Close()
-    end
-})
+local Tab3 = Window:Tab({Title = "玩家", Icon = "users"})
+Tab3:Toggle({Title = "透视玩家", Value = false, Callback = function(v) Settings.ESP_Enabled = v; if not v then clearESP() end end})
+Tab3:Input({Title = "移动速度", Value = "16", Callback = function(v) local n = tonumber(v) if n and n >= 10 and n <= 100 then Settings.WalkSpeed = n end end})
+Tab3:Button({Title = "重置速度", Callback = function() Settings.WalkSpeed = 16 end})
 
-WI:Notify({Title = "动物医院", Content = VERSION .. " 加载完成", Duration = 5})
-print("动物医院 " .. VERSION .. " 已加载")
+Window:Tab({Title = "设置", Icon = "settings"}):Button({Title = "关闭脚本", Callback = function() stopAll = true; Settings.NoSanity = false; Settings.AnimalESP_Enabled = false; clearAnimalESP(); clearESP(); setSpeed(16); Window:Close() end})
+Window:OnClose(function() stopAll = true; Settings.NoSanity = false; clearAnimalESP(); clearESP(); setSpeed(16) end)
+
+WindUI:Notify({Title = "动物医院", Content = VERSION .. " 加载完成", Duration = 3})
