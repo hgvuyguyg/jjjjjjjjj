@@ -365,7 +365,7 @@ local Window = WindUI:CreateWindow({
 })
 
 Window:Tab({Title = "公告", Icon = "info"}):Paragraph({
-    Title = "战争大亨 " .. VERSION,
+    Title = "黑脚本--战争大亨 " .. VERSION,
     Desc = "智能破盾 | 持续全图杀 | 夜视 | 无冷却锁人",
 })
 
@@ -374,15 +374,15 @@ local selectedPlayer = playerNames[1] or "无其他玩家"
 
 local Tab1 = Window:Tab({Title = "主要", Icon = "play"})
 Tab1:Dropdown({Title = "选择破盾队伍", Values = {"delta", "echo", "kilo"}, Value = "delta", Callback = function(v) Settings.SelectedTeam = v end})
-Tab1:Button({Title = "破盾(25次)", Callback = breakShield})
+Tab1:Button({Title = "破盾(本功能仅作者可用)", Callback = breakShield})
 Tab1:Divider()
 Tab1:Dropdown({Title = "选择目标", Values = playerNames, Value = selectedPlayer, Callback = function(v) rpgTarget = v end})
 Tab1:Toggle({Title = "RPG杀戮(选择目标)", Value = false, Callback = function(v) Settings.RPGAura = v end})
 Tab1:Divider()
-Tab1:Button({Title = "杀最近敌人(4发)", Callback = killNearest})
-Tab1:Button({Title = "杀全图(3发)", Callback = killAll})
+Tab1:Button({Title = "杀最近敌人", Callback = killNearest})
+Tab1:Button({Title = "杀全图", Callback = killAll})
 Tab1:Divider()
-Tab1:Button({Title = "开启持续全图杀", Callback = startLoopKillAll})
+Tab1:Button({Title = "开启持续全图杀(开了爽飞天)", Callback = startLoopKillAll})
 Tab1:Button({Title = "停止持续全图杀", Callback = stopLoopKillAll})
 Tab1:Divider()
 Tab1:Toggle({Title = "RPG无冷却自动锁人", Value = false, Callback = function(v) Settings.RPGAutoLock = v end})
