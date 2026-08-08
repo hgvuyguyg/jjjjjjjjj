@@ -1,4 +1,4 @@
--- 森林中的99夜 | V3.3 | 第一部分
+-- 森林中的99夜 | V3.4 | 第一部分
 
 local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 if not WI then return end
@@ -10,7 +10,6 @@ local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
 local Camera = Workspace.CurrentCamera
 
--- 家坐标（用于距离限制）
 local HOME_POSITION = Vector3.new(10, 4, -0.4)
 local MAX_ESP_DISTANCE = 5000
 
@@ -99,7 +98,7 @@ local function forestIsScrew(obj)
     return false
 end
 
--- ==================== 夜视 ====================
+-- ==================== 夜视（每帧刷新）====================
 local function ApplyNightVision()
     pcall(function()
         if nightVision then
@@ -120,26 +119,19 @@ local function ApplyNightVision()
     end)
 end
 
-local function ToggleNightVision(v)
-    nightVision = v
-    ApplyNightVision()
-end
-
 RunService.RenderStepped:Connect(function()
     if nightVision then ApplyNightVision() end
 end)
 
--- ==================== 速度（V2.9原版）====================
-task.spawn(function()
-    while task.wait(0.1) do
-        if speedEnabled then
-            pcall(function()
-                local c = LocalPlayer.Character
-                if c and c:FindFirstChild("Humanoid") then
-                    c.Humanoid.WalkSpeed = speedValue
-                end
-            end)
-        end
+-- ==================== 速度（每帧刷新）====================
+RunService.RenderStepped:Connect(function()
+    if speedEnabled then
+        pcall(function()
+            local c = LocalPlayer.Character
+            if c and c:FindFirstChild("Humanoid") then
+                c.Humanoid.WalkSpeed = speedValue
+            end
+        end)
     end
 end)
 
@@ -151,7 +143,7 @@ local function LoadFlyScript()
     WI:Notify({Title = "飞行", Content = "飞行脚本已加载", Duration = 2})
 end
 
--- ==================== 删除敌对生物（含阿尔法狼）====================
+-- ==================== 删除敌对生物 ====================
 local function KillAllEnemies()
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then
@@ -186,9 +178,9 @@ local function KillAllEnemies()
 end
 
 print("第一部分加载完成，请运行第二部分")
--- 森林中的99夜 | V3.3 | 第二部分
+-- 森林中的99夜 | V3.4 | 第二部分
 
--- ==================== 吸取物品（已移除Bear）====================
+-- ==================== 吸取物品 ====================
 local function forestPullItems()
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
@@ -364,7 +356,7 @@ end
 
 task.spawn(function() while task.wait(ESP_UPDATE_INTERVAL) do UpdateESP() end end)
 
--- ==================== 传送（修复小孩问题）====================
+-- ==================== 传送 ====================
 local function TeleportToNearest(targetName, displayName)
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
@@ -375,9 +367,7 @@ local function TeleportToNearest(targetName, displayName)
             local match = false
             if obj:IsA("Model") then
                 if obj.Name == targetName then match = true end
-                if string.find(targetName, "Lost Child") and string.find(obj.Name, "Lost Child") and obj.Name == targetName then
-                    match = true
-                end
+                if string.find(targetName, "Lost Child") and string.find(obj.Name, "Lost Child") and obj.Name == targetName then match = true end
             end
             if obj:IsA("BasePart") and obj.Name == targetName then match = true end
 
@@ -385,14 +375,8 @@ local function TeleportToNearest(targetName, displayName)
                 local root = nil
                 if obj:IsA("Model") then
                     root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head") or obj:FindFirstChild("Handle")
-                    if not root then
-                        for _, c in ipairs(obj:GetDescendants()) do
-                            if c:IsA("BasePart") then root = c; break end
-                        end
-                    end
-                else
-                    root = obj
-                end
+                    if not root then for _, c in ipairs(obj:GetDescendants()) do if c:IsA("BasePart") then root = c; break end end end
+                else root = obj end
                 if root then
                     local d = (hrp.Position - root.Position).Magnitude
                     if d < closestDist then closestDist = d; closest = root end
@@ -405,7 +389,7 @@ local function TeleportToNearest(targetName, displayName)
         pcall(function() hrp.CFrame = closest.CFrame * CFrame.new(0, 2, 0) end)
         WI:Notify({Title = "传送成功", Content = displayName, Duration = 2})
     else
-        WI:Notify({Title = "传送失败", Content = "没找到" .. displayName .. "，请确认附近有该物品", Duration = 3})
+        WI:Notify({Title = "传送失败", Content = "没找到" .. displayName, Duration = 3})
     end
 end
 
@@ -441,11 +425,14 @@ local Window = WI:CreateWindow({
     Theme = "冰白", Transparent = true, ScrollBarEnabled = true
 })
 
-Window:Tab({Title = "公告", Icon = "info"}):Paragraph({Title = "黑脚本--森林中的99夜 V3.3", Desc = "新增透视阿尔法狼 | 删除含阿尔法狼 | 中文菜单 | 修复小孩传送"})
+Window:Tab({Title = "公告", Icon = "info"}):Paragraph({Title = "黑脚本--森林中的99夜 V3.4", Desc = "速度/夜视实时刷新 | 透视阿尔法狼 | 删除敌对生物 | 中文菜单"})
 
 local T2 = Window:Tab({Title = "主要功能", Icon = "settings"})
 T2:Section({Title = "夜视"})
-T2:Toggle({Title = "开启夜视", Value = false, Callback = ToggleNightVision})
+T2:Toggle({Title = "开启夜视", Value = false, Callback = function(v)
+    nightVision = v
+    if not v then ApplyNightVision() end
+end})
 T2:Slider({Title = "亮度", Value = {Min = 1, Max = 5, Default = 2}, Step = 0.5, Callback = function(v) nightVisionValue = v end})
 
 T2:Section({Title = "物品吸附"})
@@ -480,12 +467,14 @@ T2:Dropdown({Title = "选择要吸附的物品（可多选）", Values = itemDis
 end})
 
 T2:Section({Title = "⚠️ 测试功能"})
-T2:Button({Title = "🗑️ 删除所有敌对生物 (Wolf/Bear/Alpha Wolf)", Justify = "Center", Color = Color3.fromRGB(255, 60, 60), Callback = KillAllEnemies})
-T2:Paragraph({Title = "说明", Desc = "点击后将Wolf、Bear、Alpha Wolf传送到Y轴+10000\n只执行一次，不会重复删除"})
+T2:Button({Title = "🗑️ 删除所有敌对生物", Justify = "Center", Color = Color3.fromRGB(255, 60, 60), Callback = KillAllEnemies})
 
 local T3 = Window:Tab({Title = "玩家", Icon = "user"})
 T3:Section({Title = "移动速度"})
-T3:Toggle({Title = "可调移速", Value = false, Callback = function(v) speedEnabled = v; if not v then pcall(function() LocalPlayer.Character.Humanoid.WalkSpeed = 16 end) end end})
+T3:Toggle({Title = "可调移速", Value = false, Callback = function(v)
+    speedEnabled = v
+    if not v then pcall(function() LocalPlayer.Character.Humanoid.WalkSpeed = 16 end) end
+end})
 T3:Slider({Title = "移速数值", Value = {Min = 16, Max = 100, Default = 20}, Step = 1, Callback = function(v) speedValue = v end})
 T3:Section({Title = "飞行"})
 T3:Button({Title = "加载飞行脚本", Justify = "Center", Color = Color3.fromRGB(100, 200, 255), Callback = LoadFlyScript})
@@ -497,9 +486,7 @@ local T4 = Window:Tab({Title = "传送", Icon = "map"})
 T4:Section({Title = "传送到指定物品"})
 T4:Dropdown({Title = "选择物品", Values = itemDisplayNames, Value = "", Multi = false, AllowNone = true, Callback = function(v)
     if type(v)=="string" and v~="" then
-        for _,itemName in ipairs(itemList) do
-            if string.find(v, itemName) then selectedTeleportItem = itemName; break end
-        end
+        for _,itemName in ipairs(itemList) do if string.find(v, itemName) then selectedTeleportItem = itemName; break end end
     else selectedTeleportItem = nil end
 end})
 T4:Button({Title = "传送到该物品", Justify = "Center", Color = Color3.fromRGB(255, 140, 0), Callback = function()
@@ -509,9 +496,7 @@ end})
 T4:Section({Title = "传送到指定小孩"})
 T4:Dropdown({Title = "选择小孩", Values = childDisplayNames, Value = "", Multi = false, AllowNone = true, Callback = function(v)
     if type(v)=="string" and v~="" then
-        for _,childName in ipairs(childList) do
-            if string.find(v, childName) then selectedChildTeleport = childName; break end
-        end
+        for _,childName in ipairs(childList) do if string.find(v, childName) then selectedChildTeleport = childName; break end end
     else selectedChildTeleport = nil end
 end})
 T4:Button({Title = "传送到该小孩", Justify = "Center", Color = Color3.fromRGB(255, 100, 100), Callback = function()
@@ -555,17 +540,12 @@ T5:Colorpicker({Title = "小孩颜色", Default = Color3.fromRGB(255, 100, 100),
 T5:Toggle({Title = "显示距离", Value = false, Callback = function(v) showDistance = v end})
 
 local T6 = Window:Tab({Title = "设置", Icon = "settings"})
-T6:Paragraph({Title = "黑脚本--森林中的99夜 V3.3", Desc = "透视阿尔法狼 | 删除含阿尔法狼 | 中文菜单 | ESP限制5km"})
+T6:Paragraph({Title = "黑脚本--森林中的99夜 V3.4", Desc = "速度/夜视每帧刷新 | 面板关闭不重置"})
 T6:Button({Title = "关闭界面", Callback = function() Window:Close() end})
 
 Window:OnClose(function()
-    nightVision = false; ApplyNightVision(); ClearESP()
-    forestEnabled = false
-    if speedEnabled then
-        speedEnabled = false
-        pcall(function() LocalPlayer.Character.Humanoid.WalkSpeed = 16 end)
-    end
+    ClearESP()
 end)
 
-WI:Notify({Title = "森林中的99夜", Content = "V3.3 加载完成", Duration = 3})
-print("森林中的99夜 V3.3 加载完成")
+WI:Notify({Title = "森林中的99夜", Content = "V3.4 加载完成", Duration = 3})
+print("森林中的99夜 V3.4 加载完成")
