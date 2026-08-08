@@ -1,596 +1,20 @@
--- 森林中的九十九夜 第1段：灵动岛 + 拖拽 + 主面板框架
+-- 森林中的99夜 | V2.9
+
+local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+if not WI then return end
 
 local Players = game:GetService("Players")
-local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local Camera = Workspace.CurrentCamera
 
-local forestScreenGui = Instance.new("ScreenGui")
-forestScreenGui.Name = "Forest99UI"
-forestScreenGui.ResetOnSpawn = false
-forestScreenGui.Parent = PlayerGui
+-- ==================== 变量 ====================
+local nightVision = false
+local nightVisionValue = 2
 
--- ===== 灵动岛 =====
-local forestBar = Instance.new("Frame")
-forestBar.Size = UDim2.new(0, 280, 0, 46)
-forestBar.Position = UDim2.new(0.5, -140, 0, 8)
-forestBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-forestBar.BackgroundTransparency = 0.25
-forestBar.BorderSizePixel = 0
-forestBar.ZIndex = 20
-forestBar.Parent = forestScreenGui
-local forestBarCorner = Instance.new("UICorner")
-forestBarCorner.CornerRadius = UDim.new(0, 14)
-forestBarCorner.Parent = forestBar
-local forestRGBOutline = Instance.new("Frame")
-forestRGBOutline.Size = UDim2.new(1, 3, 1, 3)
-forestRGBOutline.Position = UDim2.new(0, -1.5, 0, -1.5)
-forestRGBOutline.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-forestRGBOutline.ZIndex = 19
-forestRGBOutline.Parent = forestBar
-local forestRGBOutlineCorner = Instance.new("UICorner")
-forestRGBOutlineCorner.CornerRadius = UDim.new(0, 15)
-forestRGBOutlineCorner.Parent = forestRGBOutline
-local forestBarHue = 0
-RunService.RenderStepped:Connect(function(delta)
-    forestBarHue = (forestBarHue + delta * 0.3) % 1
-    forestRGBOutline.BackgroundColor3 = Color3.fromHSV(forestBarHue, 0.7, 1)
-end)
-
-local forestDragBtn = Instance.new("TextButton")
-forestDragBtn.Size = UDim2.new(0, 60, 1, 0)
-forestDragBtn.Position = UDim2.new(0, 0, 0, 0)
-forestDragBtn.Text = "+"
-forestDragBtn.TextColor3 = Color3.fromRGB(80, 80, 80)
-forestDragBtn.Font = Enum.Font.GothamBold
-forestDragBtn.TextSize = 22
-forestDragBtn.BackgroundTransparency = 1
-forestDragBtn.BorderSizePixel = 0
-forestDragBtn.ZIndex = 21
-forestDragBtn.AutoButtonColor = false
-forestDragBtn.Parent = forestBar
-
-local forestDivider = Instance.new("Frame")
-forestDivider.Size = UDim2.new(0, 1, 0.6, 0)
-forestDivider.Position = UDim2.new(0, 60, 0.2, 0)
-forestDivider.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
-forestDivider.BorderSizePixel = 0
-forestDivider.ZIndex = 22
-forestDivider.Parent = forestBar
-
-local forestOpenBtn = Instance.new("TextButton")
-forestOpenBtn.Size = UDim2.new(1, -64, 1, -6)
-forestOpenBtn.Position = UDim2.new(0, 62, 0, 3)
-forestOpenBtn.Text = "森林中的九十九夜"
-forestOpenBtn.TextColor3 = Color3.fromRGB(40, 40, 40)
-forestOpenBtn.Font = Enum.Font.GothamBold
-forestOpenBtn.TextSize = 14
-forestOpenBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-forestOpenBtn.BackgroundTransparency = 0.15
-forestOpenBtn.BorderSizePixel = 0
-forestOpenBtn.ZIndex = 21
-forestOpenBtn.AutoButtonColor = false
-forestOpenBtn.Parent = forestBar
-local forestOpenCorner = Instance.new("UICorner")
-forestOpenCorner.CornerRadius = UDim.new(0, 10)
-forestOpenCorner.Parent = forestOpenBtn
-
-forestOpenBtn.MouseEnter:Connect(function() forestOpenBtn.BackgroundColor3 = Color3.fromRGB(240, 240, 240) end)
-forestOpenBtn.MouseLeave:Connect(function() forestOpenBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end)
-
-local forestDragging = false
-local forestDragStart = nil
-local forestStartPos = nil
-forestDragBtn.MouseButton1Down:Connect(function()
-    forestDragging = true
-    forestDragStart = UserInputService:GetMouseLocation()
-    forestStartPos = forestBar.Position
-end)
-forestDragBtn.MouseMoved:Connect(function()
-    if forestDragging then
-        local delta = UserInputService:GetMouseLocation() - forestDragStart
-        forestBar.Position = UDim2.new(forestStartPos.X.Scale, forestStartPos.X.Offset + delta.X, forestStartPos.Y.Scale, forestStartPos.Y.Offset + delta.Y)
-    end
-end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then forestDragging = false end
-end)
--- 森林中的九十九夜 第2段：主面板 + 顶部栏 + 导航栏 + 公告页
-
--- ===== 主面板 =====
-local forestMainFrame = Instance.new("Frame")
-forestMainFrame.Size = UDim2.new(0, 580, 0, 440)
-forestMainFrame.Position = UDim2.new(0.5, -290, 0.5, -220)
-forestMainFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-forestMainFrame.BackgroundTransparency = 0.06
-forestMainFrame.Visible = false
-forestMainFrame.ZIndex = 2
-forestMainFrame.Parent = forestScreenGui
-local forestMainCorner = Instance.new("UICorner")
-forestMainCorner.CornerRadius = UDim.new(0, 14)
-forestMainCorner.Parent = forestMainFrame
-
-local forestRGBBorder = Instance.new("Frame")
-forestRGBBorder.Size = UDim2.new(1, 5, 1, 5)
-forestRGBBorder.Position = UDim2.new(0, -2.5, 0, -2.5)
-forestRGBBorder.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-forestRGBBorder.ZIndex = 1
-forestRGBBorder.Parent = forestMainFrame
-local forestRGBBorderCorner = Instance.new("UICorner")
-forestRGBBorderCorner.CornerRadius = UDim.new(0, 16)
-forestRGBBorderCorner.Parent = forestRGBBorder
-local forestHue = 0
-RunService.RenderStepped:Connect(function(delta)
-    if forestMainFrame.Visible then
-        forestHue = (forestHue + delta * 0.3) % 1
-        forestRGBBorder.BackgroundColor3 = Color3.fromHSV(forestHue, 0.7, 1)
-    end
-end)
-
-local forestInnerPanel = Instance.new("Frame")
-forestInnerPanel.Size = UDim2.new(1, -6, 1, -6)
-forestInnerPanel.Position = UDim2.new(0, 3, 0, 3)
-forestInnerPanel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-forestInnerPanel.ClipsDescendants = true
-forestInnerPanel.ZIndex = 3
-forestInnerPanel.Parent = forestMainFrame
-local forestInnerCorner = Instance.new("UICorner")
-forestInnerCorner.CornerRadius = UDim.new(0, 12)
-forestInnerCorner.Parent = forestInnerPanel
-
--- ===== 顶部栏 =====
-local forestTopBar = Instance.new("Frame")
-forestTopBar.Size = UDim2.new(1, 0, 0, 36)
-forestTopBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-forestTopBar.BorderSizePixel = 0
-forestTopBar.ZIndex = 10
-forestTopBar.Parent = forestInnerPanel
-local forestTopBarCorner = Instance.new("UICorner")
-forestTopBarCorner.CornerRadius = UDim.new(0, 12)
-forestTopBarCorner.Parent = forestTopBar
-
-local forestTitleLabel = Instance.new("TextLabel")
-forestTitleLabel.Size = UDim2.new(0, 140, 1, 0)
-forestTitleLabel.Position = UDim2.new(0, 12, 0, 0)
-forestTitleLabel.Text = "森林中的九十九夜"
-forestTitleLabel.TextColor3 = Color3.fromRGB(50, 50, 50)
-forestTitleLabel.Font = Enum.Font.GothamBold
-forestTitleLabel.TextSize = 14
-forestTitleLabel.BackgroundTransparency = 1
-forestTitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-forestTitleLabel.ZIndex = 11
-forestTitleLabel.Parent = forestTopBar
-
-local forestInfoBox = Instance.new("Frame")
-forestInfoBox.Size = UDim2.new(0, 200, 0, 26)
-forestInfoBox.Position = UDim2.new(0, 150, 0, 5)
-forestInfoBox.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
-forestInfoBox.BorderSizePixel = 0
-forestInfoBox.ZIndex = 12
-forestInfoBox.Parent = forestTopBar
-local forestInfoCorner = Instance.new("UICorner")
-forestInfoCorner.CornerRadius = UDim.new(0, 6)
-forestInfoCorner.Parent = forestInfoBox
-local forestInfoRGBOutline = Instance.new("Frame")
-forestInfoRGBOutline.Size = UDim2.new(1, 2, 1, 2)
-forestInfoRGBOutline.Position = UDim2.new(0, -1, 0, -1)
-forestInfoRGBOutline.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-forestInfoRGBOutline.ZIndex = 11
-forestInfoRGBOutline.Parent = forestInfoBox
-local forestInfoRGBCorner = Instance.new("UICorner")
-forestInfoRGBCorner.CornerRadius = UDim.new(0, 7)
-forestInfoRGBCorner.Parent = forestInfoRGBOutline
-local forestInfoHue = 0
-RunService.RenderStepped:Connect(function(delta)
-    forestInfoHue = (forestInfoHue + delta * 0.5) % 1
-    forestInfoRGBOutline.BackgroundColor3 = Color3.fromHSV(forestInfoHue, 0.7, 1)
-end)
-
-local forestInfoLabel = Instance.new("TextLabel")
-forestInfoLabel.Size = UDim2.new(1, 0, 1, 0)
-forestInfoLabel.Text = "森林99夜 V1.0 | " .. os.date("%m月%d日 %H:%M:%S")
-forestInfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-forestInfoLabel.Font = Enum.Font.GothamBold
-forestInfoLabel.TextSize = 10
-forestInfoLabel.BackgroundTransparency = 1
-forestInfoLabel.ZIndex = 13
-forestInfoLabel.Parent = forestInfoBox
-spawn(function()
-    while true do
-        forestInfoLabel.Text = "森林99夜 V1.0 | " .. os.date("%m月%d日 %H:%M:%S")
-        task.wait(1)
-    end
-end)
-
-local forestCloseButton = Instance.new("TextButton")
-forestCloseButton.Size = UDim2.new(0, 28, 0, 28)
-forestCloseButton.Position = UDim2.new(1, -34, 0, 4)
-forestCloseButton.Text = "×"
-forestCloseButton.TextColor3 = Color3.fromRGB(100, 100, 100)
-forestCloseButton.Font = Enum.Font.GothamBold
-forestCloseButton.TextSize = 18
-forestCloseButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-forestCloseButton.BorderSizePixel = 0
-forestCloseButton.ZIndex = 11
-forestCloseButton.Parent = forestTopBar
-local forestCloseCorner = Instance.new("UICorner")
-forestCloseCorner.CornerRadius = UDim.new(1, 0)
-forestCloseCorner.Parent = forestCloseButton
-forestCloseButton.MouseEnter:Connect(function() forestCloseButton.BackgroundColor3 = Color3.fromRGB(200, 200, 200) end)
-forestCloseButton.MouseLeave:Connect(function() forestCloseButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230) end)
-
-local forestTopDivider = Instance.new("Frame")
-forestTopDivider.Size = UDim2.new(1, -24, 0, 1)
-forestTopDivider.Position = UDim2.new(0, 12, 0, 36)
-forestTopDivider.BackgroundColor3 = Color3.fromRGB(225, 225, 225)
-forestTopDivider.BorderSizePixel = 0
-forestTopDivider.ZIndex = 10
-forestTopDivider.Parent = forestInnerPanel
-
-local forestMainContentContainer = Instance.new("Frame")
-forestMainContentContainer.Size = UDim2.new(1, 0, 1, -36)
-forestMainContentContainer.Position = UDim2.new(0, 0, 0, 36)
-forestMainContentContainer.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-forestMainContentContainer.BorderSizePixel = 0
-forestMainContentContainer.ZIndex = 5
-forestMainContentContainer.Parent = forestInnerPanel
-
--- ===== 导航栏 =====
-local forestNavFrame = Instance.new("Frame")
-forestNavFrame.Size = UDim2.new(0, 135, 1, 0)
-forestNavFrame.Position = UDim2.new(0, 0, 0, 0)
-forestNavFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-forestNavFrame.BackgroundTransparency = 0.03
-forestNavFrame.BorderSizePixel = 0
-forestNavFrame.ZIndex = 6
-forestNavFrame.Parent = forestMainContentContainer
-local forestNavDivider = Instance.new("Frame")
-forestNavDivider.Size = UDim2.new(0, 1, 1, 0)
-forestNavDivider.Position = UDim2.new(1, 0, 0, 0)
-forestNavDivider.BackgroundColor3 = Color3.fromRGB(225, 225, 225)
-forestNavDivider.BorderSizePixel = 0
-forestNavDivider.ZIndex = 7
-forestNavDivider.Parent = forestNavFrame
-
-local forestNavScroll = Instance.new("ScrollingFrame")
-forestNavScroll.Size = UDim2.new(1, 0, 1, 0)
-forestNavScroll.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-forestNavScroll.BackgroundTransparency = 0.03
-forestNavScroll.BorderSizePixel = 0
-forestNavScroll.ScrollBarThickness = 0
-forestNavScroll.CanvasSize = UDim2.new(0, 0, 0, 200)
-forestNavScroll.ZIndex = 6
-forestNavScroll.Parent = forestNavFrame
-local forestNavList = Instance.new("UIListLayout")
-forestNavList.Padding = UDim.new(0, 2)
-forestNavList.Parent = forestNavScroll
-local forestNavTopPad = Instance.new("Frame")
-forestNavTopPad.Size = UDim2.new(1, 0, 0, 5)
-forestNavTopPad.BackgroundTransparency = 1
-forestNavTopPad.Parent = forestNavScroll
-
-local forestNavItems = {
-    {name = "公告", icon = "📢"},
-    {name = "主要功能", icon = "⚙️"},
-    {name = "物品区", icon = "📦"}
-}
-local forestNavButtons = {}
-local forestSelectedNav = nil
-local forestContentArea = Instance.new("Frame")
-forestContentArea.Size = UDim2.new(1, -136, 1, 0)
-forestContentArea.Position = UDim2.new(0, 136, 0, 0)
-forestContentArea.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-forestContentArea.BorderSizePixel = 0
-forestContentArea.ZIndex = 6
-forestContentArea.Parent = forestMainContentContainer
-
-local forestContentPages = {}
-function forestSwitchContent(n)
-    for a, b in pairs(forestContentPages) do
-        b.Visible = (a == n)
-    end
-end
-
-local function forestSelectNav(button, itemName)
-    if forestSelectedNav then forestSelectedNav.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end
-    button.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-    forestSelectedNav = button
-    forestTitleLabel.Text = itemName
-    forestSwitchContent(itemName)
-end
-
-for _, item in ipairs(forestNavItems) do
-    local NavButton = Instance.new("TextButton")
-    NavButton.Size = UDim2.new(1, -12, 0, 36)
-    NavButton.Position = UDim2.new(0, 6, 0, 0)
-    NavButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    NavButton.Text = ""
-    NavButton.BorderSizePixel = 0
-    NavButton.ZIndex = 7
-    NavButton.AutoButtonColor = false
-    NavButton.Parent = forestNavScroll
-    local NavCorner = Instance.new("UICorner")
-    NavCorner.CornerRadius = UDim.new(0, 8)
-    NavCorner.Parent = NavButton
-
-    local NavIcon = Instance.new("TextLabel")
-    NavIcon.Size = UDim2.new(0, 14, 1, 0)
-    NavIcon.Position = UDim2.new(0, 2, 0, 0)
-    NavIcon.Text = item.icon
-    NavIcon.TextSize = 10
-    NavIcon.BackgroundTransparency = 1
-    NavIcon.TextXAlignment = Enum.TextXAlignment.Left
-    NavIcon.ZIndex = 8
-    NavIcon.Parent = NavButton
-
-    local NavLabel = Instance.new("TextLabel")
-    NavLabel.Size = UDim2.new(1, -22, 1, 0)
-    NavLabel.Position = UDim2.new(0, 26, 0, 0)
-    NavLabel.Text = "  " .. item.name
-    NavLabel.TextColor3 = Color3.fromRGB(60, 60, 60)
-    NavLabel.Font = Enum.Font.GothamSemibold
-    NavLabel.TextSize = 11
-    NavLabel.BackgroundTransparency = 1
-    NavLabel.TextXAlignment = Enum.TextXAlignment.Left
-    NavLabel.ZIndex = 8
-    NavLabel.Parent = NavButton
-
-    NavButton.MouseButton1Click:Connect(function()
-        forestSelectNav(NavButton, item.name)
-    end)
-    NavButton.MouseEnter:Connect(function()
-        if NavButton ~= forestSelectedNav then
-            NavButton.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
-        end
-    end)
-    NavButton.MouseLeave:Connect(function()
-        if NavButton ~= forestSelectedNav then
-            NavButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        end
-    end)
-    table.insert(forestNavButtons, {button = NavButton, name = item.name})
-end
-
--- ===== 公告页 =====
-local forestAnnouncementPage = Instance.new("ScrollingFrame")
-forestAnnouncementPage.Size = UDim2.new(1, 0, 1, 0)
-forestAnnouncementPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-forestAnnouncementPage.BorderSizePixel = 0
-forestAnnouncementPage.ScrollBarThickness = 3
-forestAnnouncementPage.Visible = false
-forestAnnouncementPage.ZIndex = 7
-forestAnnouncementPage.Parent = forestContentArea
-
-local forestAnnouncementText = Instance.new("TextLabel")
-forestAnnouncementText.Size = UDim2.new(1, -20, 0, 400)
-forestAnnouncementText.Position = UDim2.new(0, 10, 0, 10)
-forestAnnouncementText.Text = "📢 森林中的九十九夜\n\n本脚本由C工作室亲自制作\n用于森林中的九十九夜\n\n功能：传送篝火 + 夜视 + 吸取物品\n\n感谢使用！"
-forestAnnouncementText.TextColor3 = Color3.fromRGB(70, 70, 70)
-forestAnnouncementText.Font = Enum.Font.Gotham
-forestAnnouncementText.TextSize = 13
-forestAnnouncementText.BackgroundTransparency = 1
-forestAnnouncementText.TextXAlignment = Enum.TextXAlignment.Left
-forestAnnouncementText.TextYAlignment = Enum.TextYAlignment.Top
-forestAnnouncementText.TextWrapped = true
-forestAnnouncementText.LineHeight = 1.8
-forestAnnouncementText.ZIndex = 8
-forestAnnouncementText.Parent = forestAnnouncementPage
-forestContentPages["公告"] = forestAnnouncementPage
--- 森林中的九十九夜 第3段：主要功能（传送篝火 + 夜视）
-
-local forestMainPage = Instance.new("ScrollingFrame")
-forestMainPage.Size = UDim2.new(1, 0, 1, 0)
-forestMainPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-forestMainPage.BorderSizePixel = 0
-forestMainPage.ScrollBarThickness = 3
-forestMainPage.Visible = false
-forestMainPage.ZIndex = 7
-forestMainPage.Parent = forestContentArea
-local forestMainPageList = Instance.new("UIListLayout")
-forestMainPageList.Padding = UDim.new(0, 6)
-forestMainPageList.Parent = forestMainPage
-local forestMainPageSpacer = Instance.new("Frame")
-forestMainPageSpacer.Size = UDim2.new(1, 0, 0, 6)
-forestMainPageSpacer.BackgroundTransparency = 1
-forestMainPageSpacer.Parent = forestMainPage
-
--- 传送篝火
-local Card1 = Instance.new("Frame")
-Card1.Size = UDim2.new(1, -16, 0, 46)
-Card1.Position = UDim2.new(0, 8, 0, 0)
-Card1.BackgroundColor3 = Color3.fromRGB(252, 252, 252)
-Card1.BorderSizePixel = 0
-Card1.ZIndex = 7
-Card1.Parent = forestMainPage
-local CardCorner1 = Instance.new("UICorner")
-CardCorner1.CornerRadius = UDim.new(0, 10)
-CardCorner1.Parent = Card1
-local CardStroke1 = Instance.new("UIStroke")
-CardStroke1.Color = Color3.fromRGB(230, 230, 230)
-CardStroke1.Thickness = 1
-CardStroke1.Parent = Card1
-local IconFrame1 = Instance.new("Frame")
-IconFrame1.Size = UDim2.new(0, 26, 0, 26)
-IconFrame1.Position = UDim2.new(0, 10, 0, 10)
-IconFrame1.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
-IconFrame1.BorderSizePixel = 0
-IconFrame1.ZIndex = 8
-IconFrame1.Parent = Card1
-local IconCorner1 = Instance.new("UICorner")
-IconCorner1.CornerRadius = UDim.new(0, 6)
-IconCorner1.Parent = IconFrame1
-local IconText1 = Instance.new("TextLabel")
-IconText1.Size = UDim2.new(1, 0, 1, 0)
-IconText1.Text = "🔥"
-IconText1.TextSize = 11
-IconText1.BackgroundTransparency = 1
-IconText1.ZIndex = 9
-IconText1.Parent = IconFrame1
-local TitleText1 = Instance.new("TextLabel")
-TitleText1.Size = UDim2.new(0, 180, 0, 15)
-TitleText1.Position = UDim2.new(0, 44, 0, 5)
-TitleText1.Text = "传送篝火"
-TitleText1.TextColor3 = Color3.fromRGB(50, 50, 50)
-TitleText1.Font = Enum.Font.GothamSemibold
-TitleText1.TextSize = 11
-TitleText1.BackgroundTransparency = 1
-TitleText1.TextXAlignment = Enum.TextXAlignment.Left
-TitleText1.ZIndex = 8
-TitleText1.Parent = Card1
-local DescText1 = Instance.new("TextLabel")
-DescText1.Size = UDim2.new(1, -100, 0, 13)
-DescText1.Position = UDim2.new(0, 44, 0, 22)
-DescText1.Text = "传送到 13, 3, 3"
-DescText1.TextColor3 = Color3.fromRGB(130, 130, 130)
-DescText1.Font = Enum.Font.Gotham
-DescText1.TextSize = 9
-DescText1.BackgroundTransparency = 1
-DescText1.TextXAlignment = Enum.TextXAlignment.Left
-DescText1.ZIndex = 8
-DescText1.Parent = Card1
-local Btn1 = Instance.new("TextButton")
-Btn1.Size = UDim2.new(0, 50, 0, 20)
-Btn1.Position = UDim2.new(1, -58, 0, 13)
-Btn1.Text = "传送"
-Btn1.TextColor3 = Color3.fromRGB(255, 255, 255)
-Btn1.Font = Enum.Font.GothamBold
-Btn1.TextSize = 10
-Btn1.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-Btn1.BorderSizePixel = 0
-Btn1.ZIndex = 9
-Btn1.AutoButtonColor = false
-Btn1.Parent = Card1
-local BtnCorner1 = Instance.new("UICorner")
-BtnCorner1.CornerRadius = UDim.new(0, 5)
-BtnCorner1.Parent = Btn1
-Btn1.MouseButton1Click:Connect(function()
-    local c = LocalPlayer.Character
-    if c and c:FindFirstChild("HumanoidRootPart") then
-        c.HumanoidRootPart.CFrame = CFrame.new(13, 3, 3)
-    end
-end)
-Btn1.MouseEnter:Connect(function() Btn1.BackgroundColor3 = Color3.fromRGB(255, 160, 20) end)
-Btn1.MouseLeave:Connect(function() Btn1.BackgroundColor3 = Color3.fromRGB(255, 140, 0) end)
-
--- 夜视
-local NVCard = Instance.new("Frame")
-NVCard.Size = UDim2.new(1, -16, 0, 46)
-NVCard.Position = UDim2.new(0, 8, 0, 0)
-NVCard.BackgroundColor3 = Color3.fromRGB(252, 252, 252)
-NVCard.BorderSizePixel = 0
-NVCard.ZIndex = 7
-NVCard.Parent = forestMainPage
-local NVCardCorner = Instance.new("UICorner")
-NVCardCorner.CornerRadius = UDim.new(0, 10)
-NVCardCorner.Parent = NVCard
-local NVCardStroke = Instance.new("UIStroke")
-NVCardStroke.Color = Color3.fromRGB(230, 230, 230)
-NVCardStroke.Thickness = 1
-NVCardStroke.Parent = NVCard
-local NVIconFrame = Instance.new("Frame")
-NVIconFrame.Size = UDim2.new(0, 26, 0, 26)
-NVIconFrame.Position = UDim2.new(0, 10, 0, 10)
-NVIconFrame.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
-NVIconFrame.BorderSizePixel = 0
-NVIconFrame.ZIndex = 8
-NVIconFrame.Parent = NVCard
-local NVIconCorner = Instance.new("UICorner")
-NVIconCorner.CornerRadius = UDim.new(0, 6)
-NVIconCorner.Parent = NVIconFrame
-local NVIconText = Instance.new("TextLabel")
-NVIconText.Size = UDim2.new(1, 0, 1, 0)
-NVIconText.Text = "🌙"
-NVIconText.TextSize = 11
-NVIconText.BackgroundTransparency = 1
-NVIconText.ZIndex = 9
-NVIconText.Parent = NVIconFrame
-local NVTitleText = Instance.new("TextLabel")
-NVTitleText.Size = UDim2.new(0, 180, 0, 15)
-NVTitleText.Position = UDim2.new(0, 44, 0, 5)
-NVTitleText.Text = "夜视模式"
-NVTitleText.TextColor3 = Color3.fromRGB(50, 50, 50)
-NVTitleText.Font = Enum.Font.GothamSemibold
-NVTitleText.TextSize = 11
-NVTitleText.BackgroundTransparency = 1
-NVTitleText.TextXAlignment = Enum.TextXAlignment.Left
-NVTitleText.ZIndex = 8
-NVTitleText.Parent = NVCard
-local NVDescText = Instance.new("TextLabel")
-NVDescText.Size = UDim2.new(1, -80, 0, 13)
-NVDescText.Position = UDim2.new(0, 44, 0, 22)
-NVDescText.Text = "提高亮度，夜晚变白天"
-NVDescText.TextColor3 = Color3.fromRGB(130, 130, 130)
-NVDescText.Font = Enum.Font.Gotham
-NVDescText.TextSize = 9
-NVDescText.BackgroundTransparency = 1
-NVDescText.TextXAlignment = Enum.TextXAlignment.Left
-NVDescText.ZIndex = 8
-NVDescText.Parent = NVCard
-local NVBtn = Instance.new("TextButton")
-NVBtn.Size = UDim2.new(0, 50, 0, 20)
-NVBtn.Position = UDim2.new(1, -58, 0, 13)
-NVBtn.Text = "关闭"
-NVBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-NVBtn.Font = Enum.Font.GothamBold
-NVBtn.TextSize = 10
-NVBtn.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
-NVBtn.BorderSizePixel = 0
-NVBtn.ZIndex = 9
-NVBtn.AutoButtonColor = false
-NVBtn.Parent = NVCard
-local NVBtnCorner = Instance.new("UICorner")
-NVBtnCorner.CornerRadius = UDim.new(0, 5)
-NVBtnCorner.Parent = NVBtn
-
-local forestNVEnabled = false
-NVBtn.MouseButton1Click:Connect(function()
-    forestNVEnabled = not forestNVEnabled
-    if forestNVEnabled then
-        NVBtn.Text = "开启"
-        NVBtn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-        game.Lighting.Brightness = 3
-        game.Lighting.ExposureCompensation = 2
-        game.Lighting.Ambient = Color3.fromRGB(200, 200, 200)
-        game.Lighting.OutdoorAmbient = Color3.fromRGB(200, 200, 200)
-    else
-        NVBtn.Text = "关闭"
-        NVBtn.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
-        game.Lighting.Brightness = 2
-        game.Lighting.ExposureCompensation = 0
-        game.Lighting.Ambient = Color3.fromRGB(127, 127, 127)
-        game.Lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
-    end
-end)
-NVBtn.MouseEnter:Connect(function()
-    if not forestNVEnabled then NVBtn.BackgroundColor3 = Color3.fromRGB(200, 200, 200) end
-end)
-NVBtn.MouseLeave:Connect(function()
-    if not forestNVEnabled then NVBtn.BackgroundColor3 = Color3.fromRGB(180, 180, 180) end
-end)
-
-forestMainPage.CanvasSize = UDim2.new(0, 0, 0, 110)
-forestContentPages["主要功能"] = forestMainPage
--- 森林中的九十九夜 第4段：物品区 + 变量 + 状态标签 + 核心吸取函数（上半部分）
-
-local forestItemPage = Instance.new("ScrollingFrame")
-forestItemPage.Size = UDim2.new(1, 0, 1, 0)
-forestItemPage.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-forestItemPage.BorderSizePixel = 0
-forestItemPage.ScrollBarThickness = 3
-forestItemPage.Visible = false
-forestItemPage.ZIndex = 7
-forestItemPage.Parent = forestContentArea
-local forestItemPageList = Instance.new("UIListLayout")
-forestItemPageList.Padding = UDim.new(0, 6)
-forestItemPageList.Parent = forestItemPage
-local forestItemPageSpacer = Instance.new("Frame")
-forestItemPageSpacer.Size = UDim2.new(1, 0, 0, 6)
-forestItemPageSpacer.BackgroundTransparency = 1
-forestItemPageSpacer.Parent = forestItemPage
-
--- ===== 变量 =====
+-- 物品吸取
 local forestEnabled = false
 local forestPullLog = false
 local forestPullCoal = false
@@ -604,13 +28,58 @@ local forestPullMicrowave = false
 local forestPullScrew = false
 local forestPullFan = false
 local forestPullTire = false
+local collectRadius = 3.5
 
 local forestExcludedNames = {"Workbench", "工作台", "Table", "Crafting"}
 local forestOilKeywords = {"Barrel", "Oil", "桶", "油"}
 local forestIronKeywords = {"Iron", "铁板", "铁", "Sheet", "Metal"}
 local forestScrewKeywords = {"Screw", "螺丝", "钉", "Bolt"}
 
-function forestIsExcluded(obj)
+-- 玩家
+local speedEnabled = false
+local speedValue = 20
+local playerESP = false
+local playerESPColor = Color3.fromRGB(255, 50, 50)
+
+-- ESP
+local bunnyESP = false
+local bunnyESPColor = Color3.fromRGB(255, 150, 200)
+local wolfESP = false
+local wolfESPColor = Color3.fromRGB(180, 180, 180)
+local chestESP = false
+local chestESPColor = Color3.fromRGB(255, 215, 0)
+local stoneESP = false
+local stoneESPColor = Color3.fromRGB(200, 170, 120)
+local berryESP = false
+local berryESPColor = Color3.fromRGB(100, 150, 255)
+local childESP = false
+local childESPColor = Color3.fromRGB(255, 100, 100)
+local showDistance = false
+
+-- RGB + 射线
+local nameRGBEnabled = false
+local nameRGBSpeed = 2
+local unifiedRGB = false
+local tracerEnabled = false
+local tracerColor = Color3.fromRGB(255, 255, 255)
+
+local espCache = {}
+local tracerCache = {}
+local playerESPCache = {}
+local selectedTeleportItem = nil
+
+-- ==================== RGB颜色 ====================
+local function GetRGBColor()
+    local hue = (tick() * nameRGBSpeed) % 1
+    return Color3.fromHSV(hue, 1, 1)
+end
+local function GetNameColor(baseColor)
+    if unifiedRGB or nameRGBEnabled then return GetRGBColor() end
+    return baseColor
+end
+
+-- ==================== 辅助函数 ====================
+local function forestIsExcluded(obj)
     for _, name in ipairs(forestExcludedNames) do
         if string.find(obj.Name, name) then return true end
         local parent = obj.Parent
@@ -619,55 +88,80 @@ function forestIsExcluded(obj)
     return false
 end
 
-function forestIsOilBarrel(obj)
+local function forestIsOilBarrel(obj)
     for _, kw in ipairs(forestOilKeywords) do
         if string.find(obj.Name, kw) then return true end
     end
     return false
 end
 
-function forestIsIronPlate(obj)
+local function forestIsIronPlate(obj)
     for _, kw in ipairs(forestIronKeywords) do
         if string.find(obj.Name, kw) then return true end
     end
     return false
 end
 
-function forestIsScrew(obj)
+local function forestIsScrew(obj)
     for _, kw in ipairs(forestScrewKeywords) do
         if string.find(obj.Name, kw) then return true end
     end
     return false
 end
 
--- ===== 状态标签 =====
-local forestStatusLabel = Instance.new("TextLabel")
-forestStatusLabel.Size = UDim2.new(1, -16, 0, 24)
-forestStatusLabel.Position = UDim2.new(0, 8, 0, 0)
-forestStatusLabel.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
-forestStatusLabel.TextColor3 = Color3.fromRGB(60, 60, 60)
-forestStatusLabel.Font = Enum.Font.Gotham
-forestStatusLabel.TextSize = 11
-forestStatusLabel.Text = "状态: 等待中..."
-forestStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
-forestStatusLabel.ZIndex = 7
-forestStatusLabel.Parent = forestItemPage
-local forestStatusCorner = Instance.new("UICorner")
-forestStatusCorner.CornerRadius = UDim.new(0, 6)
-forestStatusCorner.Parent = forestStatusLabel
+-- ==================== 夜视 ====================
+local function ApplyNightVision()
+    pcall(function()
+        if nightVision then
+            Lighting.Brightness = nightVisionValue
+            Lighting.ClockTime = 14
+            Lighting.FogEnd = 100000
+            Lighting.ExposureCompensation = nightVisionValue - 1
+            Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+            Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+        else
+            Lighting.Brightness = 2
+            Lighting.ClockTime = 12
+            Lighting.FogEnd = 500
+            Lighting.ExposureCompensation = 0
+            Lighting.Ambient = Color3.fromRGB(127, 127, 127)
+            Lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
+        end
+    end)
+end
 
--- ===== 核心吸取函数 =====
-function forestPullItems()
+RunService.RenderStepped:Connect(function()
+    if nightVision then ApplyNightVision() end
+end)
+
+-- ==================== 速度 ====================
+task.spawn(function()
+    while task.wait(0.1) do
+        if speedEnabled then
+            pcall(function()
+                local c = LocalPlayer.Character
+                if c and c:FindFirstChild("Humanoid") then
+                    c.Humanoid.WalkSpeed = speedValue
+                end
+            end)
+        end
+    end
+end)
+
+-- ==================== 飞行（远程加载）====================
+local function LoadFlyScript()
+    pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/飞饼"))()
+    end)
+    WI:Notify({Title = "飞行", Content = "飞行脚本已加载", Duration = 2})
+end
+
+-- ==================== 吸取物品 ====================
+local function forestPullItems()
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
     local hrp = char.HumanoidRootPart
 
-    local counts = {
-        log = 0, coal = 0, oil = 0, bandage = 0,
-        carrot = 0, berry = 0, cake = 0,
-        iron = 0, microwave = 0, screw = 0,
-        fan = 0, tire = 0
-    }
     local allItems = {}
     local processed = {}
 
@@ -676,7 +170,6 @@ function forestPullItems()
             if not processed[obj] and not forestIsExcluded(obj) then
                 table.insert(allItems, obj)
                 processed[obj] = true
-                counts.log = counts.log + 1
             end
         end
 
@@ -684,116 +177,91 @@ function forestPullItems()
             if not processed[obj] and not forestIsExcluded(obj) then
                 table.insert(allItems, obj)
                 processed[obj] = true
-                counts.coal = counts.coal + 1
             end
         end
 
         if obj:IsA("BasePart") then
             local parent = obj.Parent
             if parent and parent:IsA("Model") and not processed[parent] and not forestIsExcluded(parent) then
-                if parent:FindFirstChild("Humanoid") then continue end
+                if not parent:FindFirstChild("Humanoid") then
+                    local hasCap = parent:FindFirstChild("Cap")
+                    local hasMain = parent:FindFirstChild("Main")
+                    local hasTie = parent:FindFirstChild("Tie")
+                    local hasHandle = parent:FindFirstChild("Handle")
+                    local hasPart = parent:FindFirstChild("Part")
+                    local hasLeaf = parent:FindFirstChild("Leaf")
+                    local hasAttachPoint = parent:FindFirstChild("AttachPoint")
+                    local hasBack = parent:FindFirstChild("Back")
+                    local hasBase = parent:FindFirstChild("Base")
+                    local hasGlass = parent:FindFirstChild("Glass")
+                    local hasStand = parent:FindFirstChild("Stand")
+                    local hasHead = parent:FindFirstChild("Head")
+                    local hasMiddle = parent:FindFirstChild("Middle")
+                    local hasFans = parent:FindFirstChild("Fans")
+                    local hasRim = parent:FindFirstChild("Rim")
+                    local hasCenter = parent:FindFirstChild("Center")
 
-                local hasCap = parent:FindFirstChild("Cap")
-                local hasMain = parent:FindFirstChild("Main")
-                local hasTie = parent:FindFirstChild("Tie")
-                local hasHandle = parent:FindFirstChild("Handle")
-                local hasPart = parent:FindFirstChild("Part")
-                local hasLeaf = parent:FindFirstChild("Leaf")
-                local hasAttachPoint = parent:FindFirstChild("AttachPoint")
-                local hasBack = parent:FindFirstChild("Back")
-                local hasBase = parent:FindFirstChild("Base")
-                local hasGlass = parent:FindFirstChild("Glass")
-                local hasStand = parent:FindFirstChild("Stand")
-                local hasHead = parent:FindFirstChild("Head")
-                local hasMiddle = parent:FindFirstChild("Middle")
-                local hasFans = parent:FindFirstChild("Fans")
-                local hasRim = parent:FindFirstChild("Rim")
-                local hasCenter = parent:FindFirstChild("Center")
-
-                -- 油桶
-                if forestPullOil and hasCap and hasMain and forestIsOilBarrel(parent) then
-                    table.insert(allItems, parent)
-                    processed[parent] = true
-                    counts.oil = counts.oil + 1
-                end
-
-                -- 绷带
-                if forestPullBandage and hasTie and hasHandle then
-                    table.insert(allItems, parent)
-                    processed[parent] = true
-                    counts.bandage = counts.bandage + 1
-                end
-
-                -- 胡萝卜
-                if forestPullCarrot and hasPart and hasLeaf and hasHandle and not hasCap and not hasMain and not hasTie then
-                    table.insert(allItems, parent)
-                    processed[parent] = true
-                    counts.carrot = counts.carrot + 1
-                end
-
-                -- 浆果
-                if forestPullBerry and hasPart and hasHandle and not hasLeaf and not hasCap and not hasMain and not hasTie then
-                    local isWorkbench = false
-                    for _, name in ipairs(forestExcludedNames) do
-                        if string.find(parent.Name, name) then isWorkbench = true; break end
-                    end
-                    if not isWorkbench then
+                    if forestPullOil and hasCap and hasMain and forestIsOilBarrel(parent) then
                         table.insert(allItems, parent)
                         processed[parent] = true
-                        counts.berry = counts.berry + 1
                     end
-                end
 
-                -- 蛋糕
-                if forestPullCake and hasHandle and not hasCap and not hasMain and not hasTie and not hasPart and not hasLeaf then
-                    local childCount = 0
-                    for _, child in pairs(parent:GetChildren()) do
-                        if child:IsA("BasePart") then childCount = childCount + 1 end
-                    end
-                    if childCount == 1 then
+                    if forestPullBandage and hasTie and hasHandle then
                         table.insert(allItems, parent)
                         processed[parent] = true
-                        counts.cake = counts.cake + 1
                     end
-                end
 
-                -- 铁板
-                if forestPullIron and hasMain and not hasCap and not hasTie and not hasHandle and not hasPart and not hasLeaf and forestIsIronPlate(parent) then
-                    if counts.iron < 8 then
+                    if forestPullCarrot and hasPart and hasLeaf and hasHandle and not hasCap and not hasMain and not hasTie then
                         table.insert(allItems, parent)
                         processed[parent] = true
-                        counts.iron = counts.iron + 1
                     end
-                end
 
-                -- 微波炉
-                if forestPullMicrowave and hasPart and hasMain and hasBack and hasBase and hasGlass and hasAttachPoint then
-                    table.insert(allItems, parent)
-                    processed[parent] = true
-                    counts.microwave = counts.microwave + 1
-                end
+                    if forestPullBerry and hasPart and hasHandle and not hasLeaf and not hasCap and not hasMain and not hasTie then
+                        local isWorkbench = false
+                        for _, name in ipairs(forestExcludedNames) do
+                            if string.find(parent.Name, name) then isWorkbench = true break end
+                        end
+                        if not isWorkbench then
+                            table.insert(allItems, parent)
+                            processed[parent] = true
+                        end
+                    end
 
-                -- 螺丝钉
-                if forestPullScrew and hasMain and not hasCap and not hasTie and not hasHandle and not hasPart and not hasLeaf and forestIsScrew(parent) then
-                    if counts.screw < 8 then
+                    if forestPullCake and hasHandle and not hasCap and not hasMain and not hasTie and not hasPart and not hasLeaf then
+                        local childCount = 0
+                        for _, child in pairs(parent:GetChildren()) do
+                            if child:IsA("BasePart") then childCount = childCount + 1 end
+                        end
+                        if childCount == 1 then
+                            table.insert(allItems, parent)
+                            processed[parent] = true
+                        end
+                    end
+
+                    if forestPullIron and hasMain and not hasCap and not hasTie and not hasHandle and not hasPart and not hasLeaf and forestIsIronPlate(parent) then
                         table.insert(allItems, parent)
                         processed[parent] = true
-                        counts.screw = counts.screw + 1
                     end
-                end
 
-                -- 风扇
-                if forestPullFan and hasStand and hasMain and hasHead and hasMiddle and hasFans then
-                    table.insert(allItems, parent)
-                    processed[parent] = true
-                    counts.fan = counts.fan + 1
-                end
+                    if forestPullMicrowave and hasPart and hasMain and hasBack and hasBase and hasGlass and hasAttachPoint then
+                        table.insert(allItems, parent)
+                        processed[parent] = true
+                    end
 
-                -- 新轮胎
-                if forestPullTire and hasRim and hasCenter and hasMain and hasPart then
-                    table.insert(allItems, parent)
-                    processed[parent] = true
-                    counts.tire = counts.tire + 1
+                    if forestPullScrew and hasMain and not hasCap and not hasTie and not hasHandle and not hasPart and not hasLeaf and forestIsScrew(parent) then
+                        table.insert(allItems, parent)
+                        processed[parent] = true
+                    end
+
+                    if forestPullFan and hasStand and hasMain and hasHead and hasMiddle and hasFans then
+                        table.insert(allItems, parent)
+                        processed[parent] = true
+                    end
+
+                    if forestPullTire and hasRim and hasCenter and hasMain and hasPart then
+                        table.insert(allItems, parent)
+                        processed[parent] = true
+                    end
                 end
             end
         end
@@ -801,12 +269,12 @@ function forestPullItems()
 
     local total = #allItems
     if total > 0 then
-        local radius = 3.5
+        local radius = collectRadius
         local angleStep = (2 * math.pi) / total
         local groundY = hrp.Position.Y - 1.0
 
         for i, obj in ipairs(allItems) do
-            local angle = i * angleStep + os.clock() * 0.2
+            local angle = i * angleStep
             local xOffset = math.cos(angle) * radius
             local zOffset = math.sin(angle) * radius
             local targetPos = Vector3.new(hrp.Position.X + xOffset, groundY, hrp.Position.Z + zOffset)
@@ -818,276 +286,258 @@ function forestPullItems()
             end
         end
     end
-
-    local totalCount = counts.log + counts.coal + counts.oil + counts.bandage + counts.carrot + counts.berry + counts.cake + counts.iron + counts.microwave + counts.screw + counts.fan + counts.tire
-    if totalCount > 0 then
-        forestStatusLabel.Text = "已吸 " .. totalCount .. " 件 | 🪵"..counts.log.." 🪨"..counts.coal.." 🛢️"..counts.oil.." 🩹"..counts.bandage.." 🥕"..counts.carrot.." 🫐"..counts.berry.." 🍰"..counts.cake.." 🔩"..counts.iron.." 📺"..counts.microwave.." 🔧"..counts.screw.." 🌀"..counts.fan.." 🛞"..counts.tire
-    else
-        forestStatusLabel.Text = "状态: 等待中..."
-    end
 end
 
-spawn(function()
-    while forestScreenGui and forestScreenGui.Parent do
+task.spawn(function()
+    while task.wait(0.8) do
         if forestEnabled then forestPullItems() end
-        task.wait(0.8)
     end
 end)
--- 森林中的九十九夜 第5段：物品卡片（上半部分：总开关 + 前6个物品）
 
-local function forestCreateItemCard(name, desc, icon, defaultState, code)
-    local Card = Instance.new("Frame")
-    Card.Size = UDim2.new(1, -16, 0, 46)
-    Card.BackgroundColor3 = Color3.fromRGB(252, 252, 252)
-    Card.BorderSizePixel = 0
-    Card.ZIndex = 7
-    Card.Parent = forestItemPage
-    local CardCorner = Instance.new("UICorner")
-    CardCorner.CornerRadius = UDim.new(0, 10)
-    CardCorner.Parent = Card
-    local CardStroke = Instance.new("UIStroke")
-    CardStroke.Color = Color3.fromRGB(230, 230, 230)
-    CardStroke.Thickness = 1
-    CardStroke.Parent = Card
-
-    local IconFrame = Instance.new("Frame")
-    IconFrame.Size = UDim2.new(0, 26, 0, 26)
-    IconFrame.Position = UDim2.new(0, 10, 0, 10)
-    IconFrame.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
-    IconFrame.BorderSizePixel = 0
-    IconFrame.ZIndex = 8
-    IconFrame.Parent = Card
-    local IconCorner = Instance.new("UICorner")
-    IconCorner.CornerRadius = UDim.new(0, 6)
-    IconCorner.Parent = IconFrame
-    local IconText = Instance.new("TextLabel")
-    IconText.Size = UDim2.new(1, 0, 1, 0)
-    IconText.Text = icon
-    IconText.TextSize = 11
-    IconText.BackgroundTransparency = 1
-    IconText.ZIndex = 9
-    IconText.Parent = IconFrame
-
-    local TitleText = Instance.new("TextLabel")
-    TitleText.Size = UDim2.new(0, 180, 0, 15)
-    TitleText.Position = UDim2.new(0, 44, 0, 5)
-    TitleText.Text = name
-    TitleText.TextColor3 = Color3.fromRGB(50, 50, 50)
-    TitleText.Font = Enum.Font.GothamSemibold
-    TitleText.TextSize = 11
-    TitleText.BackgroundTransparency = 1
-    TitleText.TextXAlignment = Enum.TextXAlignment.Left
-    TitleText.ZIndex = 8
-    TitleText.Parent = Card
-
-    local DescText = Instance.new("TextLabel")
-    DescText.Size = UDim2.new(1, -80, 0, 13)
-    DescText.Position = UDim2.new(0, 44, 0, 22)
-    DescText.Text = desc
-    DescText.TextColor3 = Color3.fromRGB(130, 130, 130)
-    DescText.Font = Enum.Font.Gotham
-    DescText.TextSize = 9
-    DescText.BackgroundTransparency = 1
-    DescText.TextXAlignment = Enum.TextXAlignment.Left
-    DescText.ZIndex = 8
-    DescText.Parent = Card
-
-    local Toggle = Instance.new("TextButton")
-    Toggle.Size = UDim2.new(0, 36, 0, 20)
-    Toggle.Position = UDim2.new(1, -46, 0, 13)
-    Toggle.BackgroundColor3 = defaultState and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(200, 200, 200)
-    Toggle.Text = ""
-    Toggle.BorderSizePixel = 0
-    Toggle.ZIndex = 8
-    Toggle.AutoButtonColor = false
-    Toggle.Parent = Card
-    local ToggleCorner = Instance.new("UICorner")
-    ToggleCorner.CornerRadius = UDim.new(1, 0)
-    ToggleCorner.Parent = Toggle
-    local ToggleKnob = Instance.new("Frame")
-    ToggleKnob.Size = UDim2.new(0, 16, 0, 16)
-    ToggleKnob.Position = defaultState and UDim2.new(1, -18, 0, 2) or UDim2.new(0, 2, 0, 2)
-    ToggleKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    ToggleKnob.BorderSizePixel = 0
-    ToggleKnob.ZIndex = 9
-    ToggleKnob.Parent = Toggle
-    local KnobCorner = Instance.new("UICorner")
-    KnobCorner.CornerRadius = UDim.new(1, 0)
-    KnobCorner.Parent = ToggleKnob
-
-    local toggleState = defaultState
-    Toggle.MouseButton1Click:Connect(function()
-        toggleState = not toggleState
-        if toggleState then
-            Toggle.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-            ToggleKnob:TweenPosition(UDim2.new(1, -18, 0, 2), "Out", "Quad", 0.15)
-        else
-            Toggle.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-            ToggleKnob:TweenPosition(UDim2.new(0, 2, 0, 2), "Out", "Quad", 0.15)
-        end
-        if code == "log" then forestPullLog = toggleState
-        elseif code == "coal" then forestPullCoal = toggleState
-        elseif code == "oil" then forestPullOil = toggleState
-        elseif code == "bandage" then forestPullBandage = toggleState
-        elseif code == "carrot" then forestPullCarrot = toggleState
-        elseif code == "berry" then forestPullBerry = toggleState
-        elseif code == "cake" then forestPullCake = toggleState
-        elseif code == "iron" then forestPullIron = toggleState
-        elseif code == "microwave" then forestPullMicrowave = toggleState
-        elseif code == "screw" then forestPullScrew = toggleState
-        elseif code == "fan" then forestPullFan = toggleState
-        elseif code == "tire" then forestPullTire = toggleState
-        end
-    end)
+-- ==================== ESP系统 ====================
+local function ClearESP()
+    for obj, _ in pairs(espCache) do pcall(function() obj:Destroy() end) end
+    espCache = {}
+    for _, line in ipairs(tracerCache) do pcall(function() line:Remove() end) end
+    tracerCache = {}
+    for _, hl in ipairs(playerESPCache) do pcall(function() hl:Destroy() end) end
+    playerESPCache = {}
 end
 
--- 总开关卡片
-local CardMain = Instance.new("Frame")
-CardMain.Size = UDim2.new(1, -16, 0, 46)
-CardMain.BackgroundColor3 = Color3.fromRGB(252, 252, 252)
-CardMain.BorderSizePixel = 0
-CardMain.ZIndex = 7
-CardMain.Parent = forestItemPage
-local CardMainCorner = Instance.new("UICorner")
-CardMainCorner.CornerRadius = UDim.new(0, 10)
-CardMainCorner.Parent = CardMain
-local CardMainStroke = Instance.new("UIStroke")
-CardMainStroke.Color = Color3.fromRGB(230, 230, 230)
-CardMainStroke.Thickness = 1
-CardMainStroke.Parent = CardMain
-local IconFrameM = Instance.new("Frame")
-IconFrameM.Size = UDim2.new(0, 26, 0, 26)
-IconFrameM.Position = UDim2.new(0, 10, 0, 10)
-IconFrameM.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
-IconFrameM.BorderSizePixel = 0
-IconFrameM.ZIndex = 8
-IconFrameM.Parent = CardMain
-local IconCornerM = Instance.new("UICorner")
-IconCornerM.CornerRadius = UDim.new(0, 6)
-IconCornerM.Parent = IconFrameM
-local IconTextM = Instance.new("TextLabel")
-IconTextM.Size = UDim2.new(1, 0, 1, 0)
-IconTextM.Text = "⚡"
-IconTextM.TextSize = 11
-IconTextM.BackgroundTransparency = 1
-IconTextM.ZIndex = 9
-IconTextM.Parent = IconFrameM
-local TitleTextM = Instance.new("TextLabel")
-TitleTextM.Size = UDim2.new(0, 180, 0, 15)
-TitleTextM.Position = UDim2.new(0, 44, 0, 5)
-TitleTextM.Text = "开启吸取"
-TitleTextM.TextColor3 = Color3.fromRGB(50, 50, 50)
-TitleTextM.Font = Enum.Font.GothamSemibold
-TitleTextM.TextSize = 11
-TitleTextM.BackgroundTransparency = 1
-TitleTextM.TextXAlignment = Enum.TextXAlignment.Left
-TitleTextM.ZIndex = 8
-TitleTextM.Parent = CardMain
-local DescTextM = Instance.new("TextLabel")
-DescTextM.Size = UDim2.new(1, -80, 0, 13)
-DescTextM.Position = UDim2.new(0, 44, 0, 22)
-DescTextM.Text = "总开关"
-DescTextM.TextColor3 = Color3.fromRGB(130, 130, 130)
-DescTextM.Font = Enum.Font.Gotham
-DescTextM.TextSize = 9
-DescTextM.BackgroundTransparency = 1
-DescTextM.TextXAlignment = Enum.TextXAlignment.Left
-DescTextM.ZIndex = 8
-DescTextM.Parent = CardMain
-local BtnMain = Instance.new("TextButton")
-BtnMain.Size = UDim2.new(0, 50, 0, 20)
-BtnMain.Position = UDim2.new(1, -58, 0, 13)
-BtnMain.Text = "执行"
-BtnMain.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnMain.Font = Enum.Font.GothamBold
-BtnMain.TextSize = 10
-BtnMain.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-BtnMain.BorderSizePixel = 0
-BtnMain.ZIndex = 9
-BtnMain.AutoButtonColor = false
-BtnMain.Parent = CardMain
-local BtnMainCorner = Instance.new("UICorner")
-BtnMainCorner.CornerRadius = UDim.new(0, 5)
-BtnMainCorner.Parent = BtnMain
-
-local forestMainToggle = false
-BtnMain.MouseButton1Click:Connect(function()
-    forestMainToggle = not forestMainToggle
-    if forestMainToggle then
-        BtnMain.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
-        BtnMain.Text = "停止"
-        forestEnabled = true
-    else
-        BtnMain.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-        BtnMain.Text = "执行"
-        forestEnabled = false
+local function CreateESP(obj, color, displayName)
+    local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head") or obj:FindFirstChild("Handle")
+    if not root then for _, child in ipairs(obj:GetDescendants()) do if child:IsA("BasePart") then root = child; break end end end
+    if not root then return end
+    
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local nameColor = GetNameColor(color)
+    
+    local hl = Instance.new("Highlight")
+    hl.FillColor, hl.FillTransparency, hl.OutlineColor, hl.OutlineTransparency = color, 0.5, color, 0
+    hl.Adornee, hl.DepthMode = obj, Enum.HighlightDepthMode.AlwaysOnTop
+    hl.Parent = obj; espCache[hl] = true
+    
+    local billboard = Instance.new("BillboardGui")
+    billboard.Size, billboard.StudsOffset, billboard.AlwaysOnTop = UDim2.new(0, 200, 0, 40), Vector3.new(0, 3, 0), true
+    billboard.Parent = root; espCache[billboard] = true
+    local label = Instance.new("TextLabel")
+    label.Size, label.BackgroundTransparency, label.Text, label.TextColor3 = UDim2.new(1, 0, 1, 0), 1, displayName, nameColor
+    label.TextStrokeTransparency, label.TextStrokeColor3 = 0, Color3.fromRGB(0, 0, 0)
+    label.Font, label.TextSize = Enum.Font.SourceSansBold, 18
+    label.Parent = billboard
+    
+    if showDistance and hrp then
+        local distVal = math.floor((hrp.Position - root.Position).Magnitude)
+        local distBillboard = Instance.new("BillboardGui")
+        distBillboard.Size, distBillboard.StudsOffset, distBillboard.AlwaysOnTop = UDim2.new(0, 100, 0, 25), Vector3.new(0, 1.5, 0), true
+        distBillboard.Parent = root; espCache[distBillboard] = true
+        local distLabel = Instance.new("TextLabel")
+        distLabel.Size, distLabel.BackgroundTransparency, distLabel.Text = UDim2.new(1, 0, 1, 0), 1, distVal .. "m"
+        distLabel.TextColor3, distLabel.TextStrokeTransparency, distLabel.TextStrokeColor3 = Color3.fromRGB(255, 255, 255), 0, Color3.fromRGB(0, 0, 0)
+        distLabel.Font, distLabel.TextSize = Enum.Font.SourceSansBold, 14
+        distLabel.Parent = distBillboard
     end
-end)
-BtnMain.MouseEnter:Connect(function()
-    if not forestMainToggle then BtnMain.BackgroundColor3 = Color3.fromRGB(255, 160, 20) end
-end)
-BtnMain.MouseLeave:Connect(function()
-    if not forestMainToggle then BtnMain.BackgroundColor3 = Color3.fromRGB(255, 140, 0) end
-end)
-
--- 创建所有物品卡片（前6个）
-forestCreateItemCard("木头", "吸取Log", "🪵", false, "log")
-forestCreateItemCard("煤炭", "吸取Coal", "🪨", false, "coal")
-forestCreateItemCard("油桶", "吸取油桶", "🛢️", false, "oil")
-forestCreateItemCard("绷带", "吸取绷带", "🩹", false, "bandage")
-forestCreateItemCard("胡萝卜", "吸取胡萝卜", "🥕", false, "carrot")
-forestCreateItemCard("浆果", "吸取浆果", "🫐", false, "berry")
--- 森林中的九十九夜 第6段：物品卡片（下半部分：后6个物品）+ 打开关闭动画 + 导航初始化
-
--- 创建剩余物品卡片（后6个）
-forestCreateItemCard("蛋糕", "吸取蛋糕", "🍰", false, "cake")
-forestCreateItemCard("铁板", "吸取铁板", "🔩", false, "iron")
-forestCreateItemCard("微波炉", "吸取微波炉", "📺", false, "microwave")
-forestCreateItemCard("螺丝钉", "吸取螺丝钉", "🔧", false, "screw")
-forestCreateItemCard("风扇", "吸取风扇", "🌀", false, "fan")
-forestCreateItemCard("新轮胎", "吸取新轮胎", "🛞", false, "tire")
-
-forestItemPage.CanvasSize = UDim2.new(0, 0, 0, 13 * 52 + 60)
-forestContentPages["物品区"] = forestItemPage
-
--- ===== 打开关闭动画 =====
-forestContentPages["公告"].Visible = true
-
-local forestIsOpen = false
-local function forestOpenPanel()
-    forestIsOpen = true
-    forestMainFrame.Size = UDim2.new(0, 0, 0, 0)
-    forestMainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-    forestMainFrame.Visible = true
-    TweenService:Create(forestMainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, 580, 0, 440),
-        Position = UDim2.new(0.5, -290, 0.5, -220)
-    }):Play()
+    
+    if tracerEnabled and hrp then
+        local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
+        if onScreen then
+            local line = Drawing.new("Line")
+            line.From, line.To = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y), Vector2.new(screenPos.X, screenPos.Y)
+            line.Color, line.Thickness, line.Visible = tracerColor, 1, true
+            table.insert(tracerCache, line)
+        end
+    end
 end
 
-local function forestClosePanel()
-    forestIsOpen = false
-    TweenService:Create(forestMainFrame, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-        Size = UDim2.new(0, 0, 0, 0),
-        Position = UDim2.new(0.5, 0, 0.5, 0)
-    }):Play()
-    task.wait(0.15)
-    forestMainFrame.Visible = false
+local function UpdateESP()
+    ClearESP()
+    
+    if playerESP then
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and plr.Character then
+                pcall(function()
+                    local hl = Instance.new("Highlight")
+                    hl.FillColor, hl.FillTransparency, hl.OutlineColor = playerESPColor, 0.4, playerESPColor
+                    hl.Adornee, hl.DepthMode = plr.Character, Enum.HighlightDepthMode.AlwaysOnTop
+                    hl.Parent = plr.Character; table.insert(playerESPCache, hl)
+                    local root = plr.Character:FindFirstChild("HumanoidRootPart") or plr.Character:FindFirstChild("Head")
+                    if root then
+                        local billboard = Instance.new("BillboardGui")
+                        billboard.Size, billboard.StudsOffset, billboard.AlwaysOnTop = UDim2.new(0, 200, 0, 40), Vector3.new(0, 3, 0), true
+                        billboard.Parent = root; table.insert(playerESPCache, billboard)
+                        local label = Instance.new("TextLabel")
+                        label.Size, label.BackgroundTransparency, label.Text = UDim2.new(1, 0, 1, 0), 1, plr.Name
+                        label.TextColor3, label.TextStrokeTransparency, label.TextStrokeColor3 = GetNameColor(playerESPColor), 0, Color3.fromRGB(0, 0, 0)
+                        label.Font, label.TextSize = Enum.Font.SourceSansBold, 18
+                        label.Parent = billboard
+                        if tracerEnabled then
+                            local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
+                            if onScreen then
+                                local line = Drawing.new("Line")
+                                line.From, line.To = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y), Vector2.new(screenPos.X, screenPos.Y)
+                                line.Color, line.Thickness, line.Visible = tracerColor, 1, true
+                                table.insert(tracerCache, line)
+                            end
+                        end
+                    end
+                end)
+            end
+        end
+    end
+    
+    if not (bunnyESP or wolfESP or chestESP or stoneESP or berryESP or childESP) and not tracerEnabled then return end
+    
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        pcall(function()
+            if not obj:IsA("Model") then return end
+            local name = obj.Name
+            if bunnyESP and name == "Bunny" then CreateESP(obj, bunnyESPColor, "兔子") end
+            if wolfESP and name == "Wolf" then CreateESP(obj, wolfESPColor, "狼") end
+            if chestESP and name == "ChestLid" then CreateESP(obj, chestESPColor, "宝箱") end
+            if stoneESP and name == "Stone" then CreateESP(obj, stoneESPColor, "宝藏土堆") end
+            if berryESP and name == "Berry" then CreateESP(obj, berryESPColor, "蓝莓") end
+            if childESP and string.find(name, "Lost Child") then CreateESP(obj, childESPColor, "小孩") end
+        end)
+    end
 end
 
-forestOpenBtn.MouseButton1Click:Connect(function()
-    if forestIsOpen then forestClosePanel() else forestOpenPanel() end
+task.spawn(function() while task.wait(0.3) do UpdateESP() end end)
+
+-- ==================== 传送功能 ====================
+local function TeleportToNearest(targetName, displayName)
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
+    local closest, closestDist = nil, math.huge
+    
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        pcall(function()
+            local match = false
+            if obj:IsA("Model") and obj.Name == targetName then match = true
+            elseif obj:IsA("BasePart") and obj.Name == targetName then match = true
+            elseif targetName == "Lost Child" and obj:IsA("Model") and string.find(obj.Name, "Lost Child") then match = true end
+            if match then
+                local root = obj:IsA("Model") and (obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head") or obj:FindFirstChild("Handle")) or obj
+                if not root and obj:IsA("Model") then for _, child in ipairs(obj:GetDescendants()) do if child:IsA("BasePart") then root = child; break end end end
+                if root then
+                    local dist = (hrp.Position - root.Position).Magnitude
+                    if dist < closestDist then closestDist = dist; closest = root end
+                end
+            end
+        end)
+    end
+    
+    if closest then pcall(function() hrp.CFrame = closest.CFrame * CFrame.new(0, 2, 0) end); WI:Notify({Title = "传送成功", Content = displayName, Duration = 2})
+    else WI:Notify({Title = "传送失败", Content = "没找到" .. displayName, Duration = 2}) end
+end
+
+-- ==================== 物品列表 ====================
+local itemList = {"Log", "Coal", "Oil Barrel", "Bandage", "Carrot", "Berry", "Cake", "Iron Plate", "Microwave", "Screw", "Fan", "Tire"}
+local itemNameMap = {["Log"]="木头",["Coal"]="煤炭",["Oil Barrel"]="油桶",["Bandage"]="绷带",["Carrot"]="胡萝卜",["Berry"]="浆果",["Cake"]="蛋糕",["Iron Plate"]="铁板",["Microwave"]="微波炉",["Screw"]="螺丝钉",["Fan"]="风扇",["Tire"]="轮胎"}
+
+-- ==================== 冰白主题 ====================
+WI:AddTheme({Name = "冰白", Accent = "#80C0FF", Outline = "#6090C0", Text = "#FFFFFF", Placeholder = "#D0E0FF"})
+
+-- ==================== Wind UI ====================
+local Window = WI:CreateWindow({
+    Title = "黑脚本--森林中的99夜", Icon = "rbxassetid://129260712070622", IconThemed = true,
+    Size = UDim2.fromOffset(480, 400), ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "冰白", Transparent = true, ScrollBarEnabled = true
+})
+
+-- 公告
+Window:Tab({Title = "公告", Icon = "info"}):Paragraph({Title = "森林中的99夜 V2.9", Desc = "夜视 | 吸附12种 | 传送 | 透视 | RGB | 射线 | 飞行"})
+
+-- 主要功能
+local T2 = Window:Tab({Title = "主要功能", Icon = "settings"})
+T2:Section({Title = "夜视"})
+T2:Toggle({Title = "开启夜视", Value = false, Callback = function(v) nightVision = v; ApplyNightVision() end})
+T2:Slider({Title = "亮度", Value = {Min = 1, Max = 5, Default = 2}, Step = 0.5, Callback = function(v) nightVisionValue = v end})
+
+T2:Section({Title = "物品吸附"})
+T2:Toggle({Title = "开启吸附总开关", Value = false, Callback = function(v) forestEnabled = v end})
+T2:Slider({Title = "光环半径", Value = {Min = 1, Max = 10, Default = 3.5}, Step = 0.5, Callback = function(v) collectRadius = v end})
+T2:Dropdown({Title = "选择要吸附的物品（可多选）", Values = itemList, Value = {}, Multi = true, AllowNone = true, Callback = function(v)
+    forestPullLog, forestPullCoal, forestPullOil, forestPullBandage = false, false, false, false
+    forestPullCarrot, forestPullBerry, forestPullCake, forestPullIron = false, false, false, false
+    forestPullMicrowave, forestPullScrew, forestPullFan, forestPullTire = false, false, false, false
+    for _, item in ipairs(v) do
+        if item == "Log" then forestPullLog = true elseif item == "Coal" then forestPullCoal = true
+        elseif item == "Oil Barrel" then forestPullOil = true elseif item == "Bandage" then forestPullBandage = true
+        elseif item == "Carrot" then forestPullCarrot = true elseif item == "Berry" then forestPullBerry = true
+        elseif item == "Cake" then forestPullCake = true elseif item == "Iron Plate" then forestPullIron = true
+        elseif item == "Microwave" then forestPullMicrowave = true elseif item == "Screw" then forestPullScrew = true
+        elseif item == "Fan" then forestPullFan = true elseif item == "Tire" then forestPullTire = true end
+    end
+end})
+
+-- 玩家
+local T3 = Window:Tab({Title = "玩家", Icon = "user"})
+T3:Section({Title = "移动速度"})
+T3:Toggle({Title = "可调移速", Value = false, Callback = function(v) speedEnabled = v; if not v then pcall(function() LocalPlayer.Character.Humanoid.WalkSpeed = 16 end) end end})
+T3:Slider({Title = "移速数值", Value = {Min = 16, Max = 100, Default = 20}, Step = 1, Callback = function(v) speedValue = v end})
+T3:Section({Title = "飞行"})
+T3:Button({Title = "加载飞行脚本", Justify = "Center", Color = Color3.fromRGB(100, 200, 255), Callback = function() LoadFlyScript() end})
+T3:Section({Title = "玩家透视"})
+T3:Toggle({Title = "透视所有玩家", Value = false, Callback = function(v) playerESP = v end})
+T3:Colorpicker({Title = "玩家透视颜色", Default = Color3.fromRGB(255, 50, 50), Callback = function(c) playerESPColor = c end})
+
+-- 传送
+local T4 = Window:Tab({Title = "传送", Icon = "map"})
+T4:Section({Title = "传送到指定物品"})
+T4:Dropdown({Title = "选择物品（单选）", Values = itemList, Value = "", Multi = false, AllowNone = true, Callback = function(v)
+    if type(v) == "string" and v ~= "" then selectedTeleportItem = v
+    elseif type(v) == "table" and #v > 0 then selectedTeleportItem = v[1]
+    else selectedTeleportItem = nil end
+end})
+T4:Button({Title = "传送到该物品", Justify = "Center", Color = Color3.fromRGB(255, 140, 0), Callback = function()
+    if selectedTeleportItem then TeleportToNearest(selectedTeleportItem, itemNameMap[selectedTeleportItem] or selectedTeleportItem)
+    else WI:Notify({Title = "传送失败", Content = "请先选择物品", Duration = 2}) end
+end})
+T4:Section({Title = "快捷传送"})
+T4:Button({Title = "传送回家", Justify = "Center", Color = Color3.fromRGB(80, 192, 255), Callback = function()
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then char.HumanoidRootPart.CFrame = CFrame.new(10, 4, -0.4); WI:Notify({Title = "传送成功", Content = "已回家", Duration = 2}) end
+end})
+T4:Button({Title = "传送到最近小孩", Justify = "Center", Color = Color3.fromRGB(255, 100, 100), Callback = function() TeleportToNearest("Lost Child", "小孩") end})
+T4:Button({Title = "传送到最近宝箱", Justify = "Center", Color = Color3.fromRGB(255, 215, 0), Callback = function() TeleportToNearest("ChestLid", "宝箱") end})
+T4:Button({Title = "传送到最近蓝莓", Justify = "Center", Color = Color3.fromRGB(100, 150, 255), Callback = function() TeleportToNearest("Berry", "蓝莓") end})
+
+-- 透视
+local T5 = Window:Tab({Title = "透视", Icon = "eye"})
+T5:Section({Title = "RGB颜色设置"})
+T5:Toggle({Title = "统一RGB", Value = false, Callback = function(v) unifiedRGB = v end})
+T5:Toggle({Title = "名字RGB", Value = false, Callback = function(v) nameRGBEnabled = v end})
+T5:Slider({Title = "RGB速度", Value = {Min = 0.5, Max = 5, Default = 2}, Step = 0.5, Callback = function(v) nameRGBSpeed = v end})
+T5:Section({Title = "射线"})
+T5:Toggle({Title = "开启射线", Value = false, Callback = function(v) tracerEnabled = v end})
+T5:Colorpicker({Title = "射线颜色", Default = Color3.fromRGB(255, 255, 255), Callback = function(c) tracerColor = c end})
+T5:Section({Title = "动物"})
+T5:Toggle({Title = "透视兔子", Value = false, Callback = function(v) bunnyESP = v end})
+T5:Colorpicker({Title = "兔子颜色", Default = Color3.fromRGB(255, 150, 200), Callback = function(c) bunnyESPColor = c end})
+T5:Toggle({Title = "透视狼", Value = false, Callback = function(v) wolfESP = v end})
+T5:Colorpicker({Title = "狼颜色", Default = Color3.fromRGB(180, 180, 180), Callback = function(c) wolfESPColor = c end})
+T5:Section({Title = "物品"})
+T5:Toggle({Title = "透视宝箱", Value = false, Callback = function(v) chestESP = v end})
+T5:Colorpicker({Title = "宝箱颜色", Default = Color3.fromRGB(255, 215, 0), Callback = function(c) chestESPColor = c end})
+T5:Toggle({Title = "透视宝藏土堆", Value = false, Callback = function(v) stoneESP = v end})
+T5:Colorpicker({Title = "土堆颜色", Default = Color3.fromRGB(200, 170, 120), Callback = function(c) stoneESPColor = c end})
+T5:Toggle({Title = "透视蓝莓", Value = false, Callback = function(v) berryESP = v end})
+T5:Colorpicker({Title = "蓝莓颜色", Default = Color3.fromRGB(100, 150, 255), Callback = function(c) berryESPColor = c end})
+T5:Section({Title = "小孩"})
+T5:Toggle({Title = "透视小孩", Value = false, Callback = function(v) childESP = v end})
+T5:Colorpicker({Title = "小孩颜色", Default = Color3.fromRGB(255, 100, 100), Callback = function(c) childESPColor = c end})
+T5:Toggle({Title = "显示距离", Value = false, Callback = function(v) showDistance = v end})
+
+-- 设置
+local T6 = Window:Tab({Title = "设置", Icon = "settings"})
+T6:Paragraph({Title = "森林中的99夜 V2.9", Desc = "飞行按钮远程加载"})
+T6:Button({Title = "关闭界面", Callback = function() Window:Close() end})
+
+Window:OnClose(function()
+    nightVision = false; ApplyNightVision(); ClearESP(); forestEnabled = false
+    if speedEnabled then pcall(function() LocalPlayer.Character.Humanoid.WalkSpeed = 16 end) end
 end)
 
-forestCloseButton.MouseButton1Click:Connect(function()
-    forestClosePanel()
-end)
-
-forestSelectNav(forestNavButtons[1].button, "公告")
-
-print("森林中的九十九夜 UI 加载完成")
-print("功能: 传送篝火 | 夜视 | 吸取 12种物品")
-
-
-
-
+WI:Notify({Title = "森林中的99夜", Content = "V2.9 加载完成", Duration = 3})
+print("森林中的99夜 V2.9 加载完成")
