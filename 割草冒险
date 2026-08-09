@@ -40,7 +40,6 @@ local autoSell = false
 local sellInterval = 3
 
 local selectedPlayerName = ""
-local panelTransparency = 0
 
 -- ==================== 获取点击事件 ====================
 local function getClickEvent()
@@ -144,7 +143,7 @@ spawn(function()
     end
 end)
 
--- ==================== 传送到稀有物品 ====================
+-- ==================== 传送到稀有物品（全部改用数字匹配）====================
 local function teleportToRareItem()
     if selectedRareItem == "" then
         WI:Notify({Title = "传送失败", Content = "请先选择物品", Duration = 2})
@@ -158,30 +157,24 @@ local function teleportToRareItem()
     end
     local hrp = char.HumanoidRootPart
     
+    -- 全部用数字前缀匹配
+    local numberPrefix = ""
+    if selectedRareItem == "卷轴戒指" then numberPrefix = "26_"
+    elseif selectedRareItem == "黎明王冠" then numberPrefix = "30_"
+    elseif selectedRareItem == "微型传送门" then numberPrefix = "27_"
+    elseif selectedRareItem == "彗星之心" then numberPrefix = "29_"
+    elseif selectedRareItem == "月亮碎片" then numberPrefix = "32_"
+    elseif selectedRareItem == "黑洞" then numberPrefix = "04_"
+    elseif selectedRareItem == "天堂之星" then numberPrefix = "39_"
+    elseif selectedRareItem == "生命之星" then numberPrefix = "33_"
+    elseif selectedRareItem == "萨满面具" then numberPrefix = "35_"
+    end
+    
     local target = nil
     local minDist = math.huge
     
-    local searchName = ""
-    if selectedRareItem == "卷轴戒指" then searchName = "26_Scroll_Ring"
-    elseif selectedRareItem == "黎明王冠" then searchName = "30_"
-    elseif selectedRareItem == "微型传送门" then searchName = "27_Tiny Portal"
-    elseif selectedRareItem == "彗星之心" then searchName = "29_Comet_Heart"
-    elseif selectedRareItem == "月亮碎片" then searchName = "32_"
-    elseif selectedRareItem == "黑洞" then searchName = "04 - BLACK HOLE [E]"
-    elseif selectedRareItem == "天堂之星" then searchName = "39_Celestial_Star"
-    elseif selectedRareItem == "生命之星" then searchName = "33_Living_Star"
-    elseif selectedRareItem == "萨满面具" then searchName = "35_Shaman_Mask"
-    end
-    
     for _, obj in ipairs(Workspace:GetDescendants()) do
-        local match = false
-        if selectedRareItem == "黎明王冠" or selectedRareItem == "月亮碎片" then
-            if obj.Name:find(searchName) then match = true end
-        else
-            if obj.Name == searchName then match = true end
-        end
-        
-        if match then
+        if obj.Name:find(numberPrefix) then
             local root = obj:IsA("BasePart") and obj or (obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildOfClass("BasePart"))
             if root then
                 local d = (hrp.Position - root.Position).Magnitude
@@ -360,8 +353,8 @@ local Window = WI:CreateWindow({
 })
 
 Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
-    Title = "黑脚本--加1割草冒险 V1.5",
-    Desc = "9种稀有 | 世界终点 | 自动售卖\n飞行 | 透视 | 速度 | 删除草\n全网首发制作者:CHANGCHENG66"
+    Title = "黑脚本--加1割草冒险 V1.5 8月9号修订",
+    Desc = "9种稀有 | 世界终点 | 自动售卖\n飞行 | 透视 | 速度 | 删除草"
 })
 
 local T2 = Window:Tab({Title = "主要功能", Icon = "solar:star-bold"})
@@ -426,15 +419,24 @@ T4:Button({Title = "加载飞行脚本", Justify = "Center", Callback = function
     WI:Notify({Title = "飞行", Content = "已加载", Duration = 2})
 end})
 
--- 设置
-Window:Tab({Title = "设置", Icon = "solar:settings-bold"}):Paragraph({
-    Title = "功能状态",
-    Desc = "自动点击: " .. (autoClick and "✅" or "❌") .. 
-           "\n自动售卖: " .. (autoSell and "✅" or "❌") .. 
-           "\n删除草地: " .. (deleteGrassEnabled and "✅" or "❌") .. 
-           "\n透视玩家: " .. (playerESP and "✅" or "❌") .. 
-           "\n速度加成: " .. (speedBoost and "✅" or "❌")
-})
+-- 设置（实时更新）
+local T5 = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+local statusParagraph = T5:Paragraph({Title = "功能状态", Desc = "加载中..."})
+
+spawn(function()
+    while true do
+        pcall(function()
+            local status = "自动点击: " .. (autoClick and "✅" or "❌") ..
+                "  自动售卖: " .. (autoSell and "✅" or "❌") .. "\n" ..
+                "删除草地: " .. (deleteGrassEnabled and "✅" or "❌") ..
+                "  透视玩家: " .. (playerESP and "✅" or "❌") .. "\n" ..
+                "速度加成: " .. (speedBoost and "✅" or "❌") ..
+                "  速度值: " .. speedValue
+            statusParagraph:SetDesc(status)
+        end)
+        task.wait(0.5)
+    end
+end)
 
 Window:OnClose(function()
     clearPlayer()
