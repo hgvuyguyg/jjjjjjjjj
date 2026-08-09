@@ -498,7 +498,7 @@ for _, item in ipairs(navItems) do
     NavButton.MouseLeave:Connect(function() if NavButton ~= selectedNav then NavButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end end)
     table.insert(navButtons, {button = NavButton, name = item.name})
 end
--- 主脚本 第2段：createButtonCard + createFeatureToggle 前半（到 god 结束并接上 teamglow）
+-- 主脚本 第2段：createButtonCard + createFeatureToggle 前半（到 god 结束）
 
 local function createButtonCard(parent, name, desc, icon, url)
     local Card = Instance.new("Frame")
@@ -609,6 +609,7 @@ local function createButtonCard(parent, name, desc, icon, url)
         Btn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
     end)
 end
+
 local function createFeatureToggle(parent, name, description, icon, runCode)
     local Card = Instance.new("Frame")
     Card.Size = UDim2.new(1, -16, 0, 46); Card.Position = UDim2.new(0, 8, 0, 0)
@@ -713,8 +714,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                         if c and c:FindFirstChild("Humanoid") then c.Humanoid.Health = 99999 end
                     end)
                 end
-            elseif runCode == "teamglow" then
--- 主脚本 第3段：createFeatureToggle 后半（teamglow 到结束）
+                -- 主脚本 第3段：createFeatureToggle 后半（从 teamglow 到结尾）
 
             elseif runCode == "teamglow" then
                 local myTeam = Players.LocalPlayer.Team
@@ -791,6 +791,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                     end
                 end)
             elseif runCode == "serverinfo" then
+                local infoActive = true
                 local infoGui = Instance.new("ScreenGui")
                 infoGui.Name = "ServerInfoGui"
                 infoGui.ResetOnSpawn = false
@@ -838,8 +839,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                 nearestLabel.TextYAlignment = Enum.TextYAlignment.Top
                 nearestLabel.ZIndex = 501
                 nearestLabel.Parent = infoFrame
-                local infoActive = true
-                infJumpConnection = RunService.RenderStepped:Connect(function()
+                local renderConn = RunService.RenderStepped:Connect(function()
                     if not infoActive then return end
                     playerCountLabel.Text = "服务器人数: " .. #Players:GetPlayers()
                     local c = Players.LocalPlayer.Character
@@ -857,14 +857,14 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                     end
                     nearestLabel.Text = nearestText
                 end)
-                infJumpConnection = {Disconnect = function() infoActive = false; infoGui:Destroy() end}
+                infJumpConnection = {Disconnect = function() infoActive = false; if infoGui then infoGui:Destroy() end; if renderConn then renderConn:Disconnect() end end}
             elseif runCode == "dance1" then
                 local c = Players.LocalPlayer.Character
                 if c and c:FindFirstChild("Humanoid") then
                     local danceActive = true
                     local anim = Instance.new("Animation"); anim.AnimationId = "rbxassetid://5918726674"
                     local track = c.Humanoid:LoadAnimation(anim); track:Play()
-                    infJumpConnection = {Disconnect = function() danceActive = false; track:Stop() end}
+                    infJumpConnection = {Disconnect = function() danceActive = false; if track then track:Stop() end end}
                 end
             elseif runCode == "fire" then
                 local c = Players.LocalPlayer.Character
@@ -930,6 +930,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
             elseif runCode == "clearfog" then
                 Lighting.FogEnd = 100000; Lighting.FogStart = 50000
             elseif runCode == "subtitle" then
+                local subActive = true
                 local subGui = Instance.new("ScreenGui")
                 subGui.Name = "SubtitleGui"
                 subGui.ResetOnSpawn = false
@@ -969,15 +970,14 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                 timeLabel.ZIndex = 500
                 timeLabel.Parent = subGui
                 local subHue = 0
-                local subActive = true
-                infJumpConnection = RunService.RenderStepped:Connect(function(delta)
+                local renderConn = RunService.RenderStepped:Connect(function(delta)
                     if not subActive then return end
                     subHue = (subHue + delta * 0.3) % 1
                     subLabel.TextColor3 = Color3.fromHSV(subHue, 1, 1)
                     local now = os.date("*t")
                     timeLabel.Text = now.year .. "年" .. now.month .. "月" .. now.day .. "日 " .. string.format("%02d:%02d:%02d", now.hour, now.min, now.sec)
                 end)
-                infJumpConnection = {Disconnect = function() subActive = false; subGui:Destroy() end}
+                infJumpConnection = {Disconnect = function() subActive = false; if subGui then subGui:Destroy() end; if renderConn then renderConn:Disconnect() end end}
             elseif runCode == "rainbowname" then
                 local c = Players.LocalPlayer.Character
                 if c and c:FindFirstChild("Head") then
@@ -1434,7 +1434,6 @@ local pageContents = {
             {name = "启示录", desc = "点击执行", icon = "⚠️", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/启示录"},
             {name = "战争大亨", desc = "点击执行", icon = "🦚", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/战争"},
             {name = "海上生存100天", desc = "点击执行", icon = "💧", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/海上100天"},
-            
         }
     },
     ["国内脚本"] = {
@@ -1507,6 +1506,3 @@ OpenBtn.MouseButton1Click:Connect(function()
 end)
 CloseButton.MouseButton1Click:Connect(function() closePanel() end)
 selectNav(navButtons[1].button, "公告")
-
-
-
