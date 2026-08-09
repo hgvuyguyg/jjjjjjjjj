@@ -1,0 +1,444 @@
+-- 🌙 加1割草冒险 | V1.5
+
+local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+if not WI then return end
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local Camera = Workspace.CurrentCamera
+
+-- 变量
+local autoClick = false
+local autoClickInterval = 0.01
+
+local deleteGrassEnabled = false
+
+local playerESP = false
+local playerESPColor = Color3.fromRGB(255, 50, 50)
+local showDistance = false
+local playerESPObjects = {}
+
+local speedBoost = false
+local speedValue = 50
+
+local selectedRareItem = ""
+local rareItemDisplayNames = {
+    "卷轴戒指",
+    "黎明王冠",
+    "微型传送门",
+    "彗星之心",
+    "月亮碎片",
+    "黑洞",
+    "天堂之星",
+    "生命之星",
+    "萨满面具"
+}
+
+local autoSell = false
+local sellInterval = 3
+
+local selectedPlayerName = ""
+local panelTransparency = 0
+
+-- ==================== 获取点击事件 ====================
+local function getClickEvent()
+    local remote = game:GetService("ReplicatedStorage")
+    if remote then
+        local Packages = remote:FindFirstChild("Packages")
+        if Packages then
+            local index = Packages:FindFirstChild("_Index")
+            if index then
+                local knit = index:FindFirstChild("acecateer_knit@1.7.2")
+                if knit then
+                    local services = knit:FindFirstChild("knit")
+                    if services then
+                        local strength = services:FindFirstChild("Services")
+                        if strength then
+                            local strengthService = strength:FindFirstChild("StrengthService")
+                            if strengthService then
+                                local re = strengthService:FindFirstChild("RE")
+                                if re then
+                                    return re:FindFirstChild("ClickRequested")
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
+
+-- ==================== 自动点击 ====================
+RunService.RenderStepped:Connect(function()
+    if autoClick then
+        pcall(function()
+            local event = getClickEvent()
+            if event then
+                event:FireServer()
+            end
+        end)
+    end
+end)
+
+-- ==================== 自动售卖 ====================
+spawn(function()
+    while true do
+        if autoSell then
+            pcall(function()
+                local Event = game:GetService("ReplicatedStorage").Packages._Index["acecateer_knit@1.7.2"].knit.Services.DataService.RF.SellAllBackpackLoot
+                Event:InvokeServer()
+            end)
+        end
+        task.wait(sellInterval)
+    end
+end)
+
+-- ==================== 清理周围草 ====================
+local function clearGrassAround()
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return 0 end
+    local hrp = char.HumanoidRootPart
+    local count = 0
+    
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        pcall(function()
+            if obj:IsA("BasePart") and obj.Name:find("Grass") then
+                local dist = (hrp.Position - obj.Position).Magnitude
+                if dist <= 50 then
+                    obj:Destroy()
+                    count = count + 1
+                end
+            end
+        end)
+    end
+    return count
+end
+
+-- ==================== 删除所有草 ====================
+local function deleteAllGrass()
+    local count = 0
+    for i = 2, 100 do
+        local grassName = "Grass_" .. i
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            pcall(function()
+                if obj.Name == grassName then
+                    obj:Destroy()
+                    count = count + 1
+                end
+            end)
+        end
+    end
+    return count
+end
+
+spawn(function()
+    while true do
+        if deleteGrassEnabled then
+            pcall(function() deleteAllGrass() end)
+        end
+        task.wait(0.5)
+    end
+end)
+
+-- ==================== 传送到稀有物品 ====================
+local function teleportToRareItem()
+    if selectedRareItem == "" then
+        WI:Notify({Title = "传送失败", Content = "请先选择物品", Duration = 2})
+        return
+    end
+    
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then
+        WI:Notify({Title = "传送失败", Content = "角色不存在", Duration = 2})
+        return
+    end
+    local hrp = char.HumanoidRootPart
+    
+    local target = nil
+    local minDist = math.huge
+    
+    local searchName = ""
+    if selectedRareItem == "卷轴戒指" then searchName = "26_Scroll_Ring"
+    elseif selectedRareItem == "黎明王冠" then searchName = "30_"
+    elseif selectedRareItem == "微型传送门" then searchName = "27_Tiny Portal"
+    elseif selectedRareItem == "彗星之心" then searchName = "29_Comet_Heart"
+    elseif selectedRareItem == "月亮碎片" then searchName = "32_"
+    elseif selectedRareItem == "黑洞" then searchName = "04 - BLACK HOLE [E]"
+    elseif selectedRareItem == "天堂之星" then searchName = "39_Celestial_Star"
+    elseif selectedRareItem == "生命之星" then searchName = "33_Living_Star"
+    elseif selectedRareItem == "萨满面具" then searchName = "35_Shaman_Mask"
+    end
+    
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        local match = false
+        if selectedRareItem == "黎明王冠" or selectedRareItem == "月亮碎片" then
+            if obj.Name:find(searchName) then match = true end
+        else
+            if obj.Name == searchName then match = true end
+        end
+        
+        if match then
+            local root = obj:IsA("BasePart") and obj or (obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildOfClass("BasePart"))
+            if root then
+                local d = (hrp.Position - root.Position).Magnitude
+                if d < minDist then
+                    minDist = d
+                    target = root
+                end
+            end
+        end
+    end
+    
+    if target then
+        hrp.CFrame = target.CFrame * CFrame.new(0, 3, 0)
+        local cleared = clearGrassAround()
+        if cleared > 0 then
+            WI:Notify({Title = "传送成功", Content = "已到达 | 清" .. cleared .. "草", Duration = 2})
+        else
+            WI:Notify({Title = "传送成功", Content = "已到达", Duration = 2})
+        end
+    else
+        WI:Notify({Title = "传送失败", Content = "没找到此物品", Duration = 2})
+    end
+end
+
+-- ==================== 传送到世界一终点 ====================
+local function teleportToWorldEnd()
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then
+        WI:Notify({Title = "传送失败", Content = "角色不存在", Duration = 2})
+        return
+    end
+    local hrp = char.HumanoidRootPart
+    hrp.CFrame = CFrame.new(742, 36.6, 4.3)
+    local cleared = clearGrassAround()
+    if cleared > 0 then
+        WI:Notify({Title = "传送成功", Content = "已到世界一终点 | 清" .. cleared .. "草", Duration = 2})
+    else
+        WI:Notify({Title = "传送成功", Content = "已到世界一终点", Duration = 2})
+    end
+end
+
+-- ==================== 获取所有玩家 ====================
+local function getNames()
+    local n = {}
+    for _, p in ipairs(Players:GetPlayers()) do 
+        if p ~= LocalPlayer then table.insert(n, p.Name) end 
+    end
+    if #n == 0 then table.insert(n, "无玩家") end
+    return n
+end
+
+local function tpPlayer(name)
+    if not name or name == "" or name == "无玩家" then return end
+    local t = Players:FindFirstChild(name)
+    if t and t.Character and t.Character:FindFirstChild("HumanoidRootPart") then
+        local c = LocalPlayer.Character
+        if c and c:FindFirstChild("HumanoidRootPart") then
+            c.HumanoidRootPart.CFrame = t.Character.HumanoidRootPart.CFrame * CFrame.new(0, 2, 0)
+            WI:Notify({Title = "传送成功", Content = name, Duration = 2})
+        end
+    end
+end
+
+-- ==================== 玩家透视 ====================
+local function clearPlayer()
+    for _, obj in ipairs(playerESPObjects) do 
+        pcall(function() obj:Destroy() end) 
+    end
+    playerESPObjects = {}
+end
+
+local function refreshPlayerESP()
+    clearPlayer()
+    if not playerESP then return end
+    
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            pcall(function()
+                local c = plr.Character
+                local root = c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Head")
+                if not root then return end
+
+                local hl = Instance.new("Highlight")
+                hl.FillColor = playerESPColor
+                hl.FillTransparency = 0.3
+                hl.OutlineColor = playerESPColor
+                hl.OutlineTransparency = 0.2
+                hl.Adornee = c
+                hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                hl.Parent = c
+                table.insert(playerESPObjects, hl)
+
+                local bb = Instance.new("BillboardGui")
+                bb.Size = UDim2.new(0, 200, 0, 30)
+                bb.StudsOffset = Vector3.new(0, 3, 0)
+                bb.AlwaysOnTop = true
+                bb.Adornee = root
+                bb.Parent = root
+                table.insert(playerESPObjects, bb)
+
+                local lb = Instance.new("TextLabel")
+                lb.Size = UDim2.new(1, 0, 1, 0)
+                lb.BackgroundTransparency = 1
+                lb.Text = plr.Name
+                lb.TextColor3 = playerESPColor
+                lb.TextStrokeTransparency = 0
+                lb.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                lb.Font = Enum.Font.SourceSansBold
+                lb.TextSize = 16
+                lb.Parent = bb
+
+                if showDistance then
+                    local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    if myRoot then
+                        local d = math.floor((myRoot.Position - root.Position).Magnitude)
+                        local db = Instance.new("BillboardGui")
+                        db.Size = UDim2.new(0, 100, 0, 20)
+                        db.StudsOffset = Vector3.new(0, -1.5, 0)
+                        db.AlwaysOnTop = true
+                        db.Adornee = root
+                        db.Parent = root
+                        table.insert(playerESPObjects, db)
+
+                        local dl = Instance.new("TextLabel")
+                        dl.Size = UDim2.new(1, 0, 1, 0)
+                        dl.BackgroundTransparency = 1
+                        dl.Text = d .. "m"
+                        dl.TextColor3 = Color3.fromRGB(255, 255, 255)
+                        dl.TextStrokeTransparency = 0
+                        dl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                        dl.Font = Enum.Font.SourceSansBold
+                        dl.TextSize = 14
+                        dl.Parent = db
+                    end
+                end
+            end)
+        end
+    end
+end
+
+task.spawn(function()
+    while task.wait(1.5) do
+        pcall(function() refreshPlayerESP() end)
+    end
+end)
+
+-- ==================== 速度 ====================
+RunService.RenderStepped:Connect(function()
+    if speedBoost then
+        pcall(function()
+            local c = LocalPlayer.Character
+            if c and c:FindFirstChild("Humanoid") then
+                c.Humanoid.WalkSpeed = speedValue
+            end
+        end)
+    end
+end)
+
+-- ==================== UI ====================
+WI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF"
+})
+
+local Window = WI:CreateWindow({
+    Title = "加1割草冒险",
+    Icon = "solar:moon-bold",
+    Size = UDim2.fromOffset(500, 420),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "冰白",
+    Transparent = true,
+    ScrollBarEnabled = true
+})
+
+Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
+    Title = "黑脚本--加1割草冒险 V1.5",
+    Desc = "9种稀有 | 世界终点 | 自动售卖\n飞行 | 透视 | 速度 | 删除草\n全网首发制作者:CHANGCHENG66"
+})
+
+local T2 = Window:Tab({Title = "主要功能", Icon = "solar:star-bold"})
+T2:Section({Title = "自动点击"})
+T2:Toggle({Title = "开启自动点击", Value = false, Callback = function(v) autoClick = v end})
+T2:Slider({Title = "点击间隔", Value = {Min = 0.005, Max = 0.1, Default = 0.01}, Step = 0.005, Callback = function(v) autoClickInterval = v end})
+
+T2:Section({Title = "自动售卖"})
+T2:Toggle({Title = "开启自动售卖", Value = false, Callback = function(v) autoSell = v end})
+T2:Slider({Title = "售卖间隔", Value = {Min = 1, Max = 10, Default = 3}, Step = 0.5, Callback = function(v) sellInterval = v end})
+
+T2:Section({Title = "删除草地"})
+T2:Toggle({Title = "自动删除草地", Value = false, Callback = function(v) deleteGrassEnabled = v end})
+T2:Button({Title = "立即删除所有草", Justify = "Center", Callback = function()
+    local count = deleteAllGrass()
+    WI:Notify({Title = "删除完成", Content = "已删除" .. count .. "个草", Duration = 2})
+end})
+
+local T3 = Window:Tab({Title = "传送", Icon = "solar:map-bold"})
+T3:Section({Title = "稀有物品"})
+T3:Dropdown({
+    Title = "选择物品",
+    Values = rareItemDisplayNames,
+    Value = "",
+    Multi = false,
+    AllowNone = true,
+    Callback = function(v)
+        if type(v) == "string" and v ~= "" then
+            selectedRareItem = v
+        else
+            selectedRareItem = ""
+        end
+    end
+})
+T3:Button({Title = "传送到该物品", Justify = "Center", Callback = function() teleportToRareItem() end})
+
+T3:Section({Title = "世界终点"})
+T3:Button({Title = "传送到世界一终点", Justify = "Center", Callback = function() teleportToWorldEnd() end})
+
+T3:Section({Title = "玩家"})
+local dd = T3:Dropdown({Title = "选择玩家", Values = getNames(), Value = "", Multi = false, AllowNone = true, Callback = function(v) 
+    if type(v) == "string" then selectedPlayerName = v
+    elseif type(v) == "table" and #v > 0 then selectedPlayerName = v[1]
+    else selectedPlayerName = "" end
+end})
+T3:Button({Title = "刷新列表", Justify = "Center", Callback = function() 
+    local n = getNames(); dd:SetValues(n); dd:SetValue(n[1])
+end})
+T3:Button({Title = "传送到该玩家", Justify = "Center", Callback = function() tpPlayer(selectedPlayerName) end})
+
+local T4 = Window:Tab({Title = "玩家", Icon = "solar:user-bold"})
+T4:Section({Title = "透视"})
+T4:Toggle({Title = "透视所有玩家", Value = false, Callback = function(v) playerESP = v end})
+T4:Colorpicker({Title = "颜色", Default = Color3.fromRGB(255, 50, 50), Callback = function(c) playerESPColor = c end})
+T4:Toggle({Title = "显示距离", Value = false, Callback = function(v) showDistance = v end})
+T4:Section({Title = "速度"})
+T4:Toggle({Title = "速度加成", Value = false, Callback = function(v) speedBoost = v end})
+T4:Slider({Title = "速度值", Value = {Min = 16, Max = 200, Default = 50}, Callback = function(v) speedValue = v end})
+T4:Section({Title = "飞行"})
+T4:Button({Title = "加载飞行脚本", Justify = "Center", Callback = function()
+    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/飞饼"))() end)
+    WI:Notify({Title = "飞行", Content = "已加载", Duration = 2})
+end})
+
+-- 设置
+Window:Tab({Title = "设置", Icon = "solar:settings-bold"}):Paragraph({
+    Title = "功能状态",
+    Desc = "自动点击: " .. (autoClick and "✅" or "❌") .. 
+           "\n自动售卖: " .. (autoSell and "✅" or "❌") .. 
+           "\n删除草地: " .. (deleteGrassEnabled and "✅" or "❌") .. 
+           "\n透视玩家: " .. (playerESP and "✅" or "❌") .. 
+           "\n速度加成: " .. (speedBoost and "✅" or "❌")
+})
+
+Window:OnClose(function()
+    clearPlayer()
+end)
+
+WI:Notify({Title = "🌙 加1割草冒险", Content = "V1.5 加载完成", Duration = 3})
+print("🌙 加1割草冒险 V1.5 加载完成")
