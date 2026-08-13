@@ -1,4 +1,4 @@
--- 🌙 夜幕降临 | V1.7
+-- 🌙 夜幕降临 | V1.9
 
 local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 if not WI then return end
@@ -24,18 +24,17 @@ local visitedSticks = {}
 local autoStrawberry = false
 local playerESP = false
 local playerESPColor = Color3.fromRGB(255, 50, 50)
-local showDistance = false
 local playerESPObjects = {}
 local caveESP = false
 local caveESPColor = Color3.fromRGB(100, 200, 255)
-local caveESPRange = 500
 local wolfESP = false
 local wolfESPColor = Color3.fromRGB(180, 180, 180)
-local wolfESPRange = 500
 local suitcaseESP = false
 local suitcaseESPColor = Color3.fromRGB(255, 200, 100)
-local suitcaseESPRange = 500
+local watchtowerESP = false
+local watchtowerESPColor = Color3.fromRGB(255, 150, 50)
 local espCache = {}
+local removeFog = false
 
 -- ==================== 冰白主题 ====================
 WI:AddTheme({
@@ -61,34 +60,32 @@ end
 
 -- ==================== 夜视 ====================
 spawn(function()
-    local nightEffect = nil
     while true do
         if nightVision then
             pcall(function()
-                if not nightEffect then
-                    nightEffect = Instance.new("ColorCorrectionEffect")
-                    nightEffect.Parent = Lighting
-                end
-                nightEffect.Brightness = nightVisionBrightness
-                nightEffect.Contrast = 0.2
-                nightEffect.Saturation = -0.3
-                Lighting.Brightness = 1.2
+                Lighting.Brightness = 1.5
                 Lighting.ClockTime = 14
                 Lighting.FogEnd = 100000
                 Lighting.GlobalShadows = false
                 Lighting.ExposureCompensation = nightVisionBrightness
-            end)
-        else
-            pcall(function()
-                if nightEffect then nightEffect:Destroy(); nightEffect = nil end
-                Lighting.Brightness = 2
-                Lighting.ClockTime = 12
-                Lighting.FogEnd = 500
-                Lighting.GlobalShadows = true
-                Lighting.ExposureCompensation = 0
+                Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+                Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
             end)
         end
-        task.wait(0.1)
+        task.wait(0.05)
+    end
+end)
+
+-- ==================== 去雾 ====================
+spawn(function()
+    while true do
+        if removeFog then
+            pcall(function()
+                Lighting.FogEnd = 100000
+                Lighting.FogStart = 50000
+            end)
+        end
+        task.wait(0.05)
     end
 end)
 
@@ -117,7 +114,7 @@ spawn(function()
     end
 end)
 
--- ==================== 自动捡Rock ====================
+-- ==================== 自动捡Rock（跳过Rock_开头的）====================
 spawn(function()
     while true do
         if autoPickupRock then
@@ -134,7 +131,7 @@ spawn(function()
                 local closestObj = nil
 
                 for _, obj in ipairs(Workspace:GetDescendants()) do
-                    if obj.Name == "Rock" and not visitedRocks[obj] then
+                    if obj.Name == "Rock" and not obj.Name:find("Rock_") and not visitedRocks[obj] then
                         local root = getRoot(obj)
                         if root then
                             local d = (hrp.Position - root.Position).Magnitude
@@ -153,14 +150,33 @@ spawn(function()
                     return
                 end
 
-                hrp.CFrame = closest.CFrame * CFrame.new(0, 2, 0)
+                hrp.CFrame = CFrame.new(closest.Position + Vector3.new(0, 5, 0))
                 visitedRocks[closestObj] = true
                 task.wait(0.3)
 
-                local prompt = closest:FindFirstChildOfClass("ProximityPrompt")
-                if closest:IsA("Model") then
-                    for _, d in ipairs(closest:GetDescendants()) do
+                local prompt = nil
+                if closestObj:IsA("BasePart") then
+                    prompt = closestObj:FindFirstChildOfClass("ProximityPrompt")
+                elseif closestObj:IsA("Model") then
+                    for _, d in ipairs(closestObj:GetDescendants()) do
                         if d:IsA("ProximityPrompt") then prompt = d; break end
+                    end
+                end
+                -- 或者找周围的ProximityPrompt
+                if not prompt then
+                    for _, d in ipairs(Workspace:GetDescendants()) do
+                        if d:IsA("ProximityPrompt") and d.Parent then
+                            local ppos = nil
+                            if d.Parent:IsA("BasePart") then ppos = d.Parent.Position
+                            elseif d.Parent:IsA("Model") then
+                                local bp = d.Parent:FindFirstChildWhichIsA("BasePart")
+                                if bp then ppos = bp.Position end
+                            end
+                            if ppos and (ppos - closest.Position).Magnitude < 8 then
+                                prompt = d
+                                break
+                            end
+                        end
                     end
                 end
                 if prompt then
@@ -209,14 +225,23 @@ spawn(function()
                     return
                 end
 
-                hrp.CFrame = closest.CFrame * CFrame.new(0, 2, 0)
+                hrp.CFrame = CFrame.new(closest.Position + Vector3.new(0, 5, 0))
                 visitedSticks[closestObj] = true
                 task.wait(0.3)
 
-                local prompt = closest:FindFirstChildOfClass("ProximityPrompt")
-                if closest:IsA("Model") then
-                    for _, d in ipairs(closest:GetDescendants()) do
-                        if d:IsA("ProximityPrompt") then prompt = d; break end
+                local prompt = nil
+                for _, d in ipairs(Workspace:GetDescendants()) do
+                    if d:IsA("ProximityPrompt") and d.Parent then
+                        local ppos = nil
+                        if d.Parent:IsA("BasePart") then ppos = d.Parent.Position
+                        elseif d.Parent:IsA("Model") then
+                            local bp = d.Parent:FindFirstChildWhichIsA("BasePart")
+                            if bp then ppos = bp.Position end
+                        end
+                        if ppos and (ppos - closest.Position).Magnitude < 8 then
+                            prompt = d
+                            break
+                        end
                     end
                 end
                 if prompt then
@@ -229,7 +254,7 @@ spawn(function()
     end
 end)
 
--- ==================== 自动草莓虫 ====================
+-- ==================== 自动草莓虫（Bush）====================
 spawn(function()
     while true do
         if autoStrawberry then
@@ -245,7 +270,7 @@ spawn(function()
                 local closestDist = math.huge
 
                 for _, obj in ipairs(Workspace:GetDescendants()) do
-                    if obj.Name == "StrawberryBush" then
+                    if obj.Name:find("Bush") then
                         local root = getRoot(obj)
                         if root then
                             local d = (hrp.Position - root.Position).Magnitude
@@ -262,13 +287,22 @@ spawn(function()
                     return
                 end
 
-                hrp.CFrame = closest.CFrame * CFrame.new(0, 2, 0)
+                hrp.CFrame = CFrame.new(closest.Position + Vector3.new(0, 5, 0))
                 task.wait(0.3)
 
-                local prompt = closest:FindFirstChildOfClass("ProximityPrompt")
-                if closest:IsA("Model") then
-                    for _, d in ipairs(closest:GetDescendants()) do
-                        if d:IsA("ProximityPrompt") then prompt = d; break end
+                local prompt = nil
+                for _, d in ipairs(Workspace:GetDescendants()) do
+                    if d:IsA("ProximityPrompt") and d.Parent then
+                        local ppos = nil
+                        if d.Parent:IsA("BasePart") then ppos = d.Parent.Position
+                        elseif d.Parent:IsA("Model") then
+                            local bp = d.Parent:FindFirstChildWhichIsA("BasePart")
+                            if bp then ppos = bp.Position end
+                        end
+                        if ppos and (ppos - closest.Position).Magnitude < 8 then
+                            prompt = d
+                            break
+                        end
                     end
                 end
                 if prompt then
@@ -289,7 +323,7 @@ local function ClearESP()
     espCache = {}
 end
 
-local function CreateESP(obj, color, name, dist)
+local function CreateESP(obj, color, name)
     local root = getRoot(obj)
     if not root then return end
 
@@ -324,7 +358,7 @@ end
 
 local lastESPUpdate = 0
 local function UpdateESP()
-    if tick() - lastESPUpdate < 0.5 then return end
+    if tick() - lastESPUpdate < 0.3 then return end
     lastESPUpdate = tick()
     ClearESP()
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -332,13 +366,10 @@ local function UpdateESP()
 
     if caveESP then
         for _, obj in ipairs(Workspace:GetDescendants()) do
-            if obj.Name:find("Cave_") then
+            if obj.Name:find("Cave") then
                 local root = getRoot(obj)
-                if root then
-                    local d = (hrp.Position - root.Position).Magnitude
-                    if d <= caveESPRange then
-                        CreateESP(obj, caveESPColor, "洞穴", d)
-                    end
+                if root and not Players:GetPlayerFromCharacter(obj) then
+                    CreateESP(obj, caveESPColor, "洞穴")
                 end
             end
         end
@@ -346,13 +377,10 @@ local function UpdateESP()
 
     if wolfESP then
         for _, obj in ipairs(Workspace:GetDescendants()) do
-            if obj.Name == "Wolf" then
+            if obj.Name:find("Wolf") then
                 local root = getRoot(obj)
-                if root then
-                    local d = (hrp.Position - root.Position).Magnitude
-                    if d <= wolfESPRange then
-                        CreateESP(obj, wolfESPColor, "狼", d)
-                    end
+                if root and not Players:GetPlayerFromCharacter(obj) then
+                    CreateESP(obj, wolfESPColor, "狼")
                 end
             end
         end
@@ -360,13 +388,21 @@ local function UpdateESP()
 
     if suitcaseESP then
         for _, obj in ipairs(Workspace:GetDescendants()) do
-            if obj.Name == "Big Suitcase" then
+            if obj.Name:find("Suitcase") then
                 local root = getRoot(obj)
-                if root then
-                    local d = (hrp.Position - root.Position).Magnitude
-                    if d <= suitcaseESPRange then
-                        CreateESP(obj, suitcaseESPColor, "行李箱", d)
-                    end
+                if root and not Players:GetPlayerFromCharacter(obj) then
+                    CreateESP(obj, suitcaseESPColor, "行李箱")
+                end
+            end
+        end
+    end
+
+    if watchtowerESP then
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            if obj.Name:find("WatchTower") then
+                local root = getRoot(obj)
+                if root and not Players:GetPlayerFromCharacter(obj) then
+                    CreateESP(obj, watchtowerESPColor, "瞭望塔")
                 end
             end
         end
@@ -374,7 +410,7 @@ local function UpdateESP()
 end
 
 task.spawn(function()
-    while task.wait(0.5) do
+    while task.wait(0.3) do
         pcall(function() UpdateESP() end)
     end
 end)
@@ -432,7 +468,7 @@ local function refreshPlayerESP()
 end
 
 task.spawn(function()
-    while task.wait(1.5) do
+    while task.wait(1) do
         pcall(function() refreshPlayerESP() end)
     end
 end)
@@ -448,11 +484,11 @@ local function teleportToNearest(name, label)
     local closest, closestDist = nil, math.huge
 
     for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj.Name == name then
+        if obj.Name:find(name) and not Players:GetPlayerFromCharacter(obj) then
             local root = getRoot(obj)
             if root then
                 local d = (hrp.Position - root.Position).Magnitude
-                if d < closestDist then
+                if d < closestDist and d > 2 then
                     closestDist = d
                     closest = root
                 end
@@ -461,10 +497,10 @@ local function teleportToNearest(name, label)
     end
 
     if closest then
-        hrp.CFrame = closest.CFrame * CFrame.new(0, 3, 0)
+        hrp.CFrame = CFrame.new(closest.Position + Vector3.new(0, 5, 0))
         WI:Notify({Title = "成功", Content = "已到" .. label, Duration = 2})
     else
-        WI:Notify({Title = "失败", Content = "没找到" .. label, Duration = 2})
+        WI:Notify({Title = "失败", Content = "没找到", Duration = 2})
     end
 end
 
@@ -495,9 +531,9 @@ end
 
 -- ==================== UI ====================
 local Window = WI:CreateWindow({
-    Title = "夜幕降临 临时版",
+    Title = "夜幕降临 抢先版",
     Icon = "solar:moon-bold",
-    Size = UDim2.fromOffset(500, 460),
+    Size = UDim2.fromOffset(500, 380),
     ToggleKey = Enum.KeyCode.RightShift,
     Theme = "冰白",
     Transparent = true,
@@ -505,8 +541,8 @@ local Window = WI:CreateWindow({
 })
 
 Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
-    Title = "黑脚本--夜幕降临 临时版",
-    Desc = "自动砍树 | 捡物品 | 草莓虫 | 夜视\n透视 | 传送 | 速度 | 飞行"
+    Title = "黑脚本--夜幕降临",
+    Desc = "自动砍树 | 捡物品 | 草莓虫 | 夜视\n透视 | 传送 | 速度 | 去雾"
 })
 
 local T2 = Window:Tab({Title = "主要功能", Icon = "solar:star-bold"})
@@ -515,10 +551,11 @@ T2:Slider({Title = "砍树间隔", Value = {Min = 0.01, Max = 1, Default = 0.1},
 T2:Divider()
 T2:Toggle({Title = "自动捡石头", Value = false, Callback = function(v) autoPickupRock = v; if v then visitedRocks = {} end end})
 T2:Toggle({Title = "自动捡木棍", Value = false, Callback = function(v) autoPickupStick = v; if v then visitedSticks = {} end end})
-T2:Toggle({Title = "自动草莓虫", Value = false, Callback = function(v) autoStrawberry = v end})
+T2:Toggle({Title = "自动草莓", Value = false, Callback = function(v) autoStrawberry = v end})
 T2:Divider()
 T2:Toggle({Title = "夜视", Value = false, Callback = function(v) nightVision = v end})
 T2:Slider({Title = "夜视亮度", Value = {Min = 0.05, Max = 0.5, Default = 0.15}, Step = 0.01, Callback = function(v) nightVisionBrightness = v end})
+T2:Toggle({Title = "去雾", Value = false, Callback = function(v) removeFog = v end})
 
 local T3 = Window:Tab({Title = "透视", Icon = "solar:eye-bold"})
 T3:Toggle({Title = "透视玩家", Value = false, Callback = function(v) playerESP = v end})
@@ -530,10 +567,13 @@ T3:Toggle({Title = "透视狼", Value = false, Callback = function(v) wolfESP = 
 T3:Colorpicker({Title = "狼颜色", Default = Color3.fromRGB(180, 180, 180), Callback = function(c) wolfESPColor = c end})
 T3:Toggle({Title = "透视大行李箱", Value = false, Callback = function(v) suitcaseESP = v end})
 T3:Colorpicker({Title = "行李箱颜色", Default = Color3.fromRGB(255, 200, 100), Callback = function(c) suitcaseESPColor = c end})
+T3:Toggle({Title = "透视瞭望塔", Value = false, Callback = function(v) watchtowerESP = v end})
+T3:Colorpicker({Title = "瞭望塔颜色", Default = Color3.fromRGB(255, 150, 50), Callback = function(c) watchtowerESPColor = c end})
 
 local T4 = Window:Tab({Title = "传送", Icon = "solar:map-bold"})
 T4:Button({Title = "传送飞机", Justify = "Center", Callback = function() teleportToNearest("Character", "飞机") end})
-T4:Button({Title = "传送大行李箱", Justify = "Center", Callback = function() teleportToNearest("Big Suitcase", "行李箱") end})
+T4:Button({Title = "传送行李箱", Justify = "Center", Callback = function() teleportToNearest("Suitcase", "行李箱") end})
+T4:Button({Title = "传送最近草莓", Justify = "Center", Callback = function() teleportToNearest("Bush", "草莓") end})
 T4:Divider()
 local dd = T4:Dropdown({Title = "选择玩家", Values = getPlayerNames(), Value = "", Multi = false, AllowNone = true, Callback = function(v)
     if type(v) == "string" then selectedPlayer = v else selectedPlayer = "" end
@@ -552,7 +592,24 @@ T5:Button({Title = "加载飞行脚本", Justify = "Center", Callback = function
 end})
 
 local T6 = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+local statusParagraph = T6:Paragraph({Title = "功能状态", Desc = "加载中..."})
+
+spawn(function()
+    while true do
+        pcall(function()
+            local fps = math.floor(1 / (RunService.RenderStepped:Wait() or 0.016))
+            local status = "FPS: " .. fps .. "\n\n" ..
+                "砍树: " .. (autoChop and "✅" or "❌") .. "\n" ..
+                "夜视: " .. (nightVision and "✅" or "❌") .. "\n" ..
+                "去雾: " .. (removeFog and "✅" or "❌") .. "\n" ..
+                "速度: " .. (speedBoost and "✅ " .. speedValue or "❌")
+            statusParagraph:SetDesc(status)
+        end)
+        task.wait(0.5)
+    end
+end)
+
 T6:Button({Title = "关闭面板", Justify = "Center", Callback = function() Window:Close() end})
 
-WI:Notify({Title = "🌙 夜幕降临", Content = "加载完成", Duration = 3})
+WI:Notify({Title = "🌙 夜幕降临", Content = "加载完成 | 修复版", Duration = 3})
 print("🌙 夜幕降临 加载完成")
