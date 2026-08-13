@@ -1,0 +1,97 @@
+-- 🌙 魔法战利品 | V1.1
+
+local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+if not WI then return end
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+
+-- 变量
+local autoTrain = false
+local trainInterval = 0.01
+local autoRebirth = false
+
+-- ==================== 冰白主题 ====================
+WI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF"
+})
+
+-- ==================== 自动训练 ====================
+spawn(function()
+    while true do
+        if autoTrain then
+            pcall(function()
+                local Event = game:GetService("ReplicatedStorage").Msg.RemoteFunction.NetWorkRemoteFunction
+                Event:InvokeServer("\xE8\xAE\xAD\xE7\xBB\x83\xE7\x82\xB9\xE5\xB1\x8F", {})
+            end)
+        end
+        task.wait(trainInterval)
+    end
+end)
+
+-- ==================== 自动重生 ====================
+spawn(function()
+    while true do
+        if autoRebirth then
+            pcall(function()
+                local Event = game:GetService("ReplicatedStorage").Msg.RemoteFunction.NetWorkRemoteFunction
+                Event:InvokeServer("\xE7\x8E\xA9\xE5\xAE\xB6\xE6\x99\x8B\xE5\x8D\x87")
+            end)
+            task.wait(10)
+        else
+            task.wait(0.5)
+        end
+    end
+end)
+
+-- ==================== UI ====================
+local Window = WI:CreateWindow({
+    Title = "魔法战利品",
+    Icon = "solar:moon-bold",
+    Size = UDim2.fromOffset(500, 300),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "冰白",
+    Transparent = true,
+    ScrollBarEnabled = true
+})
+
+Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
+    Title = "黑脚本--魔法战利品",
+    Desc = "自动训练 | 自动重生\n一键售卖真做不了😭😭😭"
+})
+
+local T2 = Window:Tab({Title = "主要功能", Icon = "solar:star-bold"})
+T2:Section({Title = "自动训练"})
+T2:Toggle({Title = "开启自动训练", Value = false, Callback = function(v) autoTrain = v end})
+T2:Slider({Title = "训练延迟(秒)", Value = {Min = 0.01, Max = 1, Default = 0.01}, Step = 0.01, Callback = function(v) trainInterval = v end})
+
+T2:Section({Title = "自动重生"})
+T2:Toggle({Title = "开启自动重生(10秒)", Value = false, Callback = function(v) autoRebirth = v end})
+
+local T3 = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+local statusParagraph = T3:Paragraph({Title = "功能状态", Desc = "加载中..."})
+
+spawn(function()
+    while true do
+        pcall(function()
+            local fps = math.floor(1 / (RunService.RenderStepped:Wait() or 0.016))
+            local status = "FPS: " .. fps .. "\n\n" ..
+                "自动训练: " .. (autoTrain and "✅" or "❌") .. "\n" ..
+                "自动重生: " .. (autoRebirth and "✅" or "❌") .. "\n" ..
+                "训练延迟: " .. trainInterval .. "秒"
+            statusParagraph:SetDesc(status)
+        end)
+        task.wait(0.5)
+    end
+end)
+
+T3:Button({Title = "关闭面板", Justify = "Center", Callback = function() Window:Close() end})
+
+WI:Notify({Title = "🌙 魔法战利品", Content = "加载完成", Duration = 3})
+print("🌙 魔法战利品 加载完成")
