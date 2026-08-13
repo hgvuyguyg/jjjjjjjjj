@@ -1,0 +1,215 @@
+-- 🌙 偷一个蛋
+
+local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+if not WI then return end
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+-- 变量
+local autoSteal = false
+local speedBoost = false
+local speedValue = 50
+local flySpeed = 200
+local stealWaitTime = 2 -- 自定义等待时间
+
+-- ==================== 冰白主题 ====================
+WI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF"
+})
+
+-- ==================== 速度 ====================
+RunService.RenderStepped:Connect(function()
+    if speedBoost then
+        pcall(function()
+            local c = LocalPlayer.Character
+            if c and c:FindFirstChild("Humanoid") then
+                c.Humanoid.WalkSpeed = speedValue
+            end
+        end)
+    end
+end)
+
+-- ==================== 等待角色加载 ====================
+local function waitForCharacter(timeout)
+    timeout = timeout or 10
+    local startTime = tick()
+    while tick() - startTime < timeout do
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChild("Humanoid") then
+            local hrp = char.HumanoidRootPart
+            local hum = char.Humanoid
+            if hrp and hum and hum.Health > 0 then
+                return true
+            end
+        end
+        task.wait(0.2)
+    end
+    return false
+end
+
+-- ==================== 安全飞行 ====================
+local function safeFlyTo(targetPos)
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
+    local hrp = char.HumanoidRootPart
+
+    local liftPos = hrp.Position + Vector3.new(0, 5, 0)
+    local liftDuration = 5 / flySpeed
+    if liftDuration < 0.1 then liftDuration = 0.1 end
+    local liftTween = TweenService:Create(hrp, TweenInfo.new(liftDuration, Enum.EasingStyle.Linear), {CFrame = CFrame.new(liftPos)})
+    liftTween:Play()
+    liftTween.Completed:Wait()
+    task.wait(0.3)
+
+    local startPos = hrp.Position
+    local distance = (targetPos - startPos).Magnitude
+    local duration = distance / flySpeed
+    if duration < 0.1 then duration = 0.1 end
+    local tween = TweenService:Create(hrp, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos)})
+    tween:Play()
+    tween.Completed:Wait()
+    task.wait(0.3)
+
+    local finalDuration = 5 / flySpeed
+    if finalDuration < 0.1 then finalDuration = 0.1 end
+    local finalTween = TweenService:Create(hrp, TweenInfo.new(finalDuration, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos)})
+    finalTween:Play()
+    finalTween.Completed:Wait()
+    return true
+end
+
+-- ==================== 传送最后端 ====================
+local function teleportToEnd()
+    if not waitForCharacter(5) then
+        WI:Notify({Title = "传送失败", Content = "角色未加载", Duration = 2})
+        return
+    end
+    safeFlyTo(Vector3.new(3439, 70.7, -337))
+    WI:Notify({Title = "传送成功", Content = "已到最后端", Duration = 2})
+end
+
+-- ==================== 半自动偷蛋 ====================
+spawn(function()
+    while true do
+        if autoSteal then
+            pcall(function()
+                if not waitForCharacter(10) then
+                    WI:Notify({Title = "偷蛋", Content = "角色加载超时", Duration = 3})
+                    autoSteal = false
+                    return
+                end
+
+                WI:Notify({Title = "偷蛋", Content = "开始飞行", Duration = 2})
+
+                -- 1. 飞到偷蛋位置
+                local success = safeFlyTo(Vector3.new(3394, 70.7, -326))
+                if not success then
+                    autoSteal = false
+                    return
+                end
+                WI:Notify({Title = "偷蛋", Content = "已到达，等待" .. stealWaitTime .. "秒", Duration = 2})
+
+                -- 2. 等待自定义时间
+                task.wait(stealWaitTime)
+
+                -- 3. 飞回安全位置
+                safeFlyTo(Vector3.new(518, 70.7, -354))
+                WI:Notify({Title = "偷蛋", Content = "已飞回安全位置", Duration = 2})
+
+                autoSteal = false
+            end)
+        end
+        task.wait(0.3)
+    end
+end)
+
+-- ==================== 角色重生处理 ====================
+LocalPlayer.CharacterAdded:Connect(function(char)
+    if autoSteal then
+        WI:Notify({Title = "偷蛋", Content = "检测到重生", Duration = 2})
+        task.wait(1)
+    end
+end)
+
+-- ==================== UI ====================
+local Window = WI:CreateWindow({
+    Title = "偷一个蛋",
+    Icon = "solar:moon-bold",
+    Size = UDim2.fromOffset(500, 390),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "冰白",
+    Transparent = true,
+    ScrollBarEnabled = true
+})
+
+Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
+    Title = "黑脚本--偷一个蛋 v1.3",
+    Desc = "飞到蛋位置→等待时间→飞回安全位置\n可调等待时间"
+})
+
+local T2 = Window:Tab({Title = "主要功能", Icon = "solar:star-bold"})
+T2:Section({Title = "传送"})
+T2:Button({Title = "传送到最后端", Justify = "Center", Callback = function() teleportToEnd() end})
+
+T2:Section({Title = "半自动偷蛋"})
+T2:Slider({Title = "停留时间(推荐1.5)", Value = {Min = 0.5, Max = 3, Default = 2}, Step = 0.1, Callback = function(v) stealWaitTime = v end})
+T2:Button({Title = "开始半自动偷蛋", Justify = "Center", Callback = function()
+    if autoSteal then
+        WI:Notify({Title = "提示", Content = "正在偷蛋中", Duration = 2})
+        return
+    end
+    autoSteal = true
+    WI:Notify({Title = "偷蛋", Content = "开始执行...停留" .. stealWaitTime .. "秒", Duration = 2})
+end})
+T2:Button({Title = "停止偷蛋", Justify = "Center", Callback = function()
+    autoSteal = false
+    WI:Notify({Title = "偷蛋", Content = "已停止", Duration = 2})
+end})
+
+T2:Section({Title = "飞行速度"})
+T2:Slider({Title = "飞行速度", Value = {Min = 50, Max = 500, Default = 200}, Step = 10, Callback = function(v) flySpeed = v end})
+
+local T3 = Window:Tab({Title = "玩家", Icon = "solar:user-bold"})
+T3:Section({Title = "速度"})
+T3:Toggle({Title = "速度加成", Value = false, Callback = function(v) speedBoost = v end})
+T3:Slider({Title = "速度值", Value = {Min = 16, Max = 200, Default = 50}, Callback = function(v) speedValue = v end})
+T3:Section({Title = "飞行"})
+T3:Button({Title = "加载飞行脚本", Justify = "Center", Callback = function()
+    pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/飞饼"))() end)
+    WI:Notify({Title = "飞行", Content = "已加载", Duration = 2})
+end})
+
+local T4 = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+local statusParagraph = T4:Paragraph({Title = "功能状态", Desc = "加载中..."})
+
+spawn(function()
+    while true do
+        pcall(function()
+            local fps = math.floor(1 / (RunService.RenderStepped:Wait() or 0.016))
+            local status = "FPS: " .. fps .. "\n\n" ..
+                "偷蛋中: " .. (autoSteal and "✅" or "❌") .. "\n" ..
+                "停留时间: " .. stealWaitTime .. "秒\n" ..
+                "速度: " .. (speedBoost and "✅ " .. speedValue or "❌") .. "\n" ..
+                "飞行速度: " .. flySpeed
+            statusParagraph:SetDesc(status)
+        end)
+        task.wait(0.5)
+    end
+end)
+
+T4:Button({Title = "关闭面板", Justify = "Center", Callback = function() Window:Close() end})
+
+Window:OnClose(function()
+    autoSteal = false
+end)
+
+WI:Notify({Title = "🌙 偷一个蛋", Content = "加载完成 | 可调停留时间", Duration = 3})
+print("🌙 偷一个蛋 加载完成")
