@@ -1,0 +1,195 @@
+-- 🌙 Murder Island 2 | V1.6
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+
+-- 变量
+local espEnabled = false
+local espNames = true
+local espBoxes = true
+local espTracers = false
+local espRole = true
+local espRange = 500
+local nameColor = Color3.fromRGB(255, 255, 255)
+local boxColor = Color3.fromRGB(255, 60, 60)
+local tracerColor = Color3.fromRGB(255, 60, 60)
+local DrawingCache = {}
+
+-- ==================== 冰白主题 ====================
+local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+if not WI then return end
+
+WI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF"
+})
+
+-- ==================== ESP ====================
+local function clearESP()
+    for _, drawings in pairs(DrawingCache) do
+        pcall(function()
+            for _, d in pairs(drawings) do
+                if d and d.Remove then d.Visible = false; d:Remove() end
+            end
+        end)
+    end
+    DrawingCache = {}
+end
+
+local function createESP(player)
+    if DrawingCache[player.UserId] then return end
+    local drawings = {}
+    local box = Drawing.new("Square")
+    box.Thickness = 2; box.Filled = false; box.Visible = false
+    box.Transparency = 1; drawings.Box = box
+    local nameText = Drawing.new("Text")
+    nameText.Size = 14; nameText.Center = true; nameText.Outline = true
+    nameText.Visible = false; nameText.Transparency = 1
+    nameText.Font = Drawing.Fonts.UI; drawings.Name = nameText
+    local roleText = Drawing.new("Text")
+    roleText.Size = 12; roleText.Center = true; roleText.Outline = true
+    roleText.Visible = false; roleText.Transparency = 1
+    roleText.Font = Drawing.Fonts.UI; drawings.Role = roleText
+    local tracer = Drawing.new("Line")
+    tracer.Thickness = 1; tracer.Visible = false
+    tracer.Transparency = 1; drawings.Tracer = tracer
+    DrawingCache[player.UserId] = drawings
+end
+
+local function updateESP()
+    clearESP()
+    if not espEnabled then return end
+
+    local cam = workspace.CurrentCamera
+    local myHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local myPos = myHrp and myHrp.Position
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local c = player.Character
+            if c then
+                local hrp = c:FindFirstChild("HumanoidRootPart")
+                local head = c:FindFirstChild("Head")
+                local h = c:FindFirstChildOfClass("Humanoid")
+                if hrp and head and h and h.Health > 0 then
+                    local d = myPos and (hrp.Position - myPos).Magnitude or 0
+                    if d <= espRange then
+                        createESP(player)
+                        local role = player:GetAttribute("CharacterId") or "?"
+
+                        -- 正确获取屏幕坐标
+                        local headScreen, headOnScreen = cam:WorldToScreenPoint(head.Position)
+                        local footScreen, footOnScreen = cam:WorldToScreenPoint(hrp.Position - Vector3.new(0, 3, 0))
+
+                        if headOnScreen and footOnScreen then
+                            local hSize = math.abs(headScreen.Y - footScreen.Y)
+                            local wSize = hSize * 0.6
+                            local boxX = headScreen.X - wSize / 2
+                            local boxY = headScreen.Y
+
+                            local drawings = DrawingCache[player.UserId]
+                            if drawings then
+                                if espNames then
+                                    drawings.Name.Text = player.DisplayName .. " [" .. math.floor(d) .. "m]"
+                                    drawings.Name.Position = Vector2.new(headScreen.X, headScreen.Y - 18)
+                                    drawings.Name.Color = nameColor
+                                    drawings.Name.Visible = true
+                                else drawings.Name.Visible = false end
+
+                                if espBoxes then
+                                    drawings.Box.Size = Vector2.new(wSize, hSize)
+                                    drawings.Box.Position = Vector2.new(boxX, boxY)
+                                    drawings.Box.Color = boxColor
+                                    drawings.Box.Thickness = 2
+                                    drawings.Box.Visible = true
+                                else drawings.Box.Visible = false end
+
+                                if espRole then
+                                    drawings.Role.Text = role
+                                    drawings.Role.Position = Vector2.new(headScreen.X, footScreen.Y + 5)
+                                    drawings.Role.Color = nameColor
+                                    drawings.Role.Visible = true
+                                else drawings.Role.Visible = false end
+
+                                if espTracers then
+                                    drawings.Tracer.From = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y)
+                                    drawings.Tracer.To = Vector2.new(footScreen.X, footScreen.Y)
+                                    drawings.Tracer.Color = tracerColor
+                                    drawings.Tracer.Visible = true
+                                else drawings.Tracer.Visible = false end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+spawn(function()
+    while true do
+        if espEnabled then
+            pcall(updateESP)
+        end
+        task.wait(0.03)
+    end
+end)
+
+-- ==================== UI ====================
+local Window = WI:CreateWindow({
+    Title = "Murder Island 2",
+    Icon = "solar:moon-bold",
+    Size = UDim2.fromOffset(500, 380),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "冰白",
+    Transparent = true,
+    ScrollBarEnabled = true
+})
+
+Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
+    Title = "黑脚本--Murder Island 2",
+    Desc = "ESP透视 | 可调颜色 | 方框对齐修复"
+})
+
+local T2 = Window:Tab({Title = "透视", Icon = "solar:eye-bold"})
+T2:Toggle({Title = "ESP总开关", Value = false, Callback = function(v)
+    espEnabled = v
+    if not v then clearESP() end
+end})
+T2:Divider()
+T2:Toggle({Title = "显示名字+距离", Value = true, Callback = function(v) espNames = v end})
+T2:Toggle({Title = "显示方框", Value = true, Callback = function(v) espBoxes = v end})
+T2:Toggle({Title = "显示身份", Value = true, Callback = function(v) espRole = v end})
+T2:Toggle({Title = "显示射线", Value = false, Callback = function(v) espTracers = v end})
+T2:Divider()
+T2:Colorpicker({Title = "名字颜色", Default = Color3.fromRGB(255, 255, 255), Callback = function(c) nameColor = c end})
+T2:Colorpicker({Title = "方框颜色", Default = Color3.fromRGB(255, 60, 60), Callback = function(c) boxColor = c end})
+T2:Colorpicker({Title = "射线颜色", Default = Color3.fromRGB(255, 60, 60), Callback = function(c) tracerColor = c end})
+T2:Divider()
+T2:Slider({Title = "ESP范围", Value = {Min = 50, Max = 2000, Default = 500}, Step = 50, Callback = function(v) espRange = v end})
+
+local T3 = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+local statusParagraph = T3:Paragraph({Title = "功能状态", Desc = "加载中..."})
+
+spawn(function()
+    while true do
+        pcall(function()
+            local fps = math.floor(1 / (RunService.RenderStepped:Wait() or 0.016))
+            local status = "FPS: " .. fps .. "\n\n" ..
+                "ESP: " .. (espEnabled and "✅" or "❌") .. "\n" ..
+                "范围: " .. espRange
+            statusParagraph:SetDesc(status)
+        end)
+        task.wait(0.5)
+    end
+end)
+
+T3:Button({Title = "关闭面板", Justify = "Center", Callback = function() Window:Close() end})
+
+WI:Notify({Title = "🌙 Murder Island 2", Content = "加载完成", Duration = 3})
+print("🌙 Murder Island 2 加载完成")
