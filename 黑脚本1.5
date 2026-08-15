@@ -49,6 +49,74 @@ local globalExecCount = getGlobalExecCount()
 if globalExecCount == 0 then globalExecCount = 1 else globalExecCount = globalExecCount + 1 end
 saveGlobalExecCount(globalExecCount)
 
+-- ============ 520次爱心特效检测 ============
+if globalExecCount == 520 then
+    spawn(function()
+        local heartGui = Instance.new("ScreenGui")
+        heartGui.Name = "HeartEffectGui"
+        heartGui.ResetOnSpawn = false
+        heartGui.Parent = PlayerGui
+        
+        local overlay = Instance.new("Frame")
+        overlay.Size = UDim2.new(1, 0, 1, 0)
+        overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        overlay.BackgroundTransparency = 0.5
+        overlay.ZIndex = 999
+        overlay.Parent = heartGui
+        
+        local heartLabel = Instance.new("TextLabel")
+        heartLabel.Size = UDim2.new(0, 200, 0, 200)
+        heartLabel.Position = UDim2.new(0.5, -100, 0.5, -100)
+        heartLabel.Text = "❤️"
+        heartLabel.Font = Enum.Font.GothamBold
+        heartLabel.TextSize = 150
+        heartLabel.BackgroundTransparency = 1
+        heartLabel.ZIndex = 1000
+        heartLabel.Parent = heartGui
+        
+        local heartHue = 0
+        local heartConn = RunService.RenderStepped:Connect(function(delta)
+            heartHue = (heartHue + delta * 0.5) % 1
+            heartLabel.TextColor3 = Color3.fromHSV(heartHue, 1, 1)
+        end)
+        
+        heartLabel.Size = UDim2.new(0, 0, 0, 0)
+        TweenService:Create(heartLabel, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 200, 0, 200)}):Play()
+        
+        wait(3)
+        
+        local msgLabel = Instance.new("TextLabel")
+        msgLabel.Size = UDim2.new(0, 400, 0, 60)
+        msgLabel.Position = UDim2.new(0.5, -200, 0.5, 120)
+        msgLabel.Text = "您已执行 520 次，感谢您的支持！❤️"
+        msgLabel.Font = Enum.Font.GothamBold
+        msgLabel.TextSize = 24
+        msgLabel.BackgroundTransparency = 1
+        msgLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        msgLabel.TextStrokeTransparency = 0
+        msgLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        msgLabel.ZIndex = 1000
+        msgLabel.Parent = heartGui
+        
+        local msgHue = 0
+        local msgConn = RunService.RenderStepped:Connect(function(delta)
+            msgHue = (msgHue + delta * 0.3) % 1
+            msgLabel.TextColor3 = Color3.fromHSV(msgHue, 1, 1)
+        end)
+        
+        wait(2)
+        
+        heartConn:Disconnect()
+        msgConn:Disconnect()
+        TweenService:Create(heartLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)}):Play()
+        TweenService:Create(msgLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {TextTransparency = 1}):Play()
+        TweenService:Create(overlay, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1}):Play()
+        
+        wait(0.5)
+        heartGui:Destroy()
+    end)
+end
+
 spawn(function()
     local sound = Instance.new("Sound")
     sound.SoundId = "rbxassetid://80701295792893"
@@ -97,7 +165,7 @@ spawn(function()
     local infoLabel = Instance.new("TextLabel")
     infoLabel.Size = UDim2.new(0, 400, 0, 60)
     infoLabel.Position = UDim2.new(0.5, -200, 0.5, -30)
-    infoLabel.Text = "此脚本已经停止更新\n此脚本作者:CHANGCHENG66"
+    infoLabel.Text = "此脚本会一直更新\n此脚本作者:CHANGCHENG66"
     infoLabel.Font = Enum.Font.GothamBold
     infoLabel.TextSize = 22
     infoLabel.BackgroundTransparency = 1
@@ -718,8 +786,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
         if toggleState then
             Toggle.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
             ToggleKnob:TweenPosition(UDim2.new(1, -18, 0, 2), "Out", "Quad", 0.15)
-            if runCode == "esp" then enableESP()
-            elseif runCode == "night" then Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.FogEnd = 100000; Lighting.GlobalShadows = false
+            if runCode == "night" then Lighting.Brightness = 2; Lighting.ClockTime = 14; Lighting.FogEnd = 100000; Lighting.GlobalShadows = false
             elseif runCode == "fps" then fpsEnabled = true; FPSLabel.Visible = true
             elseif runCode == "float" then
                 local c = Players.LocalPlayer.Character
@@ -775,7 +842,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                         if c and c:FindFirstChild("Humanoid") then c.Humanoid.Health = 99999 end
                     end)
                 end
-                -- 主脚本 第3段：createFeatureToggle 后半（从 teamglow 到结尾）
+                -- 主脚本 第3段：createFeatureToggle 后半（从 teamglow 到结尾，包含检测管理员版）
 
             elseif runCode == "teamglow" then
                 local myTeam = Players.LocalPlayer.Team
@@ -1250,7 +1317,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
             elseif runCode == "subtitle" then
                 if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
                 local subGui = PlayerGui:FindFirstChild("SubtitleGui")
-                if subGui then
+                if su
                 -- 主脚本 第4段：createInputCard + 公告 + homePosition + pageContents
 
 local function createInputCard(parent, name, description, icon, defaultValue, onExecute)
@@ -1336,10 +1403,7 @@ local pageContents = {
             {type = "button", name = "通用自瞄fps", desc = "自动瞄准脚本", icon = "🎯", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/%E8%87%AA%E7%9E%84"},
             {type = "button", name = "传送玩家", desc = "选择玩家传送到旁边", icon = "📬", url = "teleport"},
             {type = "button", name = "跟随玩家", desc = "选择玩家自动跟随", icon = "🚶", url = "follow"},
-            -- NTv3.3 已移除
             {type = "button", name = "无限罗宝", desc = "亲测可用", icon = "🌷", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/锁机"},
-            -- Tx翻译 已移除
-            -- 快速回家 已移除
             {type = "toggle", name = "无敌模式", desc = "免疫伤害（客户端）", icon = "🛡️", code = "god"},
             {type = "toggle", name = "千倍速度", desc = "移动速度1000", icon = "⚡", code = "superspeed"},
             {type = "toggle", name = "无限体力", desc = "体力不会减少", icon = "💪", code = "infstamina"},
@@ -1352,9 +1416,7 @@ local pageContents = {
             {type = "toggle", name = "防挂机", desc = "自动防止被踢出游戏", icon = "⏰", code = "antiafk"},
             {type = "toggle", name = "加速模式", desc = "游戏全局加速", icon = "⏩", code = "speedhack"},
             {type = "toggle", name = "穿墙模式", desc = "可以穿过墙壁", icon = "👻", code = "noclip"},
-            -- 透视物品 已移除
             {type = "toggle", name = "隐身模式", desc = "别人看不到你", icon = "👻", code = "invisible"},
-            -- 删除建模 已移除
             {type = "toggle", name = "去雾功能", desc = "消除游戏中的雾气", icon = "🌫️", code = "clearfog"},
             {type = "input", name = "旋转速度", desc = "角色自动旋转", icon = "🔄", default = "0", execute = function(v)
                 if spinConnection then spinConnection:Disconnect(); spinConnection = nil end
@@ -1376,7 +1438,7 @@ local pageContents = {
             {type = "toggle", name = "无限跳跃", desc = "无限连续跳跃", icon = "⬆️", code = "infjump"},
             {type = "toggle", name = "夜视功能", desc = "提高黑暗视野亮度", icon = "🔦", code = "night"},
             {type = "toggle", name = "显示FPS", desc = "左上角帧率显示", icon = "📊", code = "fps"},
-            {type = "toggle", name = "ESP透视", desc = "红色描边+名字可穿墙", icon = "👁️", code = "esp"},
+            {type = "toggle", name = "ESP透视", desc = "红色描边+名字可穿墙（可检测管理员版用户）", icon = "👁️", code = "esp"},
         }
     },
     ["战斗功能"] = {
@@ -1393,8 +1455,6 @@ local pageContents = {
         type = "toggles",
         items = {
             {type = "toggle", name = "跳舞-机械舞", desc = "机器人风格舞蹈", icon = "🤖", code = "dance1"},
-            -- 喷火模式 已移除
-            -- 光环模式 已移除
             {type = "toggle", name = "倒立行走", desc = "角色倒过来", icon = "🙃", code = "upsidedown"},
             {type = "toggle", name = "大头模式", desc = "头变得超大", icon = "🗿", code = "bighead"},
             {type = "toggle", name = "全屏特效", desc = "屏幕加滤镜", icon = "🎨", code = "screenfx"},
@@ -1409,7 +1469,6 @@ local pageContents = {
             {type = "button", name = "播放器", desc = "自定义", icon = "🎉", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/播放"},
         }
     },
-    -- 音乐区 整个移除（精简版没有）
     ["甩飞"] = {
         type = "buttons",
         items = {{name = "多人甩飞", desc = "选择玩家然后甩飞", icon = "💨", url = "https://raw.githubusercontent.com/hgvuyguyg/jjjjjjjjj/main/%E7%94%A9%E9%A3%9E"}}
