@@ -1,0 +1,127 @@
+-- 🌙 加一速度僵尸键盘逃出 | V1.1
+
+local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+if not WI then return end
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+
+-- 变量
+local speedBoost = false
+local speedValue = 50
+local autoWin = false
+local autoRebirth = false
+
+-- ==================== 冰白主题 ====================
+WI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF"
+})
+
+-- ==================== 速度 ====================
+RunService.RenderStepped:Connect(function()
+    if speedBoost then
+        pcall(function()
+            local c = LocalPlayer.Character
+            if c and c:FindFirstChild("Humanoid") then
+                c.Humanoid.WalkSpeed = speedValue
+            end
+        end)
+    end
+end)
+
+-- ==================== 传送终点 ====================
+local function teleportToEnd()
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then
+        WI:Notify({Title = "失败", Content = "角色不存在", Duration = 2})
+        return
+    end
+    char.HumanoidRootPart.CFrame = CFrame.new(6914, 513, -1330)
+    WI:Notify({Title = "成功", Content = "已到终点", Duration = 2})
+end
+
+-- ==================== 自动赢 ====================
+spawn(function()
+    while true do
+        if autoWin then
+            pcall(function()
+                local char = LocalPlayer.Character
+                if not char or not char:FindFirstChild("HumanoidRootPart") then
+                    task.wait(0.5)
+                    return
+                end
+                char.HumanoidRootPart.CFrame = CFrame.new(6910, 513, -1316)
+                task.wait(1)
+            end)
+        end
+        task.wait(0.5)
+    end
+end)
+
+-- ==================== 自动重生 ====================
+spawn(function()
+    while true do
+        if autoRebirth then
+            pcall(function()
+                local Event = game:GetService("ReplicatedStorage").Shared.Packages.Net["RF/PerformRebirth"]
+                Event:InvokeServer()
+            end)
+            task.wait(10)
+        else
+            task.wait(0.5)
+        end
+    end
+end)
+
+-- ==================== UI ====================
+local Window = WI:CreateWindow({
+    Title = "加1速度僵尸键盘",
+    Icon = "solar:moon-bold",
+    Size = UDim2.fromOffset(500, 320),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "冰白",
+    Transparent = true,
+    ScrollBarEnabled = true
+})
+
+Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
+    Title = "黑脚本--加1度僵尸键盘",
+    Desc = "传送终点 | 自动赢 | 自动重生 | 速度"
+})
+
+local T2 = Window:Tab({Title = "主要功能", Icon = "solar:star-bold"})
+T2:Button({Title = "传送到终点", Justify = "Center", Callback = function() teleportToEnd() end})
+T2:Toggle({Title = "自动赢", Value = false, Callback = function(v) autoWin = v end})
+T2:Toggle({Title = "自动重生(10秒)", Value = false, Callback = function(v) autoRebirth = v end})
+
+local T3 = Window:Tab({Title = "玩家", Icon = "solar:user-bold"})
+T3:Toggle({Title = "速度加成", Value = false, Callback = function(v) speedBoost = v end})
+T3:Slider({Title = "速度值", Value = {Min = 16, Max = 200, Default = 50}, Callback = function(v) speedValue = v end})
+
+local T4 = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+local statusParagraph = T4:Paragraph({Title = "功能状态", Desc = "加载中..."})
+
+spawn(function()
+    while true do
+        pcall(function()
+            local fps = math.floor(1 / (RunService.RenderStepped:Wait() or 0.016))
+            local status = "FPS: " .. fps .. "\n\n" ..
+                "自动赢: " .. (autoWin and "✅" or "❌") .. "\n" ..
+                "自动重生: " .. (autoRebirth and "✅" or "❌") .. "\n" ..
+                "速度: " .. (speedBoost and "✅ " .. speedValue or "❌")
+            statusParagraph:SetDesc(status)
+        end)
+        task.wait(0.5)
+    end
+end)
+
+T4:Button({Title = "关闭面板", Justify = "Center", Callback = function() Window:Close() end})
+
+WI:Notify({Title = "🌙 加一速度僵尸键盘逃出", Content = "加载完成", Duration = 3})
+print("🌙 加一速度僵尸键盘逃出 加载完成")
