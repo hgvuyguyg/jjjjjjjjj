@@ -49,6 +49,74 @@ local globalExecCount = getGlobalExecCount()
 if globalExecCount == 0 then globalExecCount = 1 else globalExecCount = globalExecCount + 1 end
 saveGlobalExecCount(globalExecCount)
 
+-- ============ 520次爱心特效检测 ============
+if globalExecCount == 520 then
+    spawn(function()
+        local heartGui = Instance.new("ScreenGui")
+        heartGui.Name = "HeartEffectGui"
+        heartGui.ResetOnSpawn = false
+        heartGui.Parent = PlayerGui
+        
+        local overlay = Instance.new("Frame")
+        overlay.Size = UDim2.new(1, 0, 1, 0)
+        overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        overlay.BackgroundTransparency = 0.5
+        overlay.ZIndex = 999
+        overlay.Parent = heartGui
+        
+        local heartLabel = Instance.new("TextLabel")
+        heartLabel.Size = UDim2.new(0, 200, 0, 200)
+        heartLabel.Position = UDim2.new(0.5, -100, 0.5, -100)
+        heartLabel.Text = "❤️"
+        heartLabel.Font = Enum.Font.GothamBold
+        heartLabel.TextSize = 150
+        heartLabel.BackgroundTransparency = 1
+        heartLabel.ZIndex = 1000
+        heartLabel.Parent = heartGui
+        
+        local heartHue = 0
+        local heartConn = RunService.RenderStepped:Connect(function(delta)
+            heartHue = (heartHue + delta * 0.5) % 1
+            heartLabel.TextColor3 = Color3.fromHSV(heartHue, 1, 1)
+        end)
+        
+        heartLabel.Size = UDim2.new(0, 0, 0, 0)
+        TweenService:Create(heartLabel, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 200, 0, 200)}):Play()
+        
+        wait(3)
+        
+        local msgLabel = Instance.new("TextLabel")
+        msgLabel.Size = UDim2.new(0, 400, 0, 60)
+        msgLabel.Position = UDim2.new(0.5, -200, 0.5, 120)
+        msgLabel.Text = "您已执行 520 次，感谢您的支持！❤️"
+        msgLabel.Font = Enum.Font.GothamBold
+        msgLabel.TextSize = 24
+        msgLabel.BackgroundTransparency = 1
+        msgLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        msgLabel.TextStrokeTransparency = 0
+        msgLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        msgLabel.ZIndex = 1000
+        msgLabel.Parent = heartGui
+        
+        local msgHue = 0
+        local msgConn = RunService.RenderStepped:Connect(function(delta)
+            msgHue = (msgHue + delta * 0.3) % 1
+            msgLabel.TextColor3 = Color3.fromHSV(msgHue, 1, 1)
+        end)
+        
+        wait(2)
+        
+        heartConn:Disconnect()
+        msgConn:Disconnect()
+        TweenService:Create(heartLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)}):Play()
+        TweenService:Create(msgLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {TextTransparency = 1}):Play()
+        TweenService:Create(overlay, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1}):Play()
+        
+        wait(0.5)
+        heartGui:Destroy()
+    end)
+end
+
 spawn(function()
     local sound = Instance.new("Sound")
     sound.SoundId = "rbxassetid://80701295792893"
@@ -326,7 +394,6 @@ local TopBarCorner = Instance.new("UICorner")
 TopBarCorner.CornerRadius = UDim.new(0, 12)
 TopBarCorner.Parent = TopBar
 
--- 标题（改成管理员版）
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(0, 120, 1, 0)
 TitleLabel.Position = UDim2.new(0, 12, 0, 0)
@@ -339,7 +406,6 @@ TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.ZIndex = 11
 TitleLabel.Parent = TopBar
 
--- InfoBox（放大）
 local InfoBox = Instance.new("Frame")
 InfoBox.Size = UDim2.new(0, 220, 0, 30)
 InfoBox.Position = UDim2.new(0, 135, 0, 3)
@@ -418,39 +484,6 @@ AdminText.TextSize = 11
 AdminText.BackgroundTransparency = 1
 AdminText.ZIndex = 13
 AdminText.Parent = AdminBadge
-
--- 执行次数（跨服务器）
-local ExecCountLabel = Instance.new("TextLabel")
-ExecCountLabel.Size = UDim2.new(0, 90, 0, 20)
-ExecCountLabel.Position = UDim2.new(0, 448, 0, 8)
-ExecCountLabel.Text = "执行: " .. globalExecCount .. "次"
-ExecCountLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-ExecCountLabel.Font = Enum.Font.GothamBold
-ExecCountLabel.TextSize = 10
-ExecCountLabel.BackgroundColor3 = Color3.fromRGB(33, 150, 243)
-ExecCountLabel.BorderSizePixel = 0
-ExecCountLabel.ZIndex = 12
-ExecCountLabel.Parent = TopBar
-local ExecCountCorner = Instance.new("UICorner")
-ExecCountCorner.CornerRadius = UDim.new(0, 5)
-ExecCountCorner.Parent = ExecCountLabel
-
--- 执行次数RGB边框
-local ExecCountRGB = Instance.new("Frame")
-ExecCountRGB.Size = UDim2.new(1, 2, 1, 2)
-ExecCountRGB.Position = UDim2.new(0, -1, 0, -1)
-ExecCountRGB.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-ExecCountRGB.ZIndex = 11
-ExecCountRGB.Parent = ExecCountLabel
-local ExecCountRGBCorner = Instance.new("UICorner")
-ExecCountRGBCorner.CornerRadius = UDim.new(0, 6)
-ExecCountRGBCorner.Parent = ExecCountRGB
-
-local execHue2 = 0
-RunService.RenderStepped:Connect(function(delta)
-    execHue2 = (execHue2 + delta * 0.5) % 1
-    ExecCountRGB.BackgroundColor3 = Color3.fromHSV(execHue2, 0.7, 1)
-end)
 
 local CloseButton = Instance.new("TextButton")
 CloseButton.Size = UDim2.new(0, 28, 0, 28)
@@ -603,7 +636,7 @@ for _, item in ipairs(navItems) do
     NavButton.MouseLeave:Connect(function() if NavButton ~= selectedNav then NavButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255) end end)
     table.insert(navButtons, {button = NavButton, name = item.name})
 end
--- 主脚本 第2段：createButtonCard + createFeatureToggle 前半（到 god 结束）
+-- 主脚本 第2段：createButtonCard + createFeatureToggle 前半
 
 local function createButtonCard(parent, name, desc, icon, url)
     local Card = Instance.new("Frame")
@@ -1088,10 +1121,11 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                 if c and c:FindFirstChild("Head") then
                     local bb = c.Head:FindFirstChild("BillboardGui")
                     if not bb then
-                        bb = Instance.new("BillboardGui"); bb.Size = UDim2.new(0, 100, 0, 30)
+                        bb = Instance.new("BillboardGui"); bb.Size = UDim2.new(0, 150, 0, 30)
                         bb.StudsOffset = Vector3.new(0, 3, 0); bb.AlwaysOnTop = true; bb.Parent = c.Head
                         local nl = Instance.new("TextLabel"); nl.Size = UDim2.new(1, 0, 1, 0); nl.BackgroundTransparency = 1
-                        nl.Text = Players.LocalPlayer.DisplayName; nl.Font = Enum.Font.GothamBold; nl.TextSize = 14; nl.Name = "RainbowName"
+                        nl.Text = Players.LocalPlayer.DisplayName .. " 👑管理员"
+                        nl.Font = Enum.Font.GothamBold; nl.TextSize = 14; nl.Name = "RainbowName"
                         nl.TextStrokeTransparency = 0; nl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0); nl.Parent = bb
                     end
                 end
@@ -1381,7 +1415,7 @@ local function getTime()
 end
 local function updateTime()
     if announcementTextBox then
-        announcementTextBox.Text = "⏰ " .. getTime() .. "\n\n👤 制作者：C Studio\n📅 创建日期：2026年7月10日\n🔄 此脚本一直更新\n\n🎮 玩法：开启功能后在游戏中体验效果\n如果在游玩时遇到任何问题 请报告给我们❤️\n最大帮助者:CHANGCHENG66☕\n\n感谢 hacker_lololo888的支持❤️❤️❤️❤️❤️"
+        announcementTextBox.Text = "⏰ " .. getTime() .. "\n\n👤 制作者：C Studio\n📅 创建日期：2026年7月10日\n🔄 此脚本一直更新\n\n📊 您目前已经执行了 " .. globalExecCount .. " 次，感谢您的支持！\n\n🎮 玩法：开启功能后在游戏中体验效果\n如果在游玩时遇到任何问题 请报告给我们❤️\n最大帮助者:CHANGCHENG66☕\n\n感谢 hacker_lololo888的支持❤️❤️❤️❤️❤️"
     end
 end
 spawn(function() while true do updateTime(); wait(1) end end)
@@ -1394,7 +1428,6 @@ spawn(function()
     end
 end)
 
--- ============ pageContents 定义 ============
 local pageContents = {
     ["公告"] = {type = "text"},
     ["通用"] = {
