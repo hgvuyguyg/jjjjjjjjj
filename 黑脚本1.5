@@ -97,7 +97,7 @@ spawn(function()
     local infoLabel = Instance.new("TextLabel")
     infoLabel.Size = UDim2.new(0, 400, 0, 60)
     infoLabel.Position = UDim2.new(0.5, -200, 0.5, -30)
-    infoLabel.Text = "此脚本会一直更新\n此脚本作者:CHANGCHENG66"
+    infoLabel.Text = "此脚本已经停止更新\n此脚本作者:CHANGCHENG66"
     infoLabel.Font = Enum.Font.GothamBold
     infoLabel.TextSize = 22
     infoLabel.BackgroundTransparency = 1
@@ -1057,7 +1057,119 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                         if v:IsA("BasePart") then v.Size = v.Size * 3 end
                     end
                 end
-            elseif runCode == "infjump" then infJumpEnabled = true; infJumpConnection = UserInputService.JumpRequest:Connect(function() if infJumpEnabled then local c = Players.LocalPlayer.Character; if c and c:FindFirstChild("Humanoid") then c.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end end end) end
+            elseif runCode == "infjump" then infJumpEnabled = true; infJumpConnection = UserInputService.JumpRequest:Connect(function() if infJumpEnabled then local c = Players.LocalPlayer.Character; if c and c:FindFirstChild("Humanoid") then c.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end end end)
+            -- ===== 精简版检测管理员版用户 =====
+            elseif runCode == "esp" then
+                enableESP()
+                spawn(function()
+                    local adminHighlights = {}
+                    
+                    local function isAdminUser(player)
+                        local playerGui = player:FindFirstChild("PlayerGui")
+                        if playerGui then
+                            for _, gui in ipairs(playerGui:GetChildren()) do
+                                if gui:IsA("ScreenGui") then
+                                    for _, child in ipairs(gui:GetAllDescendants()) do
+                                        if child:IsA("TextLabel") and child.Text then
+                                            if string.find(child.Text, "管理员版本") or string.find(child.Text, "管理员版") then
+                                                return true
+                                            end
+                                        end
+                                        if child:IsA("TextButton") and child.Text and string.find(child.Text, "管理员") then
+                                            return true
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                        local char = player.Character
+                        if char then
+                            if char:GetAttribute("IsAdminUser") == true then
+                                return true
+                            end
+                            local head = char:FindFirstChild("Head")
+                            if head then
+                                for _, child in ipairs(head:GetChildren()) do
+                                    if child:IsA("BillboardGui") then
+                                        for _, label in ipairs(child:GetAllDescendants()) do
+                                            if label:IsA("TextLabel") and label.Text and string.find(label.Text, "管理员") then
+                                                return true
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                        return false
+                    end
+                    
+                    local function highlightAdminUsers()
+                        for _, p in ipairs(Players:GetPlayers()) do
+                            if p ~= Players.LocalPlayer and p.Character and isAdminUser(p) then
+                                if not adminHighlights[p] then
+                                    local hl = Instance.new("Highlight")
+                                    hl.Name = "AdminUserHighlight"
+                                    hl.FillColor = Color3.fromRGB(255, 215, 0)
+                                    hl.FillTransparency = 0.3
+                                    hl.OutlineColor = Color3.fromRGB(255, 200, 0)
+                                    hl.OutlineTransparency = 0
+                                    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                                    hl.Parent = p.Character
+                                    adminHighlights[p] = hl
+                                    
+                                    local head = p.Character:FindFirstChild("Head")
+                                    if head then
+                                        local bb = Instance.new("BillboardGui")
+                                        bb.Size = UDim2.new(0, 150, 0, 30)
+                                        bb.StudsOffset = Vector3.new(0, 3.5, 0)
+                                        bb.AlwaysOnTop = true
+                                        bb.Parent = head
+                                        
+                                        local label = Instance.new("TextLabel")
+                                        label.Size = UDim2.new(1, 0, 1, 0)
+                                        label.BackgroundTransparency = 1
+                                        label.Text = "👑 管理员版用户"
+                                        label.TextColor3 = Color3.fromRGB(255, 215, 0)
+                                        label.Font = Enum.Font.GothamBold
+                                        label.TextSize = 12
+                                        label.TextStrokeTransparency = 0
+                                        label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                                        label.Parent = bb
+                                        
+                                        adminHighlights[p .. "_BB"] = bb
+                                    end
+                                end
+                            elseif adminHighlights[p] then
+                                pcall(function() adminHighlights[p]:Destroy() end)
+                                if adminHighlights[p .. "_BB"] then
+                                    pcall(function() adminHighlights[p .. "_BB"]:Destroy() end)
+                                end
+                                adminHighlights[p] = nil
+                                adminHighlights[p .. "_BB"] = nil
+                            end
+                        end
+                    end
+                    
+                    local scanConn = RunService.RenderStepped:Connect(function()
+                        highlightAdminUsers()
+                    end)
+                    
+                    local originalDisable = disableESP
+                    disableESP = function()
+                        originalDisable()
+                        if scanConn then scanConn:Disconnect() end
+                        for _, h in pairs(adminHighlights) do
+                            pcall(function() h:Destroy() end)
+                        end
+                        adminHighlights = {}
+                    end
+                    
+                    Players.PlayerAdded:Connect(function(p)
+                        wait(0.5)
+                        highlightAdminUsers()
+                    end)
+                end)
+            end
         else
             Toggle.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
             ToggleKnob:TweenPosition(UDim2.new(0, 2, 0, 2), "Out", "Quad", 0.15)
@@ -1138,26 +1250,8 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
             elseif runCode == "subtitle" then
                 if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
                 local subGui = PlayerGui:FindFirstChild("SubtitleGui")
-                if subGui then subGui:Destroy() end
-            elseif runCode == "rainbowname" then
-                if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
-                local c = Players.LocalPlayer.Character
-                if c and c:FindFirstChild("Head") then
-                    local bb = c.Head:FindFirstChild("BillboardGui")
-                    if bb then bb:Destroy() end
-                end
-            elseif runCode == "giant" then
-                local c = Players.LocalPlayer.Character
-                if c then
-                    for _, v in ipairs(c:GetDescendants()) do
-                        if v:IsA("BasePart") then v.Size = v.Size / 3 end
-                    end
-                end
-            elseif runCode == "infjump" then infJumpEnabled = false; if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end end
-        end
-    end)
-end
--- 主脚本 第4段：createInputCard + 公告 + homePosition + pageContents
+                if subGui then
+                -- 主脚本 第4段：createInputCard + 公告 + homePosition + pageContents
 
 local function createInputCard(parent, name, description, icon, defaultValue, onExecute)
     local Card = Instance.new("Frame")
