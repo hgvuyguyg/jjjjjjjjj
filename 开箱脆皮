@@ -1,0 +1,204 @@
+-- 🌙 开箱ASMR | V1.5
+
+local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+if not WI then return end
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+
+-- 变量
+local autoBuyWorker = false
+local workerInterval = 1
+local antiSlow = false
+local autoFarm = false
+local farmInterval = 0.1
+local farmType = "彩虹垫"
+
+-- 刷钱类型映射
+local farmTypes = {
+    ["彩虹垫"] = {keyword = "Placed_POP_IT_ASMR", label = "彩虹垫"},
+    ["蓝色果冻"] = {keyword = "NeedohPart", label = "蓝色果冻"},
+    ["键盘"] = {keyword = "Placed_CHOCOLATE_KEY_ASMR", label = "键盘"},
+    ["蜡泥朵"] = {keyword = "Placed_WAX_NEEDOH_ASMR", label = "蜡泥朵"},
+    ["糖果键盘"] = {keyword = "Placed_CANDY_KEY_ASMR", label = "糖果键盘"},
+}
+
+-- ==================== 冰白主题 ====================
+WI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF"
+})
+
+-- ==================== 辅助 ====================
+local function getRoot(obj)
+    if obj:IsA("Model") then
+        return obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head") or obj:FindFirstChild("Handle") or obj.PrimaryPart
+    elseif obj:IsA("BasePart") then
+        return obj
+    end
+    for _, c in ipairs(obj:GetDescendants()) do
+        if c:IsA("BasePart") then return c end
+    end
+    return nil
+end
+
+-- ==================== 执行售卖一次 ====================
+local function sellOnce()
+    pcall(function()
+        local Event = game:GetService("ReplicatedStorage").ASMRSellRemotes.SellASMRRequest
+        Event:InvokeServer("SellInventory")
+        WI:Notify({Title = "售卖", Content = "已执行售卖", Duration = 2})
+    end)
+end
+
+-- ==================== 自动刷钱 ====================
+spawn(function()
+    while true do
+        if autoFarm then
+            pcall(function()
+                local char = LocalPlayer.Character
+                if not char or not char:FindFirstChild("HumanoidRootPart") then
+                    task.wait(0.5)
+                    return
+                end
+                local hrp = char.HumanoidRootPart
+                local humanoid = char:FindFirstChild("Humanoid")
+                if not humanoid then return end
+
+                local config = farmTypes[farmType]
+                if not config then return end
+
+                local closest = nil
+                local closestDist = math.huge
+
+                for _, obj in ipairs(Workspace:GetDescendants()) do
+                    if obj.Name:find(config.keyword) then
+                        local root = getRoot(obj)
+                        if root then
+                            local d = (hrp.Position - root.Position).Magnitude
+                            if d < closestDist then
+                                closestDist = d
+                                closest = root
+                            end
+                        end
+                    end
+                end
+
+                if not closest then
+                    task.wait(1)
+                    return
+                end
+
+                hrp.CFrame = CFrame.new(closest.Position + Vector3.new(0, 3, 0))
+                task.wait(0.5)
+
+                local centerPos = closest.Position
+                humanoid.WalkSpeed = 16
+
+                while autoFarm do
+                    local randomOffset = Vector3.new(math.random(-5, 5), 0, math.random(-5, 5))
+                    local movePos = centerPos + randomOffset
+                    humanoid:MoveTo(movePos)
+                    task.wait(farmInterval)
+                end
+            end)
+        end
+        task.wait(0.5)
+    end
+end)
+
+-- ==================== 自动买工人 ====================
+spawn(function()
+    while true do
+        if autoBuyWorker then
+            pcall(function()
+                local Event = game:GetService("ReplicatedStorage").WorkerRemotes.BuyWorker
+                Event:FireServer()
+            end)
+        end
+        task.wait(workerInterval)
+    end
+end)
+
+-- ==================== 果冻上不减速 ====================
+spawn(function()
+    while true do
+        if antiSlow then
+            pcall(function()
+                local char = LocalPlayer.Character
+                if char and char:FindFirstChild("Humanoid") then
+                    if char.Humanoid.WalkSpeed < 16 then
+                        char.Humanoid.WalkSpeed = 16
+                    end
+                end
+            end)
+        end
+        task.wait(0.05)
+    end
+end)
+
+-- ==================== UI ====================
+local Window = WI:CreateWindow({
+    Title = "开箱ASMR",
+    Icon = "solar:moon-bold",
+    Size = UDim2.fromOffset(400, 400),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "冰白",
+    Transparent = true,
+    ScrollBarEnabled = true
+})
+
+Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
+    Title = "黑脚本--开箱ASMR",
+    Desc = "自动刷钱(5种) | 售卖 | 买工人 | 防减速"
+})
+
+local T2 = Window:Tab({Title = "主要功能", Icon = "solar:star-bold"})
+T2:Section({Title = "自动刷钱"})
+T2:Dropdown({
+    Title = "刷钱类型",
+    Values = {"彩虹垫", "蓝色果冻", "键盘", "蜡泥朵", "糖果键盘"},
+    Value = "彩虹垫",
+    Multi = false,
+    AllowNone = false,
+    Callback = function(v) farmType = v end
+})
+T2:Toggle({Title = "开启自动刷钱", Value = false, Callback = function(v) autoFarm = v end})
+T2:Slider({Title = "走动间隔(秒)", Value = {Min = 0.1, Max = 2, Default = 0.1}, Step = 0.1, Callback = function(v) farmInterval = v end})
+
+T2:Section({Title = "售卖"})
+T2:Button({Title = "执行售卖一次", Justify = "Center", Callback = function() sellOnce() end})
+
+T2:Section({Title = "自动买工人"})
+T2:Toggle({Title = "开启自动买工人", Value = false, Callback = function(v) autoBuyWorker = v end})
+T2:Slider({Title = "购买间隔(秒)", Value = {Min = 0.5, Max = 10, Default = 1}, Step = 0.5, Callback = function(v) workerInterval = v end})
+
+T2:Section({Title = "防减速"})
+T2:Toggle({Title = "果冻上不减速", Value = false, Callback = function(v) antiSlow = v end})
+
+local T3 = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+local statusParagraph = T3:Paragraph({Title = "功能状态", Desc = "加载中..."})
+
+spawn(function()
+    while true do
+        pcall(function()
+            local fps = math.floor(1 / (RunService.RenderStepped:Wait() or 0.016))
+            local status = "FPS: " .. fps .. "\n\n" ..
+                "刷钱: " .. (autoFarm and "✅ " .. farmType or "❌") .. "\n" ..
+                "买工人: " .. (autoBuyWorker and "✅" or "❌") .. "\n" ..
+                "防减速: " .. (antiSlow and "✅" or "❌")
+            statusParagraph:SetDesc(status)
+        end)
+        task.wait(0.5)
+    end
+end)
+
+T3:Button({Title = "关闭面板", Justify = "Center", Callback = function() Window:Close() end})
+
+WI:Notify({Title = "🌙 开箱ASMR", Content = "加载完成 | 5种刷钱", Duration = 3})
+print("🌙 开箱ASMR 加载完成")
