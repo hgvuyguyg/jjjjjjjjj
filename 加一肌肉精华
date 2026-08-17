@@ -1,0 +1,252 @@
+-- 版本号: 1.1.0
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+if not WindUI then return end
+
+WindUI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF",
+})
+
+local Window = WindUI:CreateWindow({
+    Title = "加一肌肉进化",
+    Icon = "solar:moon-bold",
+    Size = UDim2.fromOffset(500, 350),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "冰白",
+    Transparent = true,
+    ScrollBarEnabled = true,
+})
+
+-- 功能状态变量
+local autoClickEnabled = false
+local autoWalkEnabled = false
+local autoRespawnEnabled = false
+local lastClickTime = 0
+local lastRespawnTime = 0
+local clickDelay = 0.01
+local respawnDelay = 3
+
+-- 公告标签页
+Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
+    Title = "加一肌肉进化",
+    Desc = "版本: v1.1.0\n主要功能：自动点击 | 自动胜利 | 自动重生",
+})
+
+-- 主要功能标签页
+local MainTab = Window:Tab({Title = "主要功能", Icon = "solar:star-bold"})
+
+MainTab:Toggle({
+    Title = "自动点击",
+    Value = false,
+    Callback = function(enabled)
+        autoClickEnabled = enabled
+        
+        if enabled then
+            WindUI:Notify({
+                Title = "自动点击已开启",
+                Content = "延迟: " .. string.format("%.2f", clickDelay) .. "秒",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "自动点击已关闭",
+                Content = "已停止自动点击",
+                Duration = 2
+            })
+        end
+    end
+})
+
+MainTab:Slider({
+    Title = "点击延迟",
+    Value = {Min = 0.01, Max = 0.3, Default = 0.01},
+    Step = 0.01,
+    Callback = function(delay)
+        clickDelay = delay
+    end
+})
+
+MainTab:Divider()
+
+MainTab:Toggle({
+    Title = "自动胜利",
+    Value = false,
+    Callback = function(enabled)
+        autoWalkEnabled = enabled
+        
+        if enabled then
+            WindUI:Notify({
+                Title = "自动胜利已开启",
+                Content = "正在走向胜利坐标",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "自动胜利已关闭",
+                Content = "已停止移动",
+                Duration = 2
+            })
+        end
+    end
+})
+
+MainTab:Divider()
+
+MainTab:Toggle({
+    Title = "自动重生",
+    Value = false,
+    Callback = function(enabled)
+        autoRespawnEnabled = enabled
+        
+        if enabled then
+            WindUI:Notify({
+                Title = "自动重生已开启",
+                Content = "延迟: " .. respawnDelay .. "秒",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "自动重生已关闭",
+                Content = "已停止自动重生",
+                Duration = 2
+            })
+        end
+    end
+})
+
+MainTab:Slider({
+    Title = "重生延迟",
+    Value = {Min = 1, Max = 10, Default = 3},
+    Step = 1,
+    Callback = function(delay)
+        respawnDelay = delay
+    end
+})
+
+-- 自动点击循环
+game:GetService("RunService").Heartbeat:Connect(function()
+    if autoClickEnabled then
+        local currentTime = tick()
+        if currentTime - lastClickTime >= clickDelay then
+            local Event = game:GetService("ReplicatedStorage").Packages.Packet.RemoteEvent
+            Event:FireServer(
+                (function(bytes)
+                    local b = buffer.create(#bytes)
+                    for i = 1, #bytes do
+                        buffer.writeu8(b, i - 1, bytes[i])
+                    end
+                    return b
+                end)({ 79, 11, 9, 77, 97, 110, 117, 97, 108, 84, 97, 112 })
+            )
+            lastClickTime = currentTime
+        end
+    end
+end)
+
+-- 自动走向胜利坐标（模拟移动）
+game:GetService("RunService").Heartbeat:Connect(function()
+    if autoWalkEnabled then
+        local player = game.Players.LocalPlayer
+        if player and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character:FindFirstChild("HumanoidRootPart") then
+            local humanoid = player.Character.Humanoid
+            local rootPart = player.Character.HumanoidRootPart
+            local targetPosition = Vector3.new(88, 172.8, -4131)
+            
+            if (rootPart.Position - targetPosition).Magnitude > 5 then
+                humanoid:MoveTo(targetPosition)
+                humanoid.WalkSpeed = 16
+            else
+                humanoid:MoveTo(rootPart.Position)
+                WindUI:Notify({
+                    Title = "已到达胜利位置",
+                    Content = "自动胜利完成",
+                    Duration = 3
+                })
+                autoWalkEnabled = false
+            end
+        end
+    end
+end)
+
+-- 自动重生循环
+game:GetService("RunService").Heartbeat:Connect(function()
+    if autoRespawnEnabled then
+        local currentTime = tick()
+        if currentTime - lastRespawnTime >= respawnDelay then
+            local Event = game:GetService("ReplicatedStorage").Packages.Packet.RemoteEvent
+            Event:FireServer(
+                (function(bytes)
+                    local b = buffer.create(#bytes)
+                    for i = 1, #bytes do
+                        buffer.writeu8(b, i - 1, bytes[i])
+                    end
+                    return b
+                end)({ 56 })
+            )
+            lastRespawnTime = currentTime
+        end
+    end
+end)
+
+-- 设置标签页
+local SettingsTab = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+
+local statusParagraph = SettingsTab:Paragraph({
+    Title = "功能状态",
+    Desc = "正在加载..."
+})
+
+-- 更新状态显示
+local function updateStatus()
+    local status = ""
+    
+    if autoClickEnabled then
+        status = status .. "✅ 自动点击: 已开启 (延迟: " .. string.format("%.2f", clickDelay) .. "秒)\n"
+    else
+        status = status .. "❌ 自动点击: 未开启\n"
+    end
+    
+    if autoWalkEnabled then
+        status = status .. "✅ 自动胜利: 已开启\n"
+    else
+        status = status .. "❌ 自动胜利: 未开启\n"
+    end
+    
+    if autoRespawnEnabled then
+        status = status .. "✅ 自动重生: 已开启 (延迟: " .. respawnDelay .. "秒)\n"
+    else
+        status = status .. "❌ 自动重生: 未开启\n"
+    end
+    
+    local player = game.Players.LocalPlayer
+    if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+        status = status .. "✅ 角色: 已加载\n"
+        
+        local pos = player.Character.HumanoidRootPart.Position
+        status = status .. "位置: " .. math.floor(pos.X) .. ", " .. math.floor(pos.Y) .. ", " .. math.floor(pos.Z)
+    else
+        status = status .. "❌ 角色: 未加载"
+    end
+    
+    statusParagraph:SetDesc(status)
+end
+
+game:GetService("RunService").Heartbeat:Connect(function()
+    updateStatus()
+end)
+
+SettingsTab:Button({
+    Title = "关闭面板",
+    Callback = function()
+        Window:Close()
+    end
+})
+
+WindUI:Notify({
+    Title = "脚本加载完成",
+    Content = "加一肌肉进化 v1.1.0",
+    Duration = 3
+})
