@@ -1,0 +1,408 @@
+-- 加一速度进化 脚本 v1.1.2
+-- WindUI蓝白版 | 循环获得速度 | 自动进化 | 循环自动胜利 | 循环调速度 | 自动重生
+
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+if not WindUI then return end
+
+WindUI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF",
+})
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Settings = {
+    AutoSpeedEnabled = false,
+    AutoEvolveEnabled = false,
+    AutoWinEnabled = false,
+    AutoWalkSpeedEnabled = false,
+    AutoRebirthEnabled = false,
+    SpeedDelay = 0.1,
+    EvolveDelay = 1,
+    WinDelay = 1,
+    WalkSpeedValue = 100,
+}
+
+local VERSION = "v1.1.2"
+local lastSpeedTime = 0
+local lastEvolveTime = 0
+local lastWinTime = 0
+local lastWalkSpeedTime = 0
+local lastRebirthTime = 0
+local RebirthDelay = 10 -- 固定10秒不可改
+
+-- 获得速度
+local function addSpeed()
+    local Event = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Shared") and ReplicatedStorage.Modules.Shared:FindFirstChild("RemoteEventService") and ReplicatedStorage.Modules.Shared.RemoteEventService:FindFirstChild("AddSpeedRemoteEvent")
+    
+    if Event then
+        Event:FireServer()
+        return true
+    end
+    
+    return false
+end
+
+-- 自动进化
+local function evolve()
+    local Event = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Shared") and ReplicatedStorage.Modules.Shared:FindFirstChild("RemoteEventService") and ReplicatedStorage.Modules.Shared.RemoteEventService:FindFirstChild("EvolutionRemoteEvent")
+    
+    if Event then
+        Event:FireServer({
+            Action = "Evolve"
+        })
+        return true
+    end
+    
+    return false
+end
+
+-- 自动胜利
+local function autoWin()
+    local player = LocalPlayer
+    if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        player.Character.HumanoidRootPart.CFrame = CFrame.new(7351.1, 94, 36.4)
+        return true
+    end
+    return false
+end
+
+-- 循环调速度（每秒设置一次）
+local function setWalkSpeed()
+    local player = LocalPlayer
+    if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = Settings.WalkSpeedValue
+        return true
+    end
+    return false
+end
+
+-- 自动重生
+local function rebirth()
+    local Event = ReplicatedStorage:FindFirstChild("Modules") and ReplicatedStorage.Modules:FindFirstChild("Shared") and ReplicatedStorage.Modules.Shared:FindFirstChild("RemoteEventService") and ReplicatedStorage.Modules.Shared.RemoteEventService:FindFirstChild("RebirthRemoteEvent")
+    
+    if Event then
+        Event:FireServer()
+        return true
+    end
+    
+    return false
+end
+
+-- 循环获得速度
+task.spawn(function()
+    while true do
+        if Settings.AutoSpeedEnabled then
+            local currentTime = tick()
+            if currentTime - lastSpeedTime >= Settings.SpeedDelay then
+                addSpeed()
+                lastSpeedTime = currentTime
+            end
+        end
+        task.wait(0.01)
+    end
+end)
+
+-- 循环自动进化
+task.spawn(function()
+    while true do
+        if Settings.AutoEvolveEnabled then
+            local currentTime = tick()
+            if currentTime - lastEvolveTime >= Settings.EvolveDelay then
+                evolve()
+                lastEvolveTime = currentTime
+            end
+        end
+        task.wait(0.01)
+    end
+end)
+
+-- 循环自动胜利
+task.spawn(function()
+    while true do
+        if Settings.AutoWinEnabled then
+            local currentTime = tick()
+            if currentTime - lastWinTime >= Settings.WinDelay then
+                autoWin()
+                lastWinTime = currentTime
+            end
+        end
+        task.wait(0.01)
+    end
+end)
+
+-- 循环调速度（每秒设置一次）
+task.spawn(function()
+    while true do
+        if Settings.AutoWalkSpeedEnabled then
+            local currentTime = tick()
+            if currentTime - lastWalkSpeedTime >= 1 then -- 每秒设置一次
+                setWalkSpeed()
+                lastWalkSpeedTime = currentTime
+            end
+        end
+        task.wait(0.01)
+    end
+end)
+
+-- 循环自动重生
+task.spawn(function()
+    while true do
+        if Settings.AutoRebirthEnabled then
+            local currentTime = tick()
+            if currentTime - lastRebirthTime >= RebirthDelay then
+                rebirth()
+                lastRebirthTime = currentTime
+            end
+        end
+        task.wait(0.01)
+    end
+end)
+
+local Window = WindUI:CreateWindow({
+    Title = "加一速度进化",
+    Icon = "solar:moon-bold",
+    Size = UDim2.fromOffset(400, 350),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "冰白",
+    Transparent = true,
+    ScrollBarEnabled = true,
+})
+
+Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
+    Title = "黑脚本--加一速度进化",
+    Desc = "版本: " .. VERSION,
+})
+
+local MainTab = Window:Tab({Title = "主要功能", Icon = "solar:star-bold"})
+
+MainTab:Toggle({
+    Title = "循环获得速度",
+    Value = false,
+    Callback = function(enabled)
+        Settings.AutoSpeedEnabled = enabled
+        
+        if enabled then
+            WindUI:Notify({
+                Title = "循环获得速度已开启",
+                Content = "延迟: " .. Settings.SpeedDelay .. "秒",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "循环获得速度已关闭",
+                Content = "已停止",
+                Duration = 2
+            })
+        end
+    end
+})
+
+MainTab:Slider({
+    Title = "速度延迟 (0.01-1秒)",
+    Value = {Min = 0.01, Max = 1, Default = 0.1},
+    Step = 0.01,
+    Callback = function(delay)
+        Settings.SpeedDelay = delay
+    end
+})
+
+MainTab:Divider()
+
+MainTab:Toggle({
+    Title = "自动进化",
+    Value = false,
+    Callback = function(enabled)
+        Settings.AutoEvolveEnabled = enabled
+        
+        if enabled then
+            WindUI:Notify({
+                Title = "自动进化已开启",
+                Content = "延迟: " .. Settings.EvolveDelay .. "秒",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "自动进化已关闭",
+                Content = "已停止",
+                Duration = 2
+            })
+        end
+    end
+})
+
+MainTab:Slider({
+    Title = "进化延迟 (0.1-5秒)",
+    Value = {Min = 0.1, Max = 5, Default = 1},
+    Step = 0.1,
+    Callback = function(delay)
+        Settings.EvolveDelay = delay
+    end
+})
+
+MainTab:Divider()
+
+MainTab:Toggle({
+    Title = "循环自动胜利",
+    Value = false,
+    Callback = function(enabled)
+        Settings.AutoWinEnabled = enabled
+        
+        if enabled then
+            WindUI:Notify({
+                Title = "循环自动胜利已开启",
+                Content = "延迟: " .. Settings.WinDelay .. "秒",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "循环自动胜利已关闭",
+                Content = "已停止",
+                Duration = 2
+            })
+        end
+    end
+})
+
+MainTab:Slider({
+    Title = "胜利延迟 (0.1-5秒)",
+    Value = {Min = 0.1, Max = 5, Default = 1},
+    Step = 0.1,
+    Callback = function(delay)
+        Settings.WinDelay = delay
+    end
+})
+
+MainTab:Divider()
+
+MainTab:Toggle({
+    Title = "循环调速度",
+    Value = false,
+    Callback = function(enabled)
+        Settings.AutoWalkSpeedEnabled = enabled
+        
+        if enabled then
+            WindUI:Notify({
+                Title = "循环调速度已开启",
+                Content = "每秒设置速度: " .. Settings.WalkSpeedValue,
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "循环调速度已关闭",
+                Content = "已停止",
+                Duration = 2
+            })
+        end
+    end
+})
+
+MainTab:Slider({
+    Title = "移动速度值 (16-500)",
+    Value = {Min = 16, Max = 500, Default = 100},
+    Step = 1,
+    Callback = function(speed)
+        Settings.WalkSpeedValue = speed
+        if Settings.AutoWalkSpeedEnabled then
+            setWalkSpeed()
+        end
+    end
+})
+
+MainTab:Divider()
+
+MainTab:Toggle({
+    Title = "自动重生",
+    Value = false,
+    Callback = function(enabled)
+        Settings.AutoRebirthEnabled = enabled
+        
+        if enabled then
+            WindUI:Notify({
+                Title = "自动重生已开启",
+                Content = "延迟: 10秒（固定）",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "自动重生已关闭",
+                Content = "已停止",
+                Duration = 2
+            })
+        end
+    end
+})
+
+local SettingsTab = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+
+local statusParagraph = SettingsTab:Paragraph({
+    Title = "功能状态",
+    Desc = "正在加载..."
+})
+
+local function updateStatus()
+    local status = ""
+    
+    if Settings.AutoSpeedEnabled then
+        status = status .. "✅ 循环获得速度: 已开启\n"
+    else
+        status = status .. "❌ 循环获得速度: 未开启\n"
+    end
+    
+    if Settings.AutoEvolveEnabled then
+        status = status .. "✅ 自动进化: 已开启\n"
+    else
+        status = status .. "❌ 自动进化: 未开启\n"
+    end
+    
+    if Settings.AutoWinEnabled then
+        status = status .. "✅ 循环自动胜利: 已开启\n"
+    else
+        status = status .. "❌ 循环自动胜利: 未开启\n"
+    end
+    
+    if Settings.AutoWalkSpeedEnabled then
+        status = status .. "✅ 循环调速度: 已开启 (" .. Settings.WalkSpeedValue .. ")\n"
+    else
+        status = status .. "❌ 循环调速度: 未开启\n"
+    end
+    
+    if Settings.AutoRebirthEnabled then
+        status = status .. "✅ 自动重生: 已开启 (10秒)\n"
+    else
+        status = status .. "❌ 自动重生: 未开启\n"
+    end
+    
+    statusParagraph:SetDesc(status)
+end
+
+RunService.Heartbeat:Connect(function()
+    updateStatus()
+end)
+
+SettingsTab:Button({
+    Title = "关闭面板",
+    Callback = function()
+        Window:Close()
+    end
+})
+
+Window:OnClose(function()
+    Settings.AutoSpeedEnabled = false
+    Settings.AutoEvolveEnabled = false
+    Settings.AutoWinEnabled = false
+    Settings.AutoWalkSpeedEnabled = false
+    Settings.AutoRebirthEnabled = false
+end)
+
+WindUI:Notify({
+    Title = "加一速度进化",
+    Content = VERSION .. " 加载完成",
+    Duration = 3
+})
