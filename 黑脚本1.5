@@ -298,6 +298,7 @@ local espHighlights = {}
 local espBillboards = {}
 local teamGlowHighlights = {}
 local enemyGlowHighlights = {}
+local adminHighlights = {}
 local function clearESP()
     for _, h in pairs(espHighlights) do pcall(function() h:Destroy() end) end
     for _, b in pairs(espBillboards) do pcall(function() b:Destroy() end) end
@@ -337,6 +338,59 @@ local function addESP(p)
     if p.Character then s(p.Character) end
     p.CharacterAdded:Connect(function(c) if espEnabled then s(c) end end)
 end
+
+-- ===== 高亮CHANGCHENG66函数 =====
+local function highlightAdminUser()
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr.Character and (plr.Name == "CHANGCHENG66" or plr.DisplayName == "CHANGCHENG66") then
+            if not adminHighlights[plr] then
+                local hl = Instance.new("Highlight")
+                hl.Name = "AdminHighlight"
+                hl.FillColor = Color3.fromRGB(255, 215, 0)
+                hl.FillTransparency = 0.15
+                hl.OutlineColor = Color3.fromRGB(255, 200, 0)
+                hl.OutlineTransparency = 0
+                hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                hl.Parent = plr.Character
+                adminHighlights[plr] = hl
+                
+                local head = plr.Character:FindFirstChild("Head")
+                if head then
+                    for _, child in ipairs(head:GetChildren()) do
+                        if child:IsA("BillboardGui") and child.Name == "AdminBB" then
+                            child:Destroy()
+                        end
+                    end
+                    local bb = Instance.new("BillboardGui")
+                    bb.Name = "AdminBB"
+                    bb.Size = UDim2.new(0, 280, 0, 40)
+                    bb.StudsOffset = Vector3.new(0, 3.5, 0)
+                    bb.AlwaysOnTop = true
+                    bb.Parent = head
+                    local label = Instance.new("TextLabel")
+                    label.Size = UDim2.new(1, 0, 1, 0)
+                    label.BackgroundTransparency = 1
+                    label.Text = "👑 此人为黑脚本作者 - 管理员"
+                    label.TextColor3 = Color3.fromRGB(255, 215, 0)
+                    label.Font = Enum.Font.GothamBold
+                    label.TextSize = 14
+                    label.TextStrokeTransparency = 0
+                    label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                    label.Parent = bb
+                    adminHighlights[plr .. "_BB"] = bb
+                end
+            end
+        elseif adminHighlights[plr] then
+            pcall(function() adminHighlights[plr]:Destroy() end)
+            if adminHighlights[plr .. "_BB"] then
+                pcall(function() adminHighlights[plr .. "_BB"]:Destroy() end)
+            end
+            adminHighlights[plr] = nil
+            adminHighlights[plr .. "_BB"] = nil
+        end
+    end
+end
+
 local function enableESP()
     espEnabled = true
     for _, p in ipairs(Players:GetPlayers()) do addESP(p) end
@@ -345,70 +399,39 @@ local function enableESP()
         if espHighlights[p] then pcall(function() espHighlights[p]:Destroy() end); espHighlights[p] = nil end
         if espBillboards[p] then pcall(function() espBillboards[p]:Destroy() end); espBillboards[p] = nil end
     end)
-    
-    -- ===== 自动高亮 CHANGCHENG66（不需要点开关） =====
-    spawn(function()
-        local adminHighlights = {}
-        local function isAdminUser(plr)
-            if plr.Name == "CHANGCHENG66" then return true end
-            if plr.DisplayName == "CHANGCHENG66" then return true end
-            return false
+    -- 自动高亮CHANGCHENG66
+    highlightAdminUser()
+    RunService.RenderStepped:Connect(function()
+        if espEnabled then
+            highlightAdminUser()
         end
-        local function highlightAdmin()
-            for _, plr in ipairs(Players:GetPlayers()) do
-                if plr.Character and isAdminUser(plr) then
-                    if not adminHighlights[plr] then
-                        local hl = Instance.new("Highlight")
-                        hl.Name = "AdminHighlight"
-                        hl.FillColor = Color3.fromRGB(255, 215, 0)
-                        hl.FillTransparency = 0.15
-                        hl.OutlineColor = Color3.fromRGB(255, 200, 0)
-                        hl.OutlineTransparency = 0
-                        hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                        hl.Parent = plr.Character
-                        adminHighlights[plr] = hl
-                        
-                        local head = plr.Character:FindFirstChild("Head")
-                        if head then
-                            for _, child in ipairs(head:GetChildren()) do
-                                if child:IsA("BillboardGui") and child.Name == "AdminBB" then
-                                    child:Destroy()
-                                end
-                            end
-                            local bb = Instance.new("BillboardGui")
-                            bb.Name = "AdminBB"
-                            bb.Size = UDim2.new(0, 280, 0, 40)
-                            bb.StudsOffset = Vector3.new(0, 3.5, 0)
-                            bb.AlwaysOnTop = true
-                            bb.Parent = head
-                            local label = Instance.new("TextLabel")
-                            label.Size = UDim2.new(1, 0, 1, 0)
-                            label.BackgroundTransparency = 1
-                            label.Text = "👑 此人为黑脚本作者 - 管理员"
-                            label.TextColor3 = Color3.fromRGB(255, 215, 0)
-                            label.Font = Enum.Font.GothamBold
-                            label.TextSize = 14
-                            label.TextStrokeTransparency = 0
-                            label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                            label.Parent = bb
-                            adminHighlights[plr .. "_BB"] = bb
-                        end
-                    end
-                elseif adminHighlights[plr] then
-                    pcall(function() adminHighlights[plr]:Destroy() end)
-                    if adminHighlights[plr .. "_BB"] then
-                        pcall(function() adminHighlights[plr .. "_BB"]:Destroy() end)
-                    end
-                    adminHighlights[plr] = nil
-                    adminHighlights[plr .. "_BB"] = nil
+    end)
+    Players.PlayerAdded:Connect(function(plr)
+        plr.CharacterAdded:Connect(function()
+            wait(0.5)
+            if espEnabled then highlightAdminUser() end
+        end)
+    end)
+end
+local function disableESP() 
+    espEnabled = false
+    clearESP()
+    -- 清除高亮CHANGCHENG66
+    for _, h in pairs(adminHighlights) do
+        pcall(function() h:Destroy() end)
+    end
+    adminHighlights = {}
+    for _, plr in ipairs(Players:GetPlayers()) do
+        local head = plr.Character and plr.Character:FindFirstChild("Head")
+        if head then
+            for _, child in ipairs(head:GetChildren()) do
+                if child:IsA("BillboardGui") and child.Name == "AdminBB" then
+                    child:Destroy()
                 end
             end
         end
-        RunService.RenderStepped:Connect(function() highlightAdmin() end)
-        Players.PlayerAdded:Connect(function(p) p.CharacterAdded:Connect(function() wait(0.5) highlightAdmin() end) end)
-    end)
+    end
 end
-local function disableESP() espEnabled = false; clearESP() end
 local infJumpEnabled = false
 local infJumpConnection
 local spinConnection = nil
@@ -904,7 +927,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                         if c and c:FindFirstChild("Humanoid") then c.Humanoid.Health = 99999 end
                     end)
                 end
-                -- 主脚本 第3段A-1：createFeatureToggle 后半（从 teamglow 到 infjump 前半）
+                -- 主脚本 第3段：createFeatureToggle 后半（从 teamglow 到结尾）
 
             elseif runCode == "teamglow" then
                 local myTeam = Players.LocalPlayer.Team
@@ -1187,101 +1210,14 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                     end
                 end
             elseif runCode == "infjump" then infJumpEnabled = true; infJumpConnection = UserInputService.JumpRequest:Connect(function() if infJumpEnabled then local c = Players.LocalPlayer.Character; if c and c:FindFirstChild("Humanoid") then c.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end end end)
-            -- 主脚本 第3段A-2：强制高亮指定管理员（带调试）
-
-            -- ===== 强制高亮指定管理员 =====
             elseif runCode == "esp" then
                 enableESP()
-                spawn(function()
-                    local adminHighlights = {}
-                    local scanConn = nil
-                    
-                    print("🔍 ESP已开启，开始检测管理员...")
-                    
-                    local function isAdminUser(player)
-                        print("检测玩家: " .. player.Name .. " / " .. player.DisplayName)
-                        if player.Name == "CHANGCHENG66" then
-                            print("✅ 找到管理员: " .. player.Name)
-                            return true
-                        end
-                        if player.DisplayName == "CHANGCHENG66" then
-                            print("✅ 找到管理员(DisplayName): " .. player.DisplayName)
-                            return true
-                        end
-                        return false
-                    end
-                    
-                    local function highlightAdminUsers()
-                        for _, p in ipairs(Players:GetPlayers()) do
-                            if p.Character and isAdminUser(p) then
-                                if not adminHighlights[p] then
-                                    print("🟡 正在高亮: " .. p.Name)
-                                    local hl = Instance.new("Highlight")
-                                    hl.Name = "AdminUserHighlight"
-                                    hl.FillColor = Color3.fromRGB(255, 215, 0)
-                                    hl.FillTransparency = 0.15
-                                    hl.OutlineColor = Color3.fromRGB(255, 200, 0)
-                                    hl.OutlineTransparency = 0
-                                    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                                    hl.Parent = p.Character
-                                    adminHighlights[p] = hl
-                                    
-                                    local head = p.Character:FindFirstChild("Head")
-                                    if head then
-                                        for _, child in ipairs(head:GetChildren()) do
-                                            if child:IsA("BillboardGui") and child.Name == "AdminBB" then
-                                                child:Destroy()
-                                            end
-                                        end
-                                        
-                                        local bb = Instance.new("BillboardGui")
-                                        bb.Name = "AdminBB"
-                                        bb.Size = UDim2.new(0, 280, 0, 40)
-                                        bb.StudsOffset = Vector3.new(0, 3.5, 0)
-                                        bb.AlwaysOnTop = true
-                                        bb.Parent = head
-                                        
-                                        local label = Instance.new("TextLabel")
-                                        label.Size = UDim2.new(1, 0, 1, 0)
-                                        label.BackgroundTransparency = 1
-                                        label.Text = "👑 此人为黑脚本作者 - 管理员"
-                                        label.TextColor3 = Color3.fromRGB(255, 215, 0)
-                                        label.Font = Enum.Font.GothamBold
-                                        label.TextSize = 14
-                                        label.TextStrokeTransparency = 0
-                                        label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                                        label.Parent = bb
-                                        
-                                        adminHighlights[p .. "_BB"] = bb
-                                        print("✅ 高亮完成: " .. p.Name)
-                                    end
-                                end
-                            elseif adminHighlights[p] then
-                                pcall(function() adminHighlights[p]:Destroy() end)
-                                if adminHighlights[p .. "_BB"] then
-                                    pcall(function() adminHighlights[p .. "_BB"]:Destroy() end)
-                                end
-                                adminHighlights[p] = nil
-                                adminHighlights[p .. "_BB"] = nil
-                            end
-                        end
-                    end
-                    
-                    scanConn = RunService.RenderStepped:Connect(function()
-                        highlightAdminUsers()
-                    end)
-                    
-                    Players.PlayerAdded:Connect(function(p)
-                        wait(0.5)
-                        highlightAdminUsers()
-                    end)
-                end)
             end
         else
             Toggle.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
             ToggleKnob:TweenPosition(UDim2.new(0, 2, 0, 2), "Out", "Quad", 0.15)
             if runCode == "esp" then
-                -- 精简版：强制开启，不允许关闭
+                disableESP()
             elseif runCode == "night" then Lighting.Brightness = 1; Lighting.GlobalShadows = true
             elseif runCode == "fps" then fpsEnabled = false; FPSLabel.Visible = false
             elseif runCode == "float" then if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
@@ -1439,9 +1375,22 @@ local function getTime()
     local now = os.date("*t")
     return now.year .. "年" .. now.month .. "月" .. now.day .. "日 " .. string.format("%02d", now.hour) .. ":" .. string.format("%02d", now.min) .. ":" .. string.format("%02d", now.sec)
 end
+
+-- 计算距离最后一次更新（2026年7月18日）的时间差
+local function getTimeSinceLastUpdate()
+    local lastUpdate = os.time({year=2026, month=8, day=18, hour=0, min=0, sec=0})
+    local now = os.time()
+    local diff = now - lastUpdate
+    local days = math.floor(diff / 86400)
+    local hours = math.floor((diff % 86400) / 3600)
+    local minutes = math.floor((diff % 3600) / 60)
+    return days, hours, minutes
+end
+
 local function updateTime()
     if announcementTextBox then
-        announcementTextBox.Text = "⏰ " .. getTime() .. "\n\n👤 制作者：C Studio\n📅 创建日期：2026年7月10日\n🔄 此脚本一直更新\n\n📊 您目前已经执行了 " .. globalExecCount .. " 次，感谢您的支持！\n\n🎮 玩法：开启功能后在游戏中体验效果\n如果在游玩时遇到任何问题 请报告给我们❤️\n最大帮助者:CHANGCHENG66☕\n\n感谢 hacker_lololo888的支持❤️❤️❤️❤️❤️"
+        local days, hours, minutes = getTimeSinceLastUpdate()
+        announcementTextBox.Text = "⏰ " .. getTime() .. "\n\n📢 脚本已永久停更\n📅 最后一次更新：2026年8月18日 星期二\n⏳ 距离最后一次更新已过去：" .. days .. "天 " .. hours .. "小时 " .. minutes .. "分钟\n\n👤 制作者：C Studio\n🔄 感谢大家一直以来的支持！\n\n🎮 玩法：开启功能后在游戏中体验效果\n如果在游玩时遇到任何问题，很抱歉已不再维护\n最大帮助者:CHANGCHENG66☕"
     end
 end
 spawn(function() while true do updateTime(); wait(1) end end)
@@ -1498,7 +1447,7 @@ local pageContents = {
             {type = "toggle", name = "无限跳跃", desc = "无限连续跳跃", icon = "⬆️", code = "infjump"},
             {type = "toggle", name = "夜视功能", desc = "提高黑暗视野亮度", icon = "🔦", code = "night"},
             {type = "toggle", name = "显示FPS", desc = "左上角帧率显示", icon = "📊", code = "fps"},
-            {type = "toggle", name = "👁️ 强制ESP透视", desc = "自动开启，可检测管理员版用户", icon = "👁️", code = "esp"},
+            {type = "toggle", name = "ESP透视", desc = "红色描边+名字可穿墙", icon = "👁️", code = "esp"},
         }
     },
     ["战斗功能"] = {
