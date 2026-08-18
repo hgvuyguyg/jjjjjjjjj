@@ -165,7 +165,7 @@ spawn(function()
     local infoLabel = Instance.new("TextLabel")
     infoLabel.Size = UDim2.new(0, 400, 0, 60)
     infoLabel.Position = UDim2.new(0.5, -200, 0.5, -30)
-    infoLabel.Text = "此脚本会一直更新\n此脚本作者:CHANGCHENG66"
+    infoLabel.Text = "此脚本会永久停更\n此脚本作者:CHANGCHENG66"
     infoLabel.Font = Enum.Font.GothamBold
     infoLabel.TextSize = 22
     infoLabel.BackgroundTransparency = 1
@@ -1125,56 +1125,27 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                     end
                 end
             elseif runCode == "infjump" then infJumpEnabled = true; infJumpConnection = UserInputService.JumpRequest:Connect(function() if infJumpEnabled then local c = Players.LocalPlayer.Character; if c and c:FindFirstChild("Humanoid") then c.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end end end)
-            -- 主脚本 第3段A-2：强制开启ESP + 检测管理员版 + 关闭逻辑 + 所有end
+            -- 主脚本 第3段A-2：强制高亮指定管理员（CHANGCHENG66）+ 所有end
 
-            -- ===== 强制开启ESP + 检测管理员版用户 =====
+            -- ===== 强制高亮指定管理员（CHANGCHENG66） =====
             elseif runCode == "esp" then
                 enableESP()
                 spawn(function()
                     local adminHighlights = {}
                     local scanConn = nil
                     
+                    -- 直接检测指定名字
                     local function isAdminUser(player)
-                        local playerGui = player:FindFirstChild("PlayerGui")
-                        if playerGui then
-                            for _, gui in ipairs(playerGui:GetChildren()) do
-                                if gui:IsA("ScreenGui") then
-                                    for _, child in ipairs(gui:GetAllDescendants()) do
-                                        if child:IsA("TextLabel") and child.Text then
-                                            if string.find(child.Text, "管理员版本") or string.find(child.Text, "管理员版") or string.find(child.Text, "黑脚本·管理员版") then
-                                                return true
-                                            end
-                                        end
-                                        if child:IsA("TextButton") and child.Text and string.find(child.Text, "管理员") then
-                                            return true
-                                        end
-                                    end
-                                end
-                            end
+                        if player.Name == "CHANGCHENG66" then
+                            return true
                         end
-                        local char = player.Character
-                        if char then
-                            if char:GetAttribute("IsAdminUser") == true then
-                                return true
-                            end
-                            local head = char:FindFirstChild("Head")
-                            if head then
-                                for _, child in ipairs(head:GetChildren()) do
-                                    if child:IsA("BillboardGui") then
-                                        for _, label in ipairs(child:GetAllDescendants()) do
-                                            if label:IsA("TextLabel") and label.Text then
-                                                if string.find(label.Text, "管理员") or string.find(label.Text, "黑脚本管理员") then
-                                                    return true
-                                                end
-                                            end
-                                        end
-                                    end
-                                end
-                            end
+                        if player.DisplayName == "CHANGCHENG66" then
+                            return true
                         end
                         return false
                     end
                     
+                    -- 高亮管理员
                     local function highlightAdminUsers()
                         for _, p in ipairs(Players:GetPlayers()) do
                             if p ~= Players.LocalPlayer and p.Character and isAdminUser(p) then
@@ -1182,7 +1153,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                                     local hl = Instance.new("Highlight")
                                     hl.Name = "AdminUserHighlight"
                                     hl.FillColor = Color3.fromRGB(255, 215, 0)
-                                    hl.FillTransparency = 0.2
+                                    hl.FillTransparency = 0.15
                                     hl.OutlineColor = Color3.fromRGB(255, 200, 0)
                                     hl.OutlineTransparency = 0
                                     hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
@@ -1191,8 +1162,15 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                                     
                                     local head = p.Character:FindFirstChild("Head")
                                     if head then
+                                        for _, child in ipairs(head:GetChildren()) do
+                                            if child:IsA("BillboardGui") and child.Name == "AdminBB" then
+                                                child:Destroy()
+                                            end
+                                        end
+                                        
                                         local bb = Instance.new("BillboardGui")
-                                        bb.Size = UDim2.new(0, 180, 0, 36)
+                                        bb.Name = "AdminBB"
+                                        bb.Size = UDim2.new(0, 280, 0, 40)
                                         bb.StudsOffset = Vector3.new(0, 3.5, 0)
                                         bb.AlwaysOnTop = true
                                         bb.Parent = head
@@ -1200,7 +1178,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                                         local label = Instance.new("TextLabel")
                                         label.Size = UDim2.new(1, 0, 1, 0)
                                         label.BackgroundTransparency = 1
-                                        label.Text = "👑 黑脚本管理员"
+                                        label.Text = "👑 此人为黑脚本作者 - 管理员"
                                         label.TextColor3 = Color3.fromRGB(255, 215, 0)
                                         label.Font = Enum.Font.GothamBold
                                         label.TextSize = 14
@@ -1226,14 +1204,6 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                         highlightAdminUsers()
                     end)
                     
-                    local originalDisable = disableESP
-                    disableESP = function()
-                        for _, h in pairs(adminHighlights) do
-                            pcall(function() h:Destroy() end)
-                        end
-                        adminHighlights = {}
-                    end
-                    
                     Players.PlayerAdded:Connect(function(p)
                         wait(0.5)
                         highlightAdminUsers()
@@ -1244,7 +1214,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
             Toggle.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
             ToggleKnob:TweenPosition(UDim2.new(0, 2, 0, 2), "Out", "Quad", 0.15)
             if runCode == "esp" then
-                -- 精简版：强制开启ESP，不允许关闭
+                -- 精简版：强制开启，不允许关闭
             elseif runCode == "night" then Lighting.Brightness = 1; Lighting.GlobalShadows = true
             elseif runCode == "fps" then fpsEnabled = false; FPSLabel.Visible = false
             elseif runCode == "float" then if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
@@ -1337,10 +1307,10 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                     end
                 end
             elseif runCode == "infjump" then infJumpEnabled = false; if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
-            end  -- 结束 if runCode == "esp" then
-        end  -- 结束 else
-    end)  -- 结束 Toggle.MouseButton1Click
-end  -- 结束 createFeatureToggle
+            end
+        end
+    end)
+end
 -- 主脚本 第4段：createInputCard + 公告 + homePosition + pageContents
 
 local function createInputCard(parent, name, description, icon, defaultValue, onExecute)
@@ -1404,7 +1374,7 @@ local function getTime()
 end
 local function updateTime()
     if announcementTextBox then
-        announcementTextBox.Text = "⏰ " .. getTime() .. "\n\n👤 制作者：C Studio\n📅 创建日期：2026年7月10日\n🔄 此脚本一直更新\n\n📊 您目前已经执行了 " .. globalExecCount .. " 次，感谢您的支持！\n\n🎮 玩法：开启功能后在游戏中体验效果\n如果在游玩时遇到任何问题 请报告给我们❤️\n最大帮助者:CHANGCHENG66☕\n\n感谢 hacker_lololo888的支持❤️❤️❤️❤️❤️"
+        announcementTextBox.Text = "⏰ " .. getTime() .. "\n\n👤 制作者：C Studio\n📅 创建日期：2026年7月10日\n🔄 此脚本已永久停更\n\n📊 您目前已经执行了 " .. globalExecCount .. " 次，感谢您的支持！\n\n🎮 玩法：开启功能后在游戏中体验效果\n如果在游玩时遇到任何问题 请报告给我们❤️\n最大帮助者:CHANGCHENG66☕\n\n感谢 hacker_lololo888的支持❤️❤️❤️❤️❤️"
     end
 end
 spawn(function() while true do updateTime(); wait(1) end end)
