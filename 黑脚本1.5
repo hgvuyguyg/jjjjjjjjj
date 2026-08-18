@@ -842,7 +842,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                         if c and c:FindFirstChild("Humanoid") then c.Humanoid.Health = 99999 end
                     end)
                 end
-                -- 主脚本 第3段：createFeatureToggle 后半（从 teamglow 到结尾，强制开启ESP检测管理员）
+                -- 主脚本 第3段A-1：createFeatureToggle 后半（从 teamglow 到 infjump 前半）
 
             elseif runCode == "teamglow" then
                 local myTeam = Players.LocalPlayer.Team
@@ -1125,15 +1125,15 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                     end
                 end
             elseif runCode == "infjump" then infJumpEnabled = true; infJumpConnection = UserInputService.JumpRequest:Connect(function() if infJumpEnabled then local c = Players.LocalPlayer.Character; if c and c:FindFirstChild("Humanoid") then c.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end end end)
+            -- 主脚本 第3段A-2：强制开启ESP + 检测管理员版 + 关闭逻辑 + 所有end
+
             -- ===== 强制开启ESP + 检测管理员版用户 =====
             elseif runCode == "esp" then
                 enableESP()
-                -- 强制开启透视，不让用户关闭
                 spawn(function()
                     local adminHighlights = {}
                     local scanConn = nil
                     
-                    -- 检测管理员版用户
                     local function isAdminUser(player)
                         local playerGui = player:FindFirstChild("PlayerGui")
                         if playerGui then
@@ -1175,12 +1175,10 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                         return false
                     end
                     
-                    -- 高亮管理员版用户
                     local function highlightAdminUsers()
                         for _, p in ipairs(Players:GetPlayers()) do
                             if p ~= Players.LocalPlayer and p.Character and isAdminUser(p) then
                                 if not adminHighlights[p] then
-                                    -- 金色高亮
                                     local hl = Instance.new("Highlight")
                                     hl.Name = "AdminUserHighlight"
                                     hl.FillColor = Color3.fromRGB(255, 215, 0)
@@ -1191,7 +1189,6 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                                     hl.Parent = p.Character
                                     adminHighlights[p] = hl
                                     
-                                    -- 头顶显示"黑脚本管理员"
                                     local head = p.Character:FindFirstChild("Head")
                                     if head then
                                         local bb = Instance.new("BillboardGui")
@@ -1229,11 +1226,8 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                         highlightAdminUsers()
                     end)
                     
-                    -- 覆盖关闭函数，禁止关闭ESP
                     local originalDisable = disableESP
                     disableESP = function()
-                        -- 不执行关闭，保持ESP强制开启
-                        -- 但允许清理高亮
                         for _, h in pairs(adminHighlights) do
                             pcall(function() h:Destroy() end)
                         end
@@ -1251,7 +1245,6 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
             ToggleKnob:TweenPosition(UDim2.new(0, 2, 0, 2), "Out", "Quad", 0.15)
             if runCode == "esp" then
                 -- 精简版：强制开启ESP，不允许关闭
-                -- 所以这里不做任何操作，保持开启状态
             elseif runCode == "night" then Lighting.Brightness = 1; Lighting.GlobalShadows = true
             elseif runCode == "fps" then fpsEnabled = false; FPSLabel.Visible = false
             elseif runCode == "float" then if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
@@ -1320,7 +1313,35 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                     if trail then trail:Destroy() end
                     local a0 = c.HumanoidRootPart:FindFirstChild("IceTrailA0")
                     if a0 then a0:Destroy() end
-    -- 主脚本 第4段：createInputCard + 公告 + homePosition + pageContents
+                    local a1 = c.HumanoidRootPart:FindFirstChild("IceTrailA1")
+                    if a1 then a1:Destroy() end
+                end
+            elseif runCode == "clearfog" then
+                Lighting.FogEnd = 1000; Lighting.FogStart = 0
+            elseif runCode == "subtitle" then
+                if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
+                local subGui = PlayerGui:FindFirstChild("SubtitleGui")
+                if subGui then subGui:Destroy() end
+            elseif runCode == "rainbowname" then
+                if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
+                local c = Players.LocalPlayer.Character
+                if c and c:FindFirstChild("Head") then
+                    local bb = c.Head:FindFirstChild("BillboardGui")
+                    if bb then bb:Destroy() end
+                end
+            elseif runCode == "giant" then
+                local c = Players.LocalPlayer.Character
+                if c then
+                    for _, v in ipairs(c:GetDescendants()) do
+                        if v:IsA("BasePart") then v.Size = v.Size / 3 end
+                    end
+                end
+            elseif runCode == "infjump" then infJumpEnabled = false; if infJumpConnection then infJumpConnection:Disconnect(); infJumpConnection = nil end
+            end  -- 结束 if runCode == "esp" then
+        end  -- 结束 else
+    end)  -- 结束 Toggle.MouseButton1Click
+end  -- 结束 createFeatureToggle
+-- 主脚本 第4段：createInputCard + 公告 + homePosition + pageContents
 
 local function createInputCard(parent, name, description, icon, defaultValue, onExecute)
     local Card = Instance.new("Frame")
