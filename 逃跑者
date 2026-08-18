@@ -1,5 +1,5 @@
--- 逃跑者 脚本 v1.7.3
--- WindUI蓝白版 | 绕过反作弊 | 杀戮光环 | 调整速度 | 物品透视 | NPC透视 | 飞行 | 传送
+-- 逃跑者 脚本 v1.8.5
+-- WindUI蓝白版 | 绕过反作弊 | 杀戮光环 | 调整速度 | NPC透视 | 玩家透视 | 油桶透视 | 飞行 | 传送
 
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 if not WindUI then return end
@@ -27,124 +27,27 @@ local Settings = {
     SpeedEnabled = false,
     SpeedValue = 100,
     FlyEnabled = false,
-    ItemESPEnabled = false,
-    ItemESPShowDistance = true,
     NPCESPEnabled = false,
+    PlayerESPEnabled = false,
     JerrycanESPEnabled = false,
-    ESPColor = Color3.fromRGB(255, 255, 0),
 }
 
-local VERSION = "v1.7.3"
+local VERSION = "v1.8.5"
 local lastKillTime = 0
 local mtHook = nil
 local killAuraConnection = nil
-local itemHighlights = {}
-local itemNameTags = {}
 local npcHighlights = {}
 local npcNameTags = {}
+local playerHighlights = {}
+local playerNameTags = {}
 local jerrycanHighlights = {}
 local jerrycanNameTags = {}
-local lastItemScan = 0
 local lastNPCScan = 0
+local lastPlayerScan = 0
 local lastJerrycanScan = 0
-local cachedItems = {}
 local cachedNPCs = {}
+local cachedPlayers = {}
 local cachedJerrycans = {}
-
--- 物品名称映射（英文检测，中文显示）
-local ITEM_NAMES = {
-    {English = "Burger", Chinese = "汉堡"},
-    {English = "Hotdog", Chinese = "热狗"},
-    {English = "HotDog", Chinese = "热狗"},
-    {English = "Sandwich", Chinese = "三明治"},
-    {English = "Mug", Chinese = "马克杯"},
-    {English = "Wallet", Chinese = "钱包"},
-    {English = "Toaster", Chinese = "烤面包机"},
-    {English = "Dumbbell", Chinese = "哑铃"},
-    {English = "SilverBracelet", Chinese = "银色手镯"},
-    {English = "SilverRing", Chinese = "银戒指"},
-    {English = "SilverNecklace", Chinese = "银项链"},
-    {English = "GoldWatch", Chinese = "金表"},
-    {English = "GoldenWatch", Chinese = "金表"},
-    {English = "Trophy", Chinese = "奖杯"},
-    {English = "Watch", Chinese = "手表"},
-    {English = "Wristwatch", Chinese = "手表"},
-    {English = "Shop", Chinese = "商店"},
-    {English = "Box", Chinese = "盒子"},
-    {English = "Crate", Chinese = "箱子"},
-    {English = "Crown", Chinese = "王冠"},
-    {English = "Computer", Chinese = "电脑"},
-    {English = "Laptop", Chinese = "笔记本电脑"},
-    {English = "Water", Chinese = "水"},
-    {English = "Bottle", Chinese = "瓶子"},
-    {English = "Drink", Chinese = "饮料"},
-    {English = "Phone", Chinese = "手机"},
-    {English = "Necklace", Chinese = "项链"},
-    {English = "Diamond", Chinese = "钻石"},
-    {English = "Gold", Chinese = "黄金"},
-    {English = "Key", Chinese = "钥匙"},
-    {English = "Card", Chinese = "卡片"},
-    {English = "Money", Chinese = "钱"},
-    {English = "Cash", Chinese = "现金"},
-    {English = "Coin", Chinese = "硬币"},
-    {English = "Gem", Chinese = "宝石"},
-    {English = "Jewelry", Chinese = "珠宝"},
-    {English = "Ring", Chinese = "戒指"},
-    {English = "Bracelet", Chinese = "手镯"},
-    {English = "Crystal", Chinese = "水晶"},
-    {English = "Pearl", Chinese = "珍珠"},
-    {English = "Ruby", Chinese = "红宝石"},
-    {English = "Sapphire", Chinese = "蓝宝石"},
-    {English = "Emerald", Chinese = "绿宝石"},
-    {English = "Vase", Chinese = "花瓶"},
-    {English = "Clock", Chinese = "时钟"},
-    {English = "Lamp", Chinese = "灯"},
-    {English = "Candle", Chinese = "蜡烛"},
-    {English = "Book", Chinese = "书"},
-    {English = "Document", Chinese = "文件"},
-    {English = "Folder", Chinese = "文件夹"},
-    {English = "Briefcase", Chinese = "公文包"},
-    {English = "Bag", Chinese = "包"},
-    {English = "Backpack", Chinese = "背包"},
-    {English = "Suitcase", Chinese = "手提箱"},
-    {English = "Purse", Chinese = "手提包"},
-    {English = "Statue", Chinese = "雕像"},
-    {English = "Painting", Chinese = "画"},
-    {English = "Art", Chinese = "艺术品"},
-}
-
-local function getItemChineseName(objName)
-    local lowerName = objName:lower()
-    for _, item in pairs(ITEM_NAMES) do
-        if lowerName:find(item.English:lower()) then
-            return item.Chinese
-        end
-    end
-    return objName
-end
-
-local function isItem(obj)
-    local lowerName = obj.Name:lower()
-    for _, item in pairs(ITEM_NAMES) do
-        if lowerName:find(item.English:lower()) then
-            return true
-        end
-    end
-    return false
-end
-
-local function getAllItems()
-    local items = {}
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if isItem(obj) then
-            local rootPart = obj:IsA("Model") and (obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart) or obj
-            if rootPart then
-                table.insert(items, {Object = obj, RootPart = rootPart, Position = rootPart.Position})
-            end
-        end
-    end
-    return items
-end
 
 local function getAllNPCs()
     local npcs = {}
@@ -160,10 +63,20 @@ local function getAllNPCs()
     return npcs
 end
 
+local function getAllPlayers()
+    local players = {}
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("Head") and plr.Character:FindFirstChild("HumanoidRootPart") then
+            table.insert(players, plr)
+        end
+    end
+    return players
+end
+
 local function getAllJerrycans()
     local jerrycans = {}
     for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj.Name:lower():find("jerrycan") then
+        if obj.Name:lower():find("jerrycan") or obj.Name:lower():find("油桶") then
             local rootPart = obj:IsA("Model") and (obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart) or obj
             if rootPart then
                 table.insert(jerrycans, {Object = obj, RootPart = rootPart, Position = rootPart.Position})
@@ -263,20 +176,20 @@ task.spawn(function()
 end)
 
 -- 清理ESP
-local function clearItemESP()
-    for _, h in pairs(itemHighlights) do pcall(function() h:Destroy() end) end
-    for _, t in pairs(itemNameTags) do pcall(function() t:Destroy() end) end
-    table.clear(itemHighlights)
-    table.clear(itemNameTags)
-    table.clear(cachedItems)
-end
-
 local function clearNPCESP()
     for _, h in pairs(npcHighlights) do pcall(function() h:Destroy() end) end
     for _, t in pairs(npcNameTags) do pcall(function() t:Destroy() end) end
     table.clear(npcHighlights)
     table.clear(npcNameTags)
     table.clear(cachedNPCs)
+end
+
+local function clearPlayerESP()
+    for _, h in pairs(playerHighlights) do pcall(function() h:Destroy() end) end
+    for _, t in pairs(playerNameTags) do pcall(function() t:Destroy() end) end
+    table.clear(playerHighlights)
+    table.clear(playerNameTags)
+    table.clear(cachedPlayers)
 end
 
 local function clearJerrycanESP()
@@ -287,100 +200,23 @@ local function clearJerrycanESP()
     table.clear(cachedJerrycans)
 end
 
--- 物品ESP循环
-RunService.Heartbeat:Connect(function()
-    if not Settings.ItemESPEnabled then
-        if next(itemHighlights) then clearItemESP() end
-        return
-    end
-    
+-- 单个ESP循环处理所有功能
+local function processESP()
     local currentTime = tick()
-    if currentTime - lastItemScan > 3 then
-        cachedItems = getAllItems()
-        lastItemScan = currentTime
-        
-        -- 清理无效高亮
-        local activeItems = {}
-        for _, item in pairs(cachedItems) do activeItems[item.Object] = true end
-        for obj, _ in pairs(itemHighlights) do
-            if not activeItems[obj] then
-                if itemHighlights[obj] then pcall(function() itemHighlights[obj]:Destroy() end); itemHighlights[obj] = nil end
-                if itemNameTags[obj] then pcall(function() itemNameTags[obj]:Destroy() end); itemNameTags[obj] = nil end
-            end
-        end
-        
-        -- 创建新高亮
-        for _, item in pairs(cachedItems) do
-            if item.Object and item.Object.Parent then
-                if not itemHighlights[item.Object] then
-                    local h = Instance.new("Highlight")
-                    h.FillColor = Settings.ESPColor
-                    h.FillTransparency = 0.5
-                    h.OutlineColor = Settings.ESPColor
-                    h.OutlineTransparency = 0.3
-                    h.Parent = item.Object
-                    itemHighlights[item.Object] = h
-                    
-                    local dist = ""
-                    if Settings.ItemESPShowDistance then
-                        local d = 0
-                        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                            d = (item.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                        end
-                        dist = "\n[" .. math.floor(d) .. "m]"
-                    end
-                    
-                    local bg = Instance.new("BillboardGui")
-                    bg.Size = UDim2.new(0, 200, 0, 40)
-                    bg.AlwaysOnTop = true
-                    bg.MaxDistance = math.huge
-                    bg.Parent = item.RootPart
-                    
-                    local l = Instance.new("TextLabel")
-                    l.Size = UDim2.new(1, 0, 1, 0)
-                    l.BackgroundTransparency = 1
-                    l.Text = getItemChineseName(item.Object.Name) .. dist
-                    l.TextColor3 = Settings.ESPColor
-                    l.Font = Enum.Font.GothamBold
-                    l.TextSize = 14
-                    l.TextStrokeTransparency = 0.5
-                    l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                    l.Parent = bg
-                    itemNameTags[item.Object] = bg
-                end
-            end
-        end
-    end
-end)
-
--- NPC ESP循环
-RunService.Heartbeat:Connect(function()
-    if not Settings.NPCESPEnabled then
-        if next(npcHighlights) then clearNPCESP() end
-        return
-    end
     
-    local currentTime = tick()
-    if currentTime - lastNPCScan > 3 then
-        cachedNPCs = getAllNPCs()
-        lastNPCScan = currentTime
-        
-        local activeNPCs = {}
-        for _, npc in pairs(cachedNPCs) do activeNPCs[npc] = true end
-        for npc, _ in pairs(npcHighlights) do
-            if not activeNPCs[npc] then
-                if npcHighlights[npc] then pcall(function() npcHighlights[npc]:Destroy() end); npcHighlights[npc] = nil end
-                if npcNameTags[npc] then pcall(function() npcNameTags[npc]:Destroy() end); npcNameTags[npc] = nil end
-            end
-        end
-        
-        for _, npc in pairs(cachedNPCs) do
-            if npc and npc.Parent then
-                local head = npc:FindFirstChild("Head")
-                local rootPart = npc:FindFirstChild("HumanoidRootPart") or npc.PrimaryPart
-                
-                if head and rootPart then
-                    if not npcHighlights[npc] then
+    -- NPC ESP
+    if Settings.NPCESPEnabled then
+        if currentTime - lastNPCScan > 10 then
+            clearNPCESP()
+            cachedNPCs = getAllNPCs()
+            lastNPCScan = currentTime
+            
+            for _, npc in pairs(cachedNPCs) do
+                if npc and npc.Parent then
+                    local head = npc:FindFirstChild("Head")
+                    local rootPart = npc:FindFirstChild("HumanoidRootPart") or npc.PrimaryPart
+                    
+                    if head and rootPart then
                         local h = Instance.new("Highlight")
                         h.FillColor = Color3.fromRGB(255, 0, 0)
                         h.FillTransparency = 0.5
@@ -392,7 +228,7 @@ RunService.Heartbeat:Connect(function()
                         local dist = ""
                         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                             local d = (rootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                            dist = "\n[" .. math.floor(d) .. "m]"
+                            dist = "\n[" .. math.floor(d) .. "米]"
                         end
                         
                         local bg = Instance.new("BillboardGui")
@@ -416,33 +252,71 @@ RunService.Heartbeat:Connect(function()
                 end
             end
         end
-    end
-end)
-
--- 油桶ESP循环
-RunService.Heartbeat:Connect(function()
-    if not Settings.JerrycanESPEnabled then
-        if next(jerrycanHighlights) then clearJerrycanESP() end
-        return
+    elseif next(npcHighlights) then
+        clearNPCESP()
     end
     
-    local currentTime = tick()
-    if currentTime - lastJerrycanScan > 3 then
-        cachedJerrycans = getAllJerrycans()
-        lastJerrycanScan = currentTime
-        
-        local activeJerrycans = {}
-        for _, jerrycan in pairs(cachedJerrycans) do activeJerrycans[jerrycan.Object] = true end
-        for obj, _ in pairs(jerrycanHighlights) do
-            if not activeJerrycans[obj] then
-                if jerrycanHighlights[obj] then pcall(function() jerrycanHighlights[obj]:Destroy() end); jerrycanHighlights[obj] = nil end
-                if jerrycanNameTags[obj] then pcall(function() jerrycanNameTags[obj]:Destroy() end); jerrycanNameTags[obj] = nil end
+    -- 玩家ESP
+    if Settings.PlayerESPEnabled then
+        if currentTime - lastPlayerScan > 10 then
+            clearPlayerESP()
+            cachedPlayers = getAllPlayers()
+            lastPlayerScan = currentTime
+            
+            for _, plr in pairs(cachedPlayers) do
+                if plr.Character and plr.Character.Parent then
+                    local head = plr.Character:FindFirstChild("Head")
+                    local rootPart = plr.Character:FindFirstChild("HumanoidRootPart")
+                    
+                    if head and rootPart then
+                        local h = Instance.new("Highlight")
+                        h.FillColor = Color3.fromRGB(0, 0, 255)
+                        h.FillTransparency = 0.5
+                        h.OutlineColor = Color3.fromRGB(0, 0, 255)
+                        h.OutlineTransparency = 0.3
+                        h.Parent = plr.Character
+                        playerHighlights[plr] = h
+                        
+                        local dist = ""
+                        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                            local d = (rootPart.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                            dist = "\n[" .. math.floor(d) .. "米]"
+                        end
+                        
+                        local bg = Instance.new("BillboardGui")
+                        bg.Size = UDim2.new(0, 200, 0, 40)
+                        bg.AlwaysOnTop = true
+                        bg.MaxDistance = math.huge
+                        bg.Parent = head
+                        
+                        local l = Instance.new("TextLabel")
+                        l.Size = UDim2.new(1, 0, 1, 0)
+                        l.BackgroundTransparency = 1
+                        l.Text = plr.Name .. dist
+                        l.TextColor3 = Color3.fromRGB(0, 0, 255)
+                        l.Font = Enum.Font.GothamBold
+                        l.TextSize = 14
+                        l.TextStrokeTransparency = 0.5
+                        l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                        l.Parent = bg
+                        playerNameTags[plr] = bg
+                    end
+                end
             end
         end
-        
-        for _, jerrycan in pairs(cachedJerrycans) do
-            if jerrycan.Object and jerrycan.Object.Parent then
-                if not jerrycanHighlights[jerrycan.Object] then
+    elseif next(playerHighlights) then
+        clearPlayerESP()
+    end
+    
+    -- 油桶ESP
+    if Settings.JerrycanESPEnabled then
+        if currentTime - lastJerrycanScan > 10 then
+            clearJerrycanESP()
+            cachedJerrycans = getAllJerrycans()
+            lastJerrycanScan = currentTime
+            
+            for _, jerrycan in pairs(cachedJerrycans) do
+                if jerrycan.Object and jerrycan.Object.Parent then
                     local h = Instance.new("Highlight")
                     h.FillColor = Color3.fromRGB(0, 255, 0)
                     h.FillTransparency = 0.5
@@ -454,7 +328,7 @@ RunService.Heartbeat:Connect(function()
                     local dist = ""
                     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                         local d = (jerrycan.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                        dist = "\n[" .. math.floor(d) .. "m]"
+                        dist = "\n[" .. math.floor(d) .. "米]"
                     end
                     
                     local bg = Instance.new("BillboardGui")
@@ -477,8 +351,13 @@ RunService.Heartbeat:Connect(function()
                 end
             end
         end
+    elseif next(jerrycanHighlights) then
+        clearJerrycanESP()
     end
-end)
+end
+
+-- 单个心跳循环
+RunService.Heartbeat:Connect(processESP)
 
 -- 飞行加载
 local function loadFlyScript()
@@ -511,7 +390,7 @@ local function teleportToNearestJerrycan()
     end
     
     if nearestJerrycan and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(nearestJerrycan.Position)
+        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(nearestJerrycan.Position + Vector3.new(0, 3, 0))
         WindUI:Notify({Title = "传送成功", Content = "已传送到最近油桶", Duration = 2})
         return true
     end
@@ -526,7 +405,7 @@ local function teleportToPawnCounter()
             local rootPart = obj:IsA("Model") and (obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart) or obj
             if rootPart then
                 if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(rootPart.Position)
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(rootPart.Position + Vector3.new(0, 5, 0))
                     WindUI:Notify({Title = "传送成功", Content = "已传送到出售区", Duration = 2})
                     found = true
                     break
@@ -536,7 +415,7 @@ local function teleportToPawnCounter()
     end
     
     if not found then
-        WindUI:Notify({Title = "未找到", Content = "找不到PawnCounter", Duration = 2})
+        WindUI:Notify({Title = "未找到", Content = "找不到出售区", Duration = 2})
     end
 end
 
@@ -544,12 +423,13 @@ end
 local function teleportToCar()
     local found = false
     for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj.Name:lower():find("paint") or obj.Name:lower():find("car") or obj.Name:lower():find("vehicle") then
+        local lowerName = obj.Name:lower()
+        if lowerName:find("paint") or lowerName:find("car") or lowerName:find("vehicle") or lowerName:find("汽车") or lowerName:find("车") then
             local rootPart = obj:IsA("Model") and (obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart) or obj
             if rootPart then
                 if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(rootPart.Position)
-                    WindUI:Notify({Title = "传送成功", Content = "已传送到汽车", Duration = 2})
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(rootPart.Position + Vector3.new(0, 5, 0))
+                    WindUI:Notify({Title = "传送成功", Content = "已传送到汽车上方", Duration = 2})
                     found = true
                     break
                 end
@@ -560,6 +440,18 @@ local function teleportToCar()
     if not found then
         WindUI:Notify({Title = "未找到", Content = "找不到汽车", Duration = 2})
     end
+end
+
+-- 获取玩家列表
+local function getPlayerNames()
+    local names = {}
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            table.insert(names, plr.Name)
+        end
+    end
+    if #names == 0 then table.insert(names, "无其他玩家") end
+    return names
 end
 
 local Window = WindUI:CreateWindow({
@@ -574,8 +466,8 @@ local Window = WindUI:CreateWindow({
 
 -- 公告
 Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
-    Title = "黑脚本--逃跑者",
-    Desc = "版本: " .. VERSION,
+    Title = "黑脚本--逃跑者 " .. VERSION,
+    Desc = "支持功能：\n\n• 绕过反作弊\n• 杀戮光环（伤害可调13-100）\n• NPC透视\n• 玩家透视\n• 油桶透视\n• 调整速度\n• 飞行\n• 传送油桶/出售区/汽车/玩家\n\n版本说明：\n• v1.8.5 已删除物品透视\n• 保留NPC/玩家/油桶透视",
 })
 
 -- 主要
@@ -635,48 +527,41 @@ MainTab:Divider()
 
 MainTab:Button({
     Title = "传送到出售区",
-    Callback = function()
-        teleportToPawnCounter()
-    end
+    Callback = function() teleportToPawnCounter() end
 })
 
 MainTab:Button({
     Title = "传送到汽车",
+    Callback = function() teleportToCar() end
+})
+
+MainTab:Divider()
+
+local playerNames = getPlayerNames()
+local selectedPlayer = playerNames[1] or "无其他玩家"
+MainTab:Dropdown({
+    Title = "选择玩家",
+    Values = playerNames,
+    Value = selectedPlayer,
+    Callback = function(v) selectedPlayer = v end
+})
+
+MainTab:Button({
+    Title = "传送到该玩家",
     Callback = function()
-        teleportToCar()
+        for _, plr in pairs(Players:GetPlayers()) do
+            if plr.Name == selectedPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+                LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(plr.Character.HumanoidRootPart.Position + Vector3.new(0, 3, 0))
+                WindUI:Notify({Title = "传送成功", Content = "已传送到" .. plr.Name, Duration = 2})
+                return
+            end
+        end
+        WindUI:Notify({Title = "未找到", Content = "找不到该玩家", Duration = 2})
     end
 })
 
 -- 视觉
 local VisualTab = Window:Tab({Title = "视觉", Icon = "solar:eye-bold"})
-
-VisualTab:Colorpicker({
-    Title = "物品透视颜色",
-    Default = Color3.fromRGB(255, 255, 0),
-    Callback = function(color)
-        Settings.ESPColor = color
-        clearItemESP()
-    end
-})
-
-VisualTab:Divider()
-
-VisualTab:Toggle({
-    Title = "物品透视",
-    Value = false,
-    Callback = function(enabled)
-        Settings.ItemESPEnabled = enabled
-        if not enabled then clearItemESP() end
-    end
-})
-
-VisualTab:Toggle({
-    Title = "显示物品距离",
-    Value = true,
-    Callback = function(enabled) Settings.ItemESPShowDistance = enabled end
-})
-
-VisualTab:Divider()
 
 VisualTab:Toggle({
     Title = "NPC透视",
@@ -684,6 +569,17 @@ VisualTab:Toggle({
     Callback = function(enabled)
         Settings.NPCESPEnabled = enabled
         if not enabled then clearNPCESP() end
+    end
+})
+
+VisualTab:Divider()
+
+VisualTab:Toggle({
+    Title = "玩家透视",
+    Value = false,
+    Callback = function(enabled)
+        Settings.PlayerESPEnabled = enabled
+        if not enabled then clearPlayerESP() end
     end
 })
 
@@ -740,9 +636,7 @@ PlayerTab:Divider()
 
 PlayerTab:Button({
     Title = "传送到最近油桶",
-    Callback = function()
-        teleportToNearestJerrycan()
-    end
+    Callback = function() teleportToNearestJerrycan() end
 })
 
 -- 设置
@@ -753,50 +647,20 @@ local statusParagraph = SettingsTab:Paragraph({
     Desc = "正在加载..."
 })
 
-local function updateStatus()
-    local status = ""
-    
-    if mtHook then
-        status = status .. "✅ 绕过反作弊: 已开启\n"
-    else
-        status = status .. "❌ 绕过反作弊: 未开启\n"
+task.spawn(function()
+    while true do
+        local status = ""
+        
+        if mtHook then status = status .. "✅ 绕过反作弊: 已开启\n" else status = status .. "❌ 绕过反作弊: 未开启\n" end
+        if Settings.KillAuraEnabled then status = status .. "✅ 杀戮光环: 已开启 (伤害: " .. Settings.KillDamage .. ")\n" else status = status .. "❌ 杀戮光环: 未开启\n" end
+        if Settings.NPCESPEnabled then status = status .. "✅ NPC透视: 已开启 (" .. #cachedNPCs .. "个NPC)\n" else status = status .. "❌ NPC透视: 未开启\n" end
+        if Settings.PlayerESPEnabled then status = status .. "✅ 玩家透视: 已开启 (" .. #cachedPlayers .. "个玩家)\n" else status = status .. "❌ 玩家透视: 未开启\n" end
+        if Settings.JerrycanESPEnabled then status = status .. "✅ 油桶透视: 已开启 (" .. #cachedJerrycans .. "个油桶)\n" else status = status .. "❌ 油桶透视: 未开启\n" end
+        if Settings.SpeedEnabled then status = status .. "✅ 调整速度: 已开启 (" .. Settings.SpeedValue .. ")\n" else status = status .. "❌ 调整速度: 未开启\n" end
+        
+        statusParagraph:SetDesc(status)
+        task.wait(2)
     end
-    
-    if Settings.KillAuraEnabled then
-        status = status .. "✅ 杀戮光环: 已开启 (伤害: " .. Settings.KillDamage .. ")\n"
-    else
-        status = status .. "❌ 杀戮光环: 未开启\n"
-    end
-    
-    if Settings.ItemESPEnabled then
-        status = status .. "✅ 物品透视: 已开启 (" .. #cachedItems .. "个物品)\n"
-    else
-        status = status .. "❌ 物品透视: 未开启\n"
-    end
-    
-    if Settings.NPCESPEnabled then
-        status = status .. "✅ NPC透视: 已开启 (" .. #cachedNPCs .. "个NPC)\n"
-    else
-        status = status .. "❌ NPC透视: 未开启\n"
-    end
-    
-    if Settings.JerrycanESPEnabled then
-        status = status .. "✅ 油桶透视: 已开启 (" .. #cachedJerrycans .. "个油桶)\n"
-    else
-        status = status .. "❌ 油桶透视: 未开启\n"
-    end
-    
-    if Settings.SpeedEnabled then
-        status = status .. "✅ 调整速度: 已开启 (" .. Settings.SpeedValue .. ")\n"
-    else
-        status = status .. "❌ 调整速度: 未开启\n"
-    end
-    
-    statusParagraph:SetDesc(status)
-end
-
-RunService.Heartbeat:Connect(function()
-    updateStatus()
 end)
 
 SettingsTab:Button({
