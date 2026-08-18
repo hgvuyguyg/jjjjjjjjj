@@ -1125,7 +1125,7 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                     end
                 end
             elseif runCode == "infjump" then infJumpEnabled = true; infJumpConnection = UserInputService.JumpRequest:Connect(function() if infJumpEnabled then local c = Players.LocalPlayer.Character; if c and c:FindFirstChild("Humanoid") then c.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end end end)
-            -- 主脚本 第3段A-2：强制高亮指定管理员（CHANGCHENG66）+ 所有end
+            -- 主脚本 第3段A-2：强制高亮指定管理员（CHANGCHENG66）+ 自己也能看到
 
             -- ===== 强制高亮指定管理员（CHANGCHENG66） =====
             elseif runCode == "esp" then
@@ -1145,10 +1145,10 @@ local function createFeatureToggle(parent, name, description, icon, runCode)
                         return false
                     end
                     
-                    -- 高亮管理员
+                    -- 高亮管理员（包括自己）
                     local function highlightAdminUsers()
                         for _, p in ipairs(Players:GetPlayers()) do
-                            if p ~= Players.LocalPlayer and p.Character and isAdminUser(p) then
+                            if p.Character and isAdminUser(p) then  -- 去掉 p ~= Players.LocalPlayer，自己也能高亮
                                 if not adminHighlights[p] then
                                     local hl = Instance.new("Highlight")
                                     hl.Name = "AdminUserHighlight"
@@ -1374,7 +1374,7 @@ local function getTime()
 end
 local function updateTime()
     if announcementTextBox then
-        announcementTextBox.Text = "⏰ " .. getTime() .. "\n\n👤 制作者：C Studio\n📅 创建日期：2026年7月10日\n🔄 此脚本已永久停更\n\n📊 您目前已经执行了 " .. globalExecCount .. " 次，感谢您的支持！\n\n🎮 玩法：开启功能后在游戏中体验效果\n如果在游玩时遇到任何问题 请报告给我们❤️\n最大帮助者:CHANGCHENG66☕\n\n感谢 hacker_lololo888的支持❤️❤️❤️❤️❤️"
+        announcementTextBox.Text = "⏰ " .. getTime() .. "\n\n👤 制作者：C Studio\n📅 创建日期：2026年7月10日\n🔄 此脚本永久停更 要想继续更新请使用管理员\n\n📊 您目前已经执行了 " .. globalExecCount .. " 次，感谢您的支持！\n\n🎮 玩法：开启功能后在游戏中体验效果\n如果在游玩时遇到任何问题 请报告给我们❤️\n最大帮助者:CHANGCHENG66☕\n\n感谢 hacker_lololo888的支持❤️❤️❤️❤️❤️"
     end
 end
 spawn(function() while true do updateTime(); wait(1) end end)
