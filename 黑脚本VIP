@@ -1,4 +1,4 @@
--- 主脚本 第1段：UI初始化 + 音频 + 欢迎文字 + 顶部拖拽栏 + FPS显示 + ESP + 主窗口框架 + 导航栏
+-- 主脚本 第1段：UI初始化 + 音频 + 欢迎文字 + 顶部拖拽栏 + FPS显示 + ESP + 主窗口框架 + 导航
 
 local Players = game:GetService("Players")
 local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
