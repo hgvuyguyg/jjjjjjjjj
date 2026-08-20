@@ -1,0 +1,325 @@
+-- 加一沙滩逃脱 脚本 v1.1.3
+-- WindUI蓝白版 | 自动奔跑 | 自动赢 | 调整速度
+
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+if not WindUI then return end
+
+WindUI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF",
+})
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Settings = {
+    AutoRunEnabled = false,
+    RunDelay = 0.5,
+    AutoWinEnabled = false,
+    WinDelay = 5,
+    SpeedEnabled = false,
+    SpeedValue = 100,
+    SelectedStage = "第一关",
+}
+
+local VERSION = "v1.1.3"
+local lastRunTime = 0
+local lastWinTime = 0
+local speedConnection = nil
+
+-- 关卡坐标
+local STAGES = {
+    {Name = "第一关", Position = Vector3.new(22, -7.8, 1580)},
+    {Name = "第二关", Position = Vector3.new(267, -7.8, 1586)},
+    {Name = "最后一关", Position = Vector3.new(-3256.5, 51, 7653)},
+}
+
+-- 自动奔跑
+local function autoRun()
+    local Event = ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("UpdateSpeed")
+    if Event then
+        Event:FireServer("Walking")
+        return true
+    end
+    return false
+end
+
+-- 自动赢
+local function autoWin()
+    local character = LocalPlayer.Character
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        local targetPos = STAGES[1].Position
+        
+        for _, stage in pairs(STAGES) do
+            if stage.Name == Settings.SelectedStage then
+                targetPos = stage.Position
+                break
+            end
+        end
+        
+        character.HumanoidRootPart.CFrame = CFrame.new(targetPos)
+        return true
+    end
+    return false
+end
+
+-- 调整速度
+local function setSpeed()
+    local player = LocalPlayer
+    if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = Settings.SpeedValue
+        return true
+    end
+    return false
+end
+
+-- 启动速度循环
+local function startSpeedLoop()
+    if speedConnection then return end
+    
+    speedConnection = RunService.Heartbeat:Connect(function()
+        if Settings.SpeedEnabled then
+            setSpeed()
+        end
+    end)
+end
+
+startSpeedLoop()
+
+LocalPlayer.CharacterAdded:Connect(function(character)
+    task.wait(0.5)
+    if Settings.SpeedEnabled then
+        setSpeed()
+    end
+end)
+
+-- 自动奔跑循环
+task.spawn(function()
+    while true do
+        if Settings.AutoRunEnabled then
+            local currentTime = tick()
+            if currentTime - lastRunTime >= Settings.RunDelay then
+                autoRun()
+                lastRunTime = currentTime
+            end
+        end
+        task.wait(0.01)
+    end
+end)
+
+-- 自动赢循环
+task.spawn(function()
+    while true do
+        if Settings.AutoWinEnabled then
+            local currentTime = tick()
+            if currentTime - lastWinTime >= Settings.WinDelay then
+                autoWin()
+                lastWinTime = currentTime
+            end
+        end
+        task.wait(0.05)
+    end
+end)
+
+local Window = WindUI:CreateWindow({
+    Title = "加一沙滩逃脱",
+    Icon = "solar:moon-bold",
+    Size = UDim2.fromOffset(400, 350),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "冰白",
+    Transparent = true,
+    ScrollBarEnabled = true,
+})
+
+Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
+    Title = "黑脚本--加一沙滩逃脱",
+    Desc = "版本: " .. VERSION .. "\n\n支持功能：\n• 自动奔跑\n• 自动赢（第一关/第二关/最后一关）\n• 调整速度",
+})
+
+local MainTab = Window:Tab({Title = "主要功能", Icon = "solar:star-bold"})
+
+MainTab:Toggle({
+    Title = "自动奔跑",
+    Value = false,
+    Callback = function(enabled)
+        Settings.AutoRunEnabled = enabled
+        
+        if enabled then
+            WindUI:Notify({
+                Title = "自动奔跑已开启",
+                Content = "延迟: " .. Settings.RunDelay .. "秒",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "自动奔跑已关闭",
+                Content = "已停止",
+                Duration = 2
+            })
+        end
+    end
+})
+
+MainTab:Slider({
+    Title = "奔跑延迟 (0.01-3秒)",
+    Value = {Min = 0.01, Max = 3, Default = 0.5},
+    Step = 0.01,
+    Callback = function(delay)
+        Settings.RunDelay = delay
+    end
+})
+
+MainTab:Divider()
+
+MainTab:Toggle({
+    Title = "自动赢",
+    Value = false,
+    Callback = function(enabled)
+        Settings.AutoWinEnabled = enabled
+        
+        if enabled then
+            WindUI:Notify({
+                Title = "自动赢已开启",
+                Content = "关卡: " .. Settings.SelectedStage,
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "自动赢已关闭",
+                Content = "已停止",
+                Duration = 2
+            })
+        end
+    end
+})
+
+local stageNames = {"第一关", "第二关", "最后一关"}
+MainTab:Dropdown({
+    Title = "选择关卡",
+    Values = stageNames,
+    Value = "第一关",
+    Callback = function(stage)
+        Settings.SelectedStage = stage
+    end
+})
+
+MainTab:Slider({
+    Title = "胜利延迟 (1-10秒)",
+    Value = {Min = 1, Max = 10, Default = 5},
+    Step = 1,
+    Callback = function(delay)
+        Settings.WinDelay = delay
+    end
+})
+
+MainTab:Divider()
+
+MainTab:Toggle({
+    Title = "调整速度",
+    Value = false,
+    Callback = function(enabled)
+        Settings.SpeedEnabled = enabled
+        
+        if enabled then
+            setSpeed()
+            WindUI:Notify({
+                Title = "调整速度已开启",
+                Content = "速度: " .. Settings.SpeedValue,
+                Duration = 3
+            })
+        else
+            local player = LocalPlayer
+            if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+                player.Character.Humanoid.WalkSpeed = 16
+            end
+            WindUI:Notify({
+                Title = "调整速度已关闭",
+                Content = "已恢复默认速度16",
+                Duration = 2
+            })
+        end
+    end
+})
+
+MainTab:Slider({
+    Title = "移动速度 (16-500)",
+    Value = {Min = 16, Max = 500, Default = 100},
+    Step = 1,
+    Callback = function(speed)
+        Settings.SpeedValue = speed
+        if Settings.SpeedEnabled then
+            setSpeed()
+        end
+    end
+})
+
+MainTab:Button({
+    Title = "立即设置速度",
+    Callback = function()
+        if setSpeed() then
+            WindUI:Notify({
+                Title = "设置成功",
+                Content = "速度已设置为: " .. Settings.SpeedValue,
+                Duration = 2
+            })
+        else
+            WindUI:Notify({
+                Title = "设置失败",
+                Content = "角色未加载",
+                Duration = 2
+            })
+        end
+    end
+})
+
+local SettingsTab = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+
+local statusParagraph = SettingsTab:Paragraph({
+    Title = "功能状态",
+    Desc = "正在加载..."
+})
+
+local function updateStatus()
+    local status = ""
+    if Settings.AutoRunEnabled then
+        status = status .. "✅ 自动奔跑: 已开启\n"
+    else
+        status = status .. "❌ 自动奔跑: 未开启\n"
+    end
+    if Settings.AutoWinEnabled then
+        status = status .. "✅ 自动赢: 已开启 (" .. Settings.SelectedStage .. ")\n"
+    else
+        status = status .. "❌ 自动赢: 未开启\n"
+    end
+    if Settings.SpeedEnabled then
+        status = status .. "✅ 调整速度: 已开启 (" .. Settings.SpeedValue .. ")\n"
+        
+        local player = LocalPlayer
+        if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+            status = status .. "实际速度: " .. player.Character.Humanoid.WalkSpeed .. "\n"
+        end
+    else
+        status = status .. "❌ 调整速度: 未开启\n"
+    end
+    statusParagraph:SetDesc(status)
+end
+
+RunService.Heartbeat:Connect(function() updateStatus() end)
+
+SettingsTab:Button({
+    Title = "关闭面板",
+    Callback = function() Window:Close() end
+})
+
+Window:OnClose(function() end)
+
+WindUI:Notify({
+    Title = "加一沙滩逃脱",
+    Content = VERSION .. " 加载完成",
+    Duration = 3
+})
