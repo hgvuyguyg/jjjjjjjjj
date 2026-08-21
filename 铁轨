@@ -62,7 +62,7 @@ local function ClearESP()
     espCache = {}
 end
 
--- ==================== 吸全图物品 ====================
+-- ==================== 吸全图物品（修复：不破坏正常拾取）====================
 local function StartAutoLootAll()
     if autoLootAll then return end
     autoLootAll = true
@@ -177,6 +177,7 @@ local function CreateESP(obj, color, name, dist)
     bb.Size = UDim2.new(0, 200, 0, 30)
     bb.StudsOffset = Vector3.new(0, 2.5, 0)
     bb.AlwaysOnTop = true
+    bb.MaxDistance = 500
     bb.Parent = root
     table.insert(espCache, {bb = bb})
 
@@ -287,7 +288,6 @@ local function FarmBonds()
                             local sr = replicator:get_server_entity(id)
                             if sr and sr ~= id then
                                 Remotes.Store:FireServer(sr)
-                                Remotes.Store:FireServer()
                                 Event:FireServer(sr)
                             end
                         end
@@ -335,7 +335,6 @@ local Window = WI:CreateWindow({
     Size = UDim2.fromOffset(540, 360),
     ToggleKey = Enum.KeyCode.RightShift,
     Theme = "冰白",
-    Acrylic = true,
     Transparent = true,
     ScrollBarEnabled = true
 })
@@ -360,7 +359,7 @@ end})
 
 -- 3. 刷债券
 local T3 = Window:Tab({Title = "刷债券", Icon = "solar:dollar-bold"})
-T3:Paragraph({Title = "自动刷债券", Desc = "一键循环拾取地图上所有债券\n完成后提示: 所有债券已刷完\n停止后可再次开启"})
+T3:Paragraph({Title = "自动刷债券", Desc = "一键循环拾取地图上所有债券"})
 T3:Divider()
 T3:Button({Title = "开始刷债券", Justify = "Center", Callback = function()
     if autoFarmBond then WI:Notify({Title = "提示", Content = "已经在刷了", Duration = 2}) return end
@@ -373,28 +372,20 @@ end})
 
 -- 4. ESP透视
 local T4 = Window:Tab({Title = "ESP透视", Icon = "solar:eye-bold"})
-T4:Section({Title = "僵尸透视"})
 T4:Toggle({Title = "透视僵尸", Value = false, Callback = function(v) zombieESP = v end})
 T4:Colorpicker({Title = "僵尸颜色", Default = Color3.fromRGB(255, 50, 50), Callback = function(c) zombieESPColor = c end})
-T4:Slider({Title = "透视范围", Value = {Min = 0, Max = 10000, Default = 500}, Step = 10, Callback = function(v) zombieESPRange = v end})
+T4:Slider({Title = "僵尸透视范围", Value = {Min = 0, Max = 10000, Default = 500}, Step = 10, Callback = function(v) zombieESPRange = v end})
 T4:Divider()
-T4:Section({Title = "狼人透视"})
 T4:Toggle({Title = "透视狼人", Value = false, Callback = function(v) werewolfESP = v end})
 T4:Colorpicker({Title = "狼人颜色", Default = Color3.fromRGB(139, 90, 43), Callback = function(c) werewolfESPColor = c end})
-T4:Slider({Title = "透视范围", Value = {Min = 0, Max = 10000, Default = 500}, Step = 10, Callback = function(v) werewolfESPRange = v end})
+T4:Slider({Title = "狼人透视范围", Value = {Min = 0, Max = 10000, Default = 500}, Step = 10, Callback = function(v) werewolfESPRange = v end})
 T4:Divider()
-T4:Section({Title = "债券透视"})
 T4:Toggle({Title = "透视债券", Value = false, Callback = function(v) bondESP = v end})
 T4:Colorpicker({Title = "债券颜色", Default = Color3.fromRGB(50, 255, 50), Callback = function(c) bondESPColor = c end})
-T4:Slider({Title = "透视范围", Value = {Min = 0, Max = 10000, Default = 500}, Step = 10, Callback = function(v) bondESPRange = v end})
+T4:Slider({Title = "债券透视范围", Value = {Min = 0, Max = 10000, Default = 500}, Step = 10, Callback = function(v) bondESPRange = v end})
 
 -- 5. 吸全图物品
 local T5 = Window:Tab({Title = "吸物品", Icon = "solar:magnet-bold"})
-T5:Paragraph({
-    Title = "吸全图物品",
-    Desc = "很强 你黑哥研发了两月😂😂😂\n每个ID执行两次\n可自定义延迟速度"
-})
-T5:Divider()
 T5:Toggle({
     Title = "吸全图物品",
     Value = false,
@@ -459,8 +450,6 @@ task.spawn(function()
         task.wait(2)
     end
 end)
-
-T7:Divider()
 
 T7:Button({
     Title = "关闭面板",
