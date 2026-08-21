@@ -1,0 +1,286 @@
+-- 加一超级英雄进化 脚本 v1.0.0
+-- WindUI蓝白版 | 自动踢 | 自动孵化 | 自动转生
+
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+if not WindUI then return end
+
+WindUI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF",
+})
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Settings = {
+    AutoKickEnabled = false,
+    AutoHatchEnabled = false,
+    HatchDelay = 1,
+    AutoRebirthEnabled = false,
+    RebirthDelay = 5,
+}
+
+local VERSION = "v1.0.0"
+local lastKickTime = 0
+local lastHatchTime = 0
+local lastRebirthTime = 0
+local KickDelay = 0.01 -- 固定不可改
+
+-- 自动踢
+local function autoKick()
+    local Event = ReplicatedStorage:FindFirstChild("Shared") and ReplicatedStorage.Shared:FindFirstChild("Remotes") and ReplicatedStorage.Shared.Remotes:FindFirstChild("PlayerClick")
+    if Event then
+        Event:FireServer()
+        return true
+    end
+    return false
+end
+
+-- 自动孵化
+local function autoHatch()
+    local Event = ReplicatedStorage:FindFirstChild("Shared") and ReplicatedStorage.Shared:FindFirstChild("Remotes") and ReplicatedStorage.Shared.Remotes:FindFirstChild("HatchEgg")
+    if Event then
+        Event:FireServer("basic_egg")
+        return true
+    end
+    return false
+end
+
+-- 自动转生
+local function autoRebirth()
+    local Event = ReplicatedStorage:FindFirstChild("Shared") and ReplicatedStorage.Shared:FindFirstChild("Remotes") and ReplicatedStorage.Shared.Remotes:FindFirstChild("RequestRebirth")
+    if Event then
+        Event:InvokeServer()
+        return true
+    end
+    return false
+end
+
+-- 自动踢循环（0.01秒固定）
+task.spawn(function()
+    while true do
+        if Settings.AutoKickEnabled then
+            local currentTime = tick()
+            if currentTime - lastKickTime >= KickDelay then
+                autoKick()
+                lastKickTime = currentTime
+            end
+        end
+        task.wait(0.005)
+    end
+end)
+
+-- 自动孵化循环
+task.spawn(function()
+    while true do
+        if Settings.AutoHatchEnabled then
+            local currentTime = tick()
+            if currentTime - lastHatchTime >= Settings.HatchDelay then
+                autoHatch()
+                lastHatchTime = currentTime
+            end
+        end
+        task.wait(0.05)
+    end
+end)
+
+-- 自动转生循环
+task.spawn(function()
+    while true do
+        if Settings.AutoRebirthEnabled then
+            local currentTime = tick()
+            if currentTime - lastRebirthTime >= Settings.RebirthDelay then
+                autoRebirth()
+                lastRebirthTime = currentTime
+            end
+        end
+        task.wait(0.05)
+    end
+end)
+
+local Window = WindUI:CreateWindow({
+    Title = "加一超级英雄进化",
+    Icon = "solar:moon-bold",
+    Size = UDim2.fromOffset(400, 350),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "冰白",
+    Transparent = true,
+    ScrollBarEnabled = true,
+})
+
+Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
+    Title = "黑脚本--加一超级英雄进化",
+    Desc = "版本: " .. VERSION .. "\n\n支持功能：\n• 自动踢（0.01秒固定）\n• 自动孵化基本蛋\n• 自动转生",
+})
+
+local MainTab = Window:Tab({Title = "主要功能", Icon = "solar:star-bold"})
+
+MainTab:Toggle({
+    Title = "自动踢",
+    Value = false,
+    Callback = function(enabled)
+        Settings.AutoKickEnabled = enabled
+        
+        if enabled then
+            WindUI:Notify({
+                Title = "自动踢已开启",
+                Content = "延迟: 0.01秒（固定）",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "自动踢已关闭",
+                Content = "已停止",
+                Duration = 2
+            })
+        end
+    end
+})
+
+MainTab:Divider()
+
+MainTab:Toggle({
+    Title = "自动孵化基本蛋",
+    Value = false,
+    Callback = function(enabled)
+        Settings.AutoHatchEnabled = enabled
+        
+        if enabled then
+            WindUI:Notify({
+                Title = "自动孵化已开启",
+                Content = "延迟: " .. Settings.HatchDelay .. "秒",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "自动孵化已关闭",
+                Content = "已停止",
+                Duration = 2
+            })
+        end
+    end
+})
+
+MainTab:Slider({
+    Title = "孵化延迟 (0.1-5秒)",
+    Value = {Min = 0.1, Max = 5, Default = 1},
+    Step = 0.1,
+    Callback = function(delay)
+        Settings.HatchDelay = delay
+    end
+})
+
+MainTab:Divider()
+
+MainTab:Toggle({
+    Title = "自动转生",
+    Value = false,
+    Callback = function(enabled)
+        Settings.AutoRebirthEnabled = enabled
+        
+        if enabled then
+            WindUI:Notify({
+                Title = "自动转生已开启",
+                Content = "延迟: " .. Settings.RebirthDelay .. "秒",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "自动转生已关闭",
+                Content = "已停止",
+                Duration = 2
+            })
+        end
+    end
+})
+
+MainTab:Slider({
+    Title = "转生延迟 (1-30秒)",
+    Value = {Min = 1, Max = 30, Default = 5},
+    Step = 1,
+    Callback = function(delay)
+        Settings.RebirthDelay = delay
+    end
+})
+
+MainTab:Divider()
+
+MainTab:Button({
+    Title = "手动踢一次",
+    Callback = function()
+        if autoKick() then
+            WindUI:Notify({Title = "成功", Content = "已踢", Duration = 2})
+        else
+            WindUI:Notify({Title = "失败", Content = "找不到事件", Duration = 2})
+        end
+    end
+})
+
+MainTab:Button({
+    Title = "手动孵化一次",
+    Callback = function()
+        if autoHatch() then
+            WindUI:Notify({Title = "成功", Content = "已孵化", Duration = 2})
+        else
+            WindUI:Notify({Title = "失败", Content = "找不到事件", Duration = 2})
+        end
+    end
+})
+
+MainTab:Button({
+    Title = "手动转生一次",
+    Callback = function()
+        if autoRebirth() then
+            WindUI:Notify({Title = "成功", Content = "已转生", Duration = 2})
+        else
+            WindUI:Notify({Title = "失败", Content = "找不到事件", Duration = 2})
+        end
+    end
+})
+
+local SettingsTab = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+
+local statusParagraph = SettingsTab:Paragraph({
+    Title = "功能状态",
+    Desc = "正在加载..."
+})
+
+local function updateStatus()
+    local status = ""
+    if Settings.AutoKickEnabled then
+        status = status .. "✅ 自动踢: 已开启 (0.01秒)\n"
+    else
+        status = status .. "❌ 自动踢: 未开启\n"
+    end
+    if Settings.AutoHatchEnabled then
+        status = status .. "✅ 自动孵化: 已开启 (" .. Settings.HatchDelay .. "秒)\n"
+    else
+        status = status .. "❌ 自动孵化: 未开启\n"
+    end
+    if Settings.AutoRebirthEnabled then
+        status = status .. "✅ 自动转生: 已开启 (" .. Settings.RebirthDelay .. "秒)\n"
+    else
+        status = status .. "❌ 自动转生: 未开启\n"
+    end
+    statusParagraph:SetDesc(status)
+end
+
+RunService.Heartbeat:Connect(function() updateStatus() end)
+
+SettingsTab:Button({
+    Title = "关闭面板",
+    Callback = function() Window:Close() end
+})
+
+Window:OnClose(function() end)
+
+WindUI:Notify({
+    Title = "加一超级英雄进化",
+    Content = VERSION .. " 加载完成",
+    Duration = 3
+})
