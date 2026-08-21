@@ -128,7 +128,7 @@ local Window = WindUI:CreateWindow({
 })
 
 Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
-    Title = "拯救你的猫咪",
+    Title = "黑脚本--拯救你的猫咪",
     Desc = "版本: " .. VERSION .. "\n\n支持功能：\n• 自动收集种子（传送到最远StageButton，不重复）",
 })
 
