@@ -1,0 +1,355 @@
+-- 恐怖寿司[第一章] 脚本 v1.0.5
+-- WindUI蓝白版 | 透视怪物 | 传送 | 自动获取
+
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+if not WindUI then return end
+
+WindUI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF",
+})
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+
+local Settings = {
+    NoriMonsterESP = false,
+}
+
+local VERSION = "v1.0.5"
+local espHighlights = {}
+local espNameTags = {}
+local espTargets = {}
+local lastESPScan = 0
+local isGetting = false
+
+-- 获取根部件
+local function getRoot(obj)
+    if obj:IsA("Model") then
+        return obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+    elseif obj:IsA("BasePart") then
+        return obj
+    end
+    return nil
+end
+
+-- 获取父级Model
+local function getParentModel(obj)
+    local parent = obj.Parent
+    while parent and parent ~= Workspace do
+        if parent:IsA("Model") then
+            return parent
+        end
+        parent = parent.Parent
+    end
+    return obj
+end
+
+-- 清理ESP
+local function clearESP()
+    for _, h in pairs(espHighlights) do
+        pcall(function() h:Destroy() end)
+    end
+    for _, t in pairs(espNameTags) do
+        pcall(function() t:Destroy() end)
+    end
+    table.clear(espHighlights)
+    table.clear(espNameTags)
+    table.clear(espTargets)
+end
+
+-- 更新ESP
+local function updateESP()
+    clearESP()
+    
+    local character = LocalPlayer.Character
+    local characterRoot = character and character:FindFirstChild("HumanoidRootPart")
+    local seenModels = {}
+    
+    if Settings.NoriMonsterESP then
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            if obj.Name and obj.Name:lower():find("norimonster") then
+                local parentModel = getParentModel(obj)
+                
+                if not seenModels[parentModel] then
+                    seenModels[parentModel] = true
+                    
+                    local rootPart = getRoot(parentModel)
+                    if rootPart and rootPart:IsA("BasePart") and rootPart.Parent then
+                        local h = Instance.new("Highlight")
+                        h.FillColor = Color3.fromRGB(255, 0, 0)
+                        h.FillTransparency = 0.5
+                        h.OutlineColor = Color3.fromRGB(255, 0, 0)
+                        h.OutlineTransparency = 0.3
+                        h.Parent = parentModel
+                        espHighlights[parentModel] = h
+                        
+                        local billboard = Instance.new("BillboardGui")
+                        billboard.Size = UDim2.new(0, 200, 0, 25)
+                        billboard.AlwaysOnTop = true
+                        billboard.MaxDistance = 500
+                        billboard.Parent = rootPart
+                        
+                        local label = Instance.new("TextLabel")
+                        label.Size = UDim2.new(1, 0, 1, 0)
+                        label.BackgroundTransparency = 1
+                        label.Text = "NoriMonster"
+                        label.TextColor3 = Color3.fromRGB(255, 0, 0)
+                        label.Font = Enum.Font.GothamBold
+                        label.TextSize = 14
+                        label.TextStrokeTransparency = 0.5
+                        label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                        label.Parent = billboard
+                        
+                        espNameTags[parentModel] = billboard
+                        espTargets[parentModel] = {
+                            RootPart = rootPart,
+                            Name = "NoriMonster",
+                        }
+                        
+                        if characterRoot then
+                            local dist = (characterRoot.Position - rootPart.Position).Magnitude
+                            label.Text = "NoriMonster [" .. math.floor(dist) .. "米]"
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- ESP循环
+RunService.Heartbeat:Connect(function()
+    if Settings.NoriMonsterESP then
+        local currentTime = tick()
+        if currentTime - lastESPScan > 2 then
+            updateESP()
+            lastESPScan = currentTime
+        end
+        
+        local character = LocalPlayer.Character
+        local characterRoot = character and character:FindFirstChild("HumanoidRootPart")
+        
+        if characterRoot then
+            for obj, billboard in pairs(espNameTags) do
+                local target = espTargets[obj]
+                if target and billboard and billboard.Parent and target.RootPart and target.RootPart.Parent then
+                    local label = billboard:FindFirstChild("TextLabel")
+                    if label then
+                        local dist = (characterRoot.Position - target.RootPart.Position).Magnitude
+                        label.Text = target.Name .. " [" .. math.floor(dist) .. "米]"
+                    end
+                else
+                    if espHighlights[obj] then pcall(function() espHighlights[obj]:Destroy() end); espHighlights[obj] = nil end
+                    if espNameTags[obj] then pcall(function() espNameTags[obj]:Destroy() end); espNameTags[obj] = nil end
+                    espTargets[obj] = nil
+                end
+            end
+        end
+    else
+        if next(espHighlights) then clearESP() end
+    end
+end)
+
+-- 传送函数
+local function teleportTo(pos, name)
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then
+        WindUI:Notify({Title = "传送失败", Content = "角色未加载", Duration = 2})
+        return false
+    end
+    
+    character.HumanoidRootPart.CFrame = CFrame.new(pos)
+    WindUI:Notify({Title = "传送成功", Content = "已传送到" .. name, Duration = 2})
+    return true
+end
+
+-- 传送到稻谷
+local function teleportToRicePlants()
+    local found = false
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj.Name and obj.Name:lower():find("riceplant") then
+            local rootPart = getRoot(obj)
+            if rootPart and rootPart:IsA("BasePart") then
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(rootPart.Position + Vector3.new(0, 5, 0))
+                    WindUI:Notify({Title = "传送成功", Content = "已传送到稻谷", Duration = 2})
+                    found = true
+                    break
+                end
+            end
+        end
+    end
+    
+    if not found then
+        WindUI:Notify({Title = "未找到", Content = "找不到RicePlants", Duration = 2})
+    end
+end
+
+-- 获取函数
+local function getItem(pos, name)
+    if isGetting then return end
+    isGetting = true
+    
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then
+        isGetting = false
+        return
+    end
+    
+    local rootPart = character.HumanoidRootPart
+    local originalPos = rootPart.Position
+    
+    rootPart.CFrame = CFrame.new(pos)
+    WindUI:Notify({Title = "已传送", Content = "请自己拾取" .. name .. "\n3秒后自动返回", Duration = 3})
+    
+    task.wait(3)
+    
+    rootPart.CFrame = CFrame.new(originalPos)
+    WindUI:Notify({Title = "已返回", Content = "已回到原位置", Duration = 2})
+    isGetting = false
+end
+
+local Window = WindUI:CreateWindow({
+    Title = "恐怖寿司[第一章]",
+    Icon = "solar:moon-bold",
+    Size = UDim2.fromOffset(400, 350),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "冰白",
+    Transparent = true,
+    ScrollBarEnabled = true,
+})
+
+Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
+    Title = "黑脚本--恐怖寿司[第一章]",
+    Desc = "版本: " .. VERSION .. "\n\n支持功能：\n• 透视怪物NoriMonster\n• 传送厨房/稻谷/鱼场\n• 获取鳟鱼/潜水员/章鱼/稻谷/水藻/鳗鱼",
+})
+
+-- 透视
+local ESPTab = Window:Tab({Title = "透视", Icon = "solar:eye-bold"})
+
+ESPTab:Toggle({
+    Title = "透视怪物NoriMonster",
+    Value = false,
+    Callback = function(enabled)
+        Settings.NoriMonsterESP = enabled
+        if enabled then updateESP() end
+    end
+})
+
+-- 传送
+local TeleportTab = Window:Tab({Title = "传送", Icon = "solar:list-down-bold"})
+
+TeleportTab:Button({
+    Title = "传送厨房",
+    Callback = function()
+        teleportTo(Vector3.new(-41, 4.7, 94), "厨房")
+    end
+})
+
+TeleportTab:Button({
+    Title = "传送稻谷",
+    Callback = function()
+        teleportToRicePlants()
+    end
+})
+
+TeleportTab:Button({
+    Title = "传送鱼场",
+    Callback = function()
+        teleportTo(Vector3.new(-159, 4.6, 196.4), "鱼场")
+    end
+})
+
+-- 获取
+local GetTab = Window:Tab({Title = "获取", Icon = "solar:download-bold"})
+
+GetTab:Paragraph({
+    Title = "说明",
+    Desc = "传送后需要自己拾取\n停留3秒后自动传回",
+})
+
+GetTab:Button({
+    Title = "获取一次鳟鱼",
+    Callback = function()
+        getItem(Vector3.new(-138, 5.7, 235), "鳟鱼")
+    end
+})
+
+GetTab:Button({
+    Title = "获取一次潜水员",
+    Callback = function()
+        getItem(Vector3.new(-202, 5.7, 269.8), "潜水员")
+    end
+})
+
+GetTab:Button({
+    Title = "获取一次章鱼",
+    Callback = function()
+        getItem(Vector3.new(-223, 5.7, 231.8), "章鱼")
+    end
+})
+
+GetTab:Button({
+    Title = "获取一次稻谷",
+    Callback = function()
+        getItem(Vector3.new(-168, 8.6, 109.6), "稻谷")
+    end
+})
+
+GetTab:Button({
+    Title = "获取一次水藻",
+    Callback = function()
+        getItem(Vector3.new(-190.8, 4.8, 50), "水藻")
+    end
+})
+
+GetTab:Button({
+    Title = "获取一次鳗鱼",
+    Callback = function()
+        getItem(Vector3.new(-157, 5.7, 270), "鳗鱼")
+    end
+})
+
+-- 设置
+local SettingsTab = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+
+local statusParagraph = SettingsTab:Paragraph({
+    Title = "功能状态",
+    Desc = "正在加载..."
+})
+
+task.spawn(function()
+    while true do
+        local status = ""
+        if Settings.NoriMonsterESP then
+            status = status .. "✅ 透视怪物: 已开启\n"
+            status = status .. "找到: " .. #espHighlights .. "个\n"
+        else
+            status = status .. "❌ 透视怪物: 未开启\n"
+        end
+        if isGetting then
+            status = status .. "✅ 正在获取中...\n"
+        end
+        statusParagraph:SetDesc(status)
+        task.wait(1)
+    end
+end)
+
+SettingsTab:Button({
+    Title = "关闭面板",
+    Callback = function() Window:Close() end
+})
+
+Window:OnClose(function() clearESP() end)
+
+WindUI:Notify({
+    Title = "恐怖寿司",
+    Content = VERSION .. " 加载完成",
+    Duration = 3
+})
