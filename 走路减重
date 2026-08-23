@@ -1,0 +1,189 @@
+-- 每步减重 脚本 v1.1.0
+-- WindUI蓝白版 | 自动赢（30阶段可选）
+
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+if not WindUI then return end
+
+WindUI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF",
+})
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+local Settings = {
+    AutoWinEnabled = false,
+    SelectedStage = "第一阶段",
+}
+
+local VERSION = "v1.1.0"
+local lastWinTime = 0
+local WinDelay = 2 -- 固定2秒
+
+-- 30个阶段坐标（根据规律推算）
+local STAGES = {
+    {Name = "第一阶段", Position = Vector3.new(46.1, 7.6, -18.5)},
+    {Name = "第二阶段", Position = Vector3.new(85.4, 8.7, -19.6)},
+    {Name = "第三阶段", Position = Vector3.new(116.8, 4.1, -16.2)},
+    {Name = "第四阶段", Position = Vector3.new(150.9, 4.6, -16.7)},
+    {Name = "第五阶段", Position = Vector3.new(150.9, 4.6, -16.7)},
+    {Name = "第六阶段", Position = Vector3.new(185.0, 4.6, -16.7)},
+    {Name = "第七阶段", Position = Vector3.new(219.1, 4.6, -16.7)},
+    {Name = "第八阶段", Position = Vector3.new(253.2, 4.6, -16.7)},
+    {Name = "第九阶段", Position = Vector3.new(287.3, 4.6, -16.7)},
+    {Name = "第十阶段", Position = Vector3.new(321.4, 4.6, -16.7)},
+    {Name = "第十一阶段", Position = Vector3.new(355.5, 4.6, -16.7)},
+    {Name = "第十二阶段", Position = Vector3.new(389.6, 4.6, -16.7)},
+    {Name = "第十三阶段", Position = Vector3.new(423.7, 4.6, -16.7)},
+    {Name = "第十四阶段", Position = Vector3.new(457.8, 4.6, -16.7)},
+    {Name = "第十五阶段", Position = Vector3.new(491.9, 4.6, -16.7)},
+    {Name = "第十六阶段", Position = Vector3.new(526.0, 4.6, -16.7)},
+    {Name = "第十七阶段", Position = Vector3.new(560.1, 4.6, -16.7)},
+    {Name = "第十八阶段", Position = Vector3.new(594.2, 4.6, -16.7)},
+    {Name = "第十九阶段", Position = Vector3.new(628.3, 4.6, -16.7)},
+    {Name = "第二十阶段", Position = Vector3.new(662.4, 4.6, -16.7)},
+    {Name = "第二十一阶段", Position = Vector3.new(696.5, 4.6, -16.7)},
+    {Name = "第二十二阶段", Position = Vector3.new(730.6, 4.6, -16.7)},
+    {Name = "第二十三阶段", Position = Vector3.new(764.7, 4.6, -16.7)},
+    {Name = "第二十四阶段", Position = Vector3.new(798.8, 4.6, -16.7)},
+    {Name = "第二十五阶段", Position = Vector3.new(832.9, 4.6, -16.7)},
+    {Name = "第二十六阶段", Position = Vector3.new(867.0, 4.6, -16.7)},
+    {Name = "第二十七阶段", Position = Vector3.new(901.1, 4.6, -16.7)},
+    {Name = "第二十八阶段", Position = Vector3.new(935.2, 4.6, -16.7)},
+    {Name = "第二十九阶段", Position = Vector3.new(969.3, 4.6, -16.7)},
+    {Name = "第三十阶段", Position = Vector3.new(1003.4, 4.6, -16.7)},
+}
+
+-- 获取阶段名称列表
+local function getStageNames()
+    local names = {}
+    for _, stage in pairs(STAGES) do
+        table.insert(names, stage.Name)
+    end
+    return names
+end
+
+-- 自动赢
+local function autoWin()
+    local character = LocalPlayer.Character
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        local targetPos = nil
+        
+        for _, stage in pairs(STAGES) do
+            if stage.Name == Settings.SelectedStage then
+                targetPos = stage.Position
+                break
+            end
+        end
+        
+        if targetPos then
+            character.HumanoidRootPart.CFrame = CFrame.new(targetPos)
+            return true
+        end
+    end
+    return false
+end
+
+-- 自动赢循环（2秒固定）
+task.spawn(function()
+    while true do
+        if Settings.AutoWinEnabled then
+            local currentTime = tick()
+            if currentTime - lastWinTime >= WinDelay then
+                autoWin()
+                lastWinTime = currentTime
+            end
+        end
+        task.wait(0.05)
+    end
+end)
+
+local Window = WindUI:CreateWindow({
+    Title = "每步减重",
+    Icon = "solar:moon-bold",
+    Size = UDim2.fromOffset(400, 350),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "冰白",
+    Transparent = true,
+    ScrollBarEnabled = true,
+})
+
+Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
+    Title = "黑脚本--每步减重",
+    Desc = "版本: " .. VERSION .. "\n\n支持功能：\n• 自动赢（30阶段可选）",
+})
+
+local MainTab = Window:Tab({Title = "主要", Icon = "solar:star-bold"})
+
+local stageNames = getStageNames()
+
+MainTab:Dropdown({
+    Title = "选择阶段",
+    Values = stageNames,
+    Value = "第一阶段",
+    Callback = function(stage)
+        Settings.SelectedStage = stage
+    end
+})
+
+MainTab:Divider()
+
+MainTab:Toggle({
+    Title = "自动赢",
+    Value = false,
+    Callback = function(enabled)
+        Settings.AutoWinEnabled = enabled
+        
+        if enabled then
+            WindUI:Notify({
+                Title = "自动赢已开启",
+                Content = "阶段: " .. Settings.SelectedStage,
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "自动赢已关闭",
+                Content = "已停止",
+                Duration = 2
+            })
+        end
+    end
+})
+
+local SettingsTab = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+
+local statusParagraph = SettingsTab:Paragraph({
+    Title = "功能状态",
+    Desc = "正在加载..."
+})
+
+local function updateStatus()
+    local status = ""
+    if Settings.AutoWinEnabled then
+        status = status .. "✅ 自动赢: 已开启\n"
+        status = status .. "当前阶段: " .. Settings.SelectedStage .. "\n"
+    else
+        status = status .. "❌ 自动赢: 未开启\n"
+    end
+    statusParagraph:SetDesc(status)
+end
+
+RunService.Heartbeat:Connect(function() updateStatus() end)
+
+SettingsTab:Button({
+    Title = "关闭面板",
+    Callback = function() Window:Close() end
+})
+
+Window:OnClose(function() end)
+
+WindUI:Notify({
+    Title = "每步减重",
+    Content = VERSION .. " 加载完成",
+    Duration = 3
+})
