@@ -1,0 +1,245 @@
+-- 加一技能点传奇 脚本 v1.0.1
+-- WindUI蓝白版 | 自动光环农场
+
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+if not WindUI then return end
+
+WindUI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF",
+})
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+local Settings = {
+    AutoFarmEnabled = false,
+    FarmDelay = 0.5,
+}
+
+local VERSION = "v1.0.1"
+local lastFarmTime = 0
+local visitedShells = {}
+local lastShellScan = 0
+local cachedShells = {}
+
+-- 获取所有Shell
+local function getAllShells()
+    local currentTime = tick()
+    if currentTime - lastShellScan < 3 and #cachedShells > 0 then
+        return cachedShells
+    end
+    
+    local shells = {}
+    local seenModels = {}
+    
+    -- 搜索Workspace
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj.Name == "Shell" then
+            local parentModel = obj
+            local parent = obj.Parent
+            while parent and parent ~= Workspace do
+                if parent:IsA("Model") then
+                    parentModel = parent
+                    break
+                end
+                parent = parent.Parent
+            end
+            
+            if not seenModels[parentModel] then
+                seenModels[parentModel] = true
+                local rootPart = nil
+                if parentModel:IsA("Model") then
+                    rootPart = parentModel:FindFirstChild("HumanoidRootPart") or parentModel.PrimaryPart or parentModel:FindFirstChildWhichIsA("BasePart")
+                elseif parentModel:IsA("BasePart") then
+                    rootPart = parentModel
+                end
+                if rootPart then
+                    table.insert(shells, {
+                        Object = parentModel,
+                        RootPart = rootPart,
+                        Position = rootPart.Position,
+                    })
+                end
+            end
+        end
+    end
+    
+    -- 搜索getnilinstances
+    pcall(function()
+        for _, obj in getnilinstances() do
+            if obj.Name == "Shell" then
+                table.insert(shells, {
+                    Object = obj,
+                    RootPart = obj,
+                    Position = obj.Position,
+                })
+            end
+        end
+    end)
+    
+    cachedShells = shells
+    lastShellScan = currentTime
+    return shells
+end
+
+-- 自动光环农场
+local function autoFarm()
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return false end
+    
+    local rootPart = character.HumanoidRootPart
+    local shells = getAllShells()
+    
+    if #shells == 0 then return false end
+    
+    -- 找未访问的Shell
+    local target = nil
+    for _, shell in pairs(shells) do
+        if not visitedShells[shell.Object] then
+            target = shell
+            break
+        end
+    end
+    
+    if not target then
+        visitedShells = {}
+        target = shells[1]
+    end
+    
+    if target and target.RootPart and target.RootPart.Parent then
+        -- 传送到Shell
+        rootPart.CFrame = CFrame.new(target.Position + Vector3.new(0, 2, 0))
+        visitedShells[target.Object] = true
+        
+        -- 疯狂点左键2秒
+        local startTime = tick()
+        while tick() - startTime < 2 do
+            if not Settings.AutoFarmEnabled then return false end
+            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, nil, 0)
+            task.wait(0.05)
+            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, nil, 0)
+            task.wait(0.05)
+        end
+        
+        return true
+    end
+    
+    return false
+end
+
+-- 自动农场循环
+task.spawn(function()
+    while true do
+        if Settings.AutoFarmEnabled then
+            local currentTime = tick()
+            if currentTime - lastFarmTime >= Settings.FarmDelay then
+                autoFarm()
+                lastFarmTime = currentTime
+            end
+        end
+        task.wait(0.05)
+    end
+end)
+
+local Window = WindUI:CreateWindow({
+    Title = "加一技能点传奇",
+    Icon = "solar:moon-bold",
+    Size = UDim2.fromOffset(400, 350),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "冰白",
+    Transparent = true,
+    ScrollBarEnabled = true,
+})
+
+Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
+    Title = "黑脚本--加一技能点传奇",
+    Desc = "版本: " .. VERSION .. "\n\n支持功能：\n• 自动光环农场（传送Shell+点左键2秒）",
+})
+
+local MainTab = Window:Tab({Title = "主要", Icon = "solar:star-bold"})
+
+MainTab:Toggle({
+    Title = "自动光环农场",
+    Value = false,
+    Callback = function(enabled)
+        Settings.AutoFarmEnabled = enabled
+        
+        if enabled then
+            visitedShells = {}
+            lastShellScan = 0
+            local shells = getAllShells()
+            WindUI:Notify({
+                Title = "自动农场已开启",
+                Content = "找到 " .. #shells .. " 个Shell",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "自动农场已关闭",
+                Content = "已停止",
+                Duration = 2
+            })
+        end
+    end
+})
+
+MainTab:Slider({
+    Title = "切换延迟 (0.1-3秒)",
+    Value = {Min = 0.1, Max = 3, Default = 0.5},
+    Step = 0.1,
+    Callback = function(delay)
+        Settings.FarmDelay = delay
+    end
+})
+
+MainTab:Button({
+    Title = "手动农场一次",
+    Callback = function()
+        if autoFarm() then
+            WindUI:Notify({Title = "成功", Content = "已执行", Duration = 2})
+        else
+            WindUI:Notify({Title = "失败", Content = "找不到Shell", Duration = 2})
+        end
+    end
+})
+
+local SettingsTab = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+
+local statusParagraph = SettingsTab:Paragraph({
+    Title = "功能状态",
+    Desc = "正在加载..."
+})
+
+task.spawn(function()
+    while true do
+        local status = ""
+        if Settings.AutoFarmEnabled then
+            status = status .. "✅ 自动农场: 已开启\n"
+            status = status .. "Shell数量: " .. #cachedShells .. "\n"
+        else
+            status = status .. "❌ 自动农场: 未开启\n"
+        end
+        statusParagraph:SetDesc(status)
+        task.wait(1)
+    end
+end)
+
+SettingsTab:Button({
+    Title = "关闭面板",
+    Callback = function() Window:Close() end
+})
+
+Window:OnClose(function() end)
+
+WindUI:Notify({
+    Title = "加一技能点传奇",
+    Content = VERSION .. " 加载完成",
+    Duration = 3
+})
