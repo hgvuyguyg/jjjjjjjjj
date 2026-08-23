@@ -1,0 +1,305 @@
+-- 矿井 脚本 v1.1.3
+-- WindUI蓝白版 | 自动收集 | 自动售卖 | 传送 | 反挂机 | 调速度
+
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+if not WindUI then return end
+
+WindUI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF",
+})
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+local Settings = {
+    AutoCollectEnabled = false,
+    CollectDelay = 1,
+    CollectRange = 100,
+    AntiAFKEnabled = false,
+    AutoSellEnabled = false,
+    SellDelay = 30,
+    SpeedEnabled = false,
+    SpeedValue = 100,
+}
+
+local VERSION = "v1.1.3"
+local lastCollectTime = 0
+local lastOreScan = 0
+local cachedOres = {}
+local lastAFKTime = 0
+local lastSellTime = 0
+
+local ORE_NAMES_COLLECT = {
+    "Sapphire Ore", "Zinc Ore", "Coal Ore", "Iron Ore", "Gold Ore", "Diamond Ore",
+    "Ruby Ore", "Emerald Ore", "Copper Ore", "Silver Ore", "Platinum Ore",
+    "Titanium Ore", "Uranium Ore", "Mithril Ore", "Adamantite Ore",
+    "Amethyst Ore", "Topaz Ore", "Jade Ore", "Obsidian Ore", "Quartz Ore",
+}
+
+local function getAllOres()
+    local ores = {}
+    local myPosition = nil
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        myPosition = LocalPlayer.Character.HumanoidRootPart.Position
+    end
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj.Name then
+            for _, oreName in pairs(ORE_NAMES_COLLECT) do
+                if obj.Name:find(oreName) then
+                    local rootPart = nil
+                    if obj:IsA("Model") then
+                        rootPart = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+                    elseif obj:IsA("BasePart") then
+                        rootPart = obj
+                    end
+                    
+                    if rootPart then
+                        local distance = 0
+                        if myPosition then
+                            distance = (myPosition - rootPart.Position).Magnitude
+                        end
+                        
+                        if distance <= Settings.CollectRange then
+                            table.insert(ores, {
+                                FullID = obj.Name,
+                                Position = rootPart.Position,
+                                Distance = distance,
+                            })
+                        end
+                    end
+                    break
+                end
+            end
+        end
+    end
+    
+    pcall(function()
+        for _, obj in getnilinstances() do
+            if obj.Name then
+                for _, oreName in pairs(ORE_NAMES_COLLECT) do
+                    if obj.Name:find(oreName) then
+                        local distance = 0
+                        if myPosition and obj:IsA("BasePart") then
+                            distance = (myPosition - obj.Position).Magnitude
+                        end
+                        if distance <= Settings.CollectRange then
+                            table.insert(ores, {
+                                FullID = obj.Name,
+                                Position = obj.Position,
+                                Distance = distance,
+                            })
+                        end
+                        break
+                    end
+                end
+            end
+        end
+    end)
+    
+    table.sort(ores, function(a, b) return a.Distance < b.Distance end)
+    
+    cachedOres = ores
+    lastOreScan = tick()
+    return ores
+end
+
+local function autoCollect()
+    local Event = ReplicatedStorage:FindFirstChild("shared/network/MiningNetwork@GlobalMiningEvents") and ReplicatedStorage["shared/network/MiningNetwork@GlobalMiningEvents"]:FindFirstChild("CollectItem")
+    if not Event then return false end
+    
+    local ores = getAllOres()
+    if #ores == 0 then return false end
+    
+    local collected = false
+    for _, ore in pairs(ores) do
+        pcall(function()
+            Event:FireServer(ore.FullID)
+            collected = true
+        end)
+    end
+    
+    return collected
+end
+
+task.spawn(function()
+    while true do
+        if Settings.AutoCollectEnabled then
+            local currentTime = tick()
+            if currentTime - lastCollectTime >= Settings.CollectDelay then
+                autoCollect()
+                lastCollectTime = currentTime
+                lastOreScan = 0
+            end
+        end
+        task.wait(0.05)
+    end
+end)
+
+local function teleportTo(pos, name)
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then
+        WindUI:Notify({Title = "传送失败", Content = "角色未加载", Duration = 2})
+        return
+    end
+    character.HumanoidRootPart.CFrame = CFrame.new(pos)
+    WindUI:Notify({Title = "传送成功", Content = "已传送到" .. name, Duration = 2})
+end
+
+task.spawn(function()
+    while true do
+        if Settings.AntiAFKEnabled then
+            local currentTime = tick()
+            if currentTime - lastAFKTime >= 18 * 60 then
+                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, nil)
+                task.wait(0.1)
+                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, nil)
+                lastAFKTime = currentTime
+            end
+        end
+        task.wait(1)
+    end
+end)
+
+local function autoSell()
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return false end
+    
+    local rootPart = character.HumanoidRootPart
+    local originalPos = rootPart.Position
+    
+    rootPart.CFrame = CFrame.new(1019.7, 245.0, -64.5)
+    task.wait(0.5)
+    
+    local Event = ReplicatedStorage:FindFirstChild("Ml") and ReplicatedStorage.Ml:FindFirstChild("SellInventory")
+    if Event then
+        Event:FireServer()
+    end
+    
+    task.wait(0.5)
+    rootPart.CFrame = CFrame.new(originalPos)
+    
+    return true
+end
+
+task.spawn(function()
+    while true do
+        if Settings.AutoSellEnabled then
+            local currentTime = tick()
+            if currentTime - lastSellTime >= Settings.SellDelay then
+                autoSell()
+                lastSellTime = currentTime
+            end
+        end
+        task.wait(0.5)
+    end
+end)
+
+local function setSpeed()
+    local player = LocalPlayer
+    if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = Settings.SpeedValue
+    end
+end
+
+RunService.Heartbeat:Connect(function()
+    if Settings.SpeedEnabled then
+        setSpeed()
+    end
+end)
+
+local Window = WindUI:CreateWindow({
+    Title = "黑脚本--矿井",
+    Icon = "solar:moon-bold",
+    Size = UDim2.fromOffset(400, 350),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "冰白",
+    Transparent = true,
+    ScrollBarEnabled = true,
+})
+
+Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
+    Title = "黑脚本--矿井",
+    Desc = "版本: " .. VERSION .. "\n\n支持功能：\n• 自动收集矿石\n• 自动售卖\n• 传送NPC\n• 反挂机\n• 调整速度",
+})
+
+local MainTab = Window:Tab({Title = "主要", Icon = "solar:star-bold"})
+
+MainTab:Toggle({Title = "自动收集矿石", Value = false, Callback = function(v) Settings.AutoCollectEnabled = v end})
+MainTab:Slider({Title = "收集延迟 (0.5-5秒)", Value = {Min = 0.5, Max = 5, Default = 1}, Step = 0.5, Callback = function(v) Settings.CollectDelay = v end})
+MainTab:Slider({Title = "收集范围 (10-500)", Value = {Min = 10, Max = 500, Default = 100}, Step = 10, Callback = function(v) Settings.CollectRange = v end})
+
+MainTab:Divider()
+
+MainTab:Toggle({Title = "自动售卖", Value = false, Callback = function(v) Settings.AutoSellEnabled = v end})
+MainTab:Slider({Title = "售卖延迟 (15-60秒)", Value = {Min = 15, Max = 60, Default = 30}, Step = 5, Callback = function(v) Settings.SellDelay = v end})
+MainTab:Button({Title = "手动售卖一次", Callback = function() autoSell() end})
+
+-- 玩家
+local PlayerTab = Window:Tab({Title = "玩家", Icon = "solar:user-bold"})
+
+PlayerTab:Toggle({Title = "反挂机", Value = false, Callback = function(v) Settings.AntiAFKEnabled = v end})
+
+PlayerTab:Divider()
+
+PlayerTab:Toggle({Title = "调整速度", Value = false, Callback = function(v)
+    Settings.SpeedEnabled = v
+    if v then setSpeed() else
+        local player = LocalPlayer
+        if player and player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid.WalkSpeed = 16
+        end
+    end
+end})
+
+PlayerTab:Slider({Title = "移动速度 (16-500)", Value = {Min = 16, Max = 500, Default = 100}, Step = 1, Callback = function(v) Settings.SpeedValue = v; if Settings.SpeedEnabled then setSpeed() end end})
+
+PlayerTab:Divider()
+
+PlayerTab:Button({Title = "传送地标", Callback = function() teleportTo(Vector3.new(998.0, 245.0, -70.0), "地标") end})
+PlayerTab:Button({Title = "传送到萨利", Callback = function() teleportTo(Vector3.new(1055.0, 244.7, -279.0), "萨利") end})
+PlayerTab:Button({Title = "传送到鲍勃", Callback = function() teleportTo(Vector3.new(1090.0, 244.6, -467.0), "鲍勃") end})
+PlayerTab:Button({Title = "传送到开门人戴尔", Callback = function() teleportTo(Vector3.new(996.0, 244.9, -346.0), "开门人戴尔") end})
+PlayerTab:Button({Title = "传送到钻工丹", Callback = function() teleportTo(Vector3.new(913.0, 245.0, -441.0), "钻工丹") end})
+PlayerTab:Button({Title = "传送到矿工麦克", Callback = function() teleportTo(Vector3.new(956.0, 244.9, -229.0), "矿工麦克") end})
+
+-- 设置
+local SettingsTab = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+
+local statusParagraph = SettingsTab:Paragraph({
+    Title = "功能状态",
+    Desc = "正在加载..."
+})
+
+task.spawn(function()
+    while true do
+        local status = ""
+        if Settings.AutoCollectEnabled then status = status .. "✅ 自动收集: 已开启\n" else status = status .. "❌ 自动收集: 未开启\n" end
+        if Settings.AutoSellEnabled then status = status .. "✅ 自动售卖: 已开启\n" else status = status .. "❌ 自动售卖: 未开启\n" end
+        if Settings.AntiAFKEnabled then status = status .. "✅ 反挂机: 已开启\n" else status = status .. "❌ 反挂机: 未开启\n" end
+        if Settings.SpeedEnabled then status = status .. "✅ 调整速度: 已开启 (" .. Settings.SpeedValue .. ")\n" else status = status .. "❌ 调整速度: 未开启\n" end
+        statusParagraph:SetDesc(status)
+        task.wait(1)
+    end
+end)
+
+SettingsTab:Button({
+    Title = "关闭面板",
+    Callback = function() Window:Close() end
+})
+
+Window:OnClose(function() end)
+
+WindUI:Notify({
+    Title = "矿井",
+    Content = VERSION .. " 加载完成",
+    Duration = 3
+})
