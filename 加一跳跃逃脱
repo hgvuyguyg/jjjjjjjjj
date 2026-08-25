@@ -1,0 +1,63 @@
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+if not WindUI then return end
+
+WindUI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF",
+})
+
+local Window = WindUI:CreateWindow({
+    Title = "黑脚本--+1跳跃",
+    Icon = "solar:moon-bold",
+    Size = UDim2.fromOffset(600, 350),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "冰白",
+    Transparent = true,
+    ScrollBarEnabled = true,
+})
+
+local VERSION = "v1.0.0"
+
+local AboutTab = Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"})
+AboutTab:Paragraph({
+    Title = "黑脚本--+1跳跃 " .. VERSION,
+    Desc = "功能：传送顶部\n更新日志：初始发布"
+})
+
+local MainTab = Window:Tab({Title = "主要功能", Icon = "solar:star-bold"})
+
+MainTab:Button({
+    Title = "传送顶部",
+    Callback = function()
+        TeleportTo(Vector3.new(919.7, 9029.0, -36.6))
+    end
+})
+
+local SettingsTab = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+local SettingsPara = SettingsTab:Paragraph({Title = "功能状态", Desc = "加载中..."})
+
+task.spawn(function()
+    while true do
+        local status = ""
+        local fps = math.floor(1 / task.wait())
+        status = status .. "当前帧率: " .. fps .. " FPS"
+        SettingsPara:SetDesc(status)
+        task.wait(1)
+    end
+end)
+
+function TeleportTo(pos)
+    local player = game.Players.LocalPlayer
+    if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        player.Character.HumanoidRootPart.CFrame = CFrame.new(pos)
+    end
+end
+
+WindUI:Notify({
+    Title = "+1跳跃",
+    Content = VERSION .. " 加载完成",
+    Duration = 3
+})
