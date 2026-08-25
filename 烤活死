@@ -1,0 +1,368 @@
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+if not WindUI then return end
+
+WindUI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF",
+})
+
+local Window = WindUI:CreateWindow({
+    Title = "黑脚本--考或死",
+    Icon = "solar:moon-bold",
+    Size = UDim2.fromOffset(600, 350),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "冰白",
+    Transparent = true,
+    ScrollBarEnabled = true,
+})
+
+local VERSION = "v2.0.1"
+local Settings = {
+    AutoSuckEnabled = false,
+    SuckDelay = 0.5,
+    SuckItems = {},
+    SuckRadius = 5,
+}
+
+local ITEM_TYPES = {
+    {DisplayName = "粉碎罐头", Keyword = "CrushedCan"},
+    {DisplayName = "医疗包", Keyword = "MedKit"},
+    {DisplayName = "大医疗包", Keyword = "FirstAidKit"},
+    {DisplayName = "木椅子", Keyword = "WoodChair"},
+    {DisplayName = "旧罐子", Keyword = "OldCan"},
+    {DisplayName = "齿轮", Keyword = "Gear", Exclude = {"Grinder", "InnerGears", "Gear"}},
+    {DisplayName = "茶壶", Keyword = "Teapot"},
+    {DisplayName = "钢铁维修锤", Keyword = "IronRepairHammer"},
+    {DisplayName = "木凳子", Keyword = "WoodStool", Exclude = {"grin"}},
+    {DisplayName = "复活包", Keyword = "ReviveKit"},
+    {DisplayName = "绷带", Keyword = "Bandage", Exclude = {"Frame", "Handle", "Base", "Roll", "BandageRoll"}},
+    {DisplayName = "金属炮管", Keyword = "MetalBarrel"},
+    {DisplayName = "破碎钟", Keyword = "CrackedBell"},
+    {DisplayName = "破损灯笼", Keyword = "BrokenLantern"},
+    {DisplayName = "复古电视", Keyword = "VintageTV"},
+    {DisplayName = "轮子", Keyword = "Wheel"},
+}
+
+local itemDisplayNames = {}
+for _, item in pairs(ITEM_TYPES) do
+    table.insert(itemDisplayNames, item.DisplayName)
+end
+
+local AboutTab = Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"})
+AboutTab:Paragraph({
+    Title = "黑脚本--考或死 " .. VERSION,
+    Desc = "功能：吸取物品 | 传送"
+})
+
+local MainTab = Window:Tab({Title = "主要功能", Icon = "solar:star-bold"})
+
+MainTab:Dropdown({
+    Title = "选择吸取物品",
+    Values = itemDisplayNames,
+    Value = {},
+    Multi = true,
+    AllowNone = true,
+    Callback = function(v)
+        Settings.SuckItems = v
+    end
+})
+
+MainTab:Toggle({
+    Title = "自动吸取",
+    Value = false,
+    Callback = function(v)
+        Settings.AutoSuckEnabled = v
+    end
+})
+
+MainTab:Slider({
+    Title = "吸取延迟 (0.1-3秒)",
+    Value = {Min = 0.1, Max = 3, Default = 0.5},
+    Step = 0.1,
+    Callback = function(v) Settings.SuckDelay = v end
+})
+
+MainTab:Slider({
+    Title = "环绕范围 (3.5-10)",
+    Value = {Min = 3.5, Max = 10, Default = 5},
+    Step = 0.5,
+    Callback = function(v) Settings.SuckRadius = v end
+})
+
+MainTab:Divider()
+
+local locationOptions = {
+    "餐厅", "谷仓", "食品工厂", "教堂", "便利店", 
+    "加油站", "仓库", "常绿", "常绿重构器", "银行",
+    "医院", "加特林", "实验室", "下水道", "镭射枪"
+}
+
+local locationCoords = {
+    ["餐厅"] = Vector3.new(-26.6, 51.6, 113.4),
+    ["谷仓"] = Vector3.new(-203.7, 52.0, 324.2),
+    ["食品工厂"] = Vector3.new(-610.8, 51.0, 72.5),
+    ["教堂"] = Vector3.new(-117.4, 51.0, -161.4),
+    ["便利店"] = Vector3.new(252.9, 51.7, 6.9),
+    ["加油站"] = Vector3.new(620.0, 51.1, 138.1),
+    ["仓库"] = Vector3.new(610.3, 51.3, -186.8),
+    ["常绿"] = Vector3.new(449.6, 51.0, -298.5),
+    ["常绿重构器"] = Vector3.new(473.2, 91.0, -446.1),
+    ["银行"] = Vector3.new(954.1, 51.1, -128.5),
+    ["医院"] = Vector3.new(-431.3, 63.0, -46.6),
+    ["加特林"] = Vector3.new(-969.2, 55.0, -12.9),
+    ["实验室"] = Vector3.new(-969.2, 55.0, -12.9),
+    ["下水道"] = Vector3.new(82.8, 19.3, 141.7),
+    ["镭射枪"] = Vector3.new(433.3, 54.5, -572.1)
+}
+
+local selectedLocation = "餐厅"
+MainTab:Dropdown({
+    Title = "选择传送位置",
+    Values = locationOptions,
+    Value = "餐厅",
+    Callback = function(v)
+        selectedLocation = v
+    end
+})
+
+MainTab:Button({
+    Title = "确定传送",
+    Callback = function()
+        local pos = locationCoords[selectedLocation]
+        if pos then
+            TeleportTo(pos)
+        end
+    end
+})
+
+MainTab:Divider()
+
+local chestOptions = {"木箱子", "冰箱", "超级武器箱", "玻璃门冰箱", "中型武器箱"}
+local selectedChest = "木箱子"
+local visitedChests = {}
+
+MainTab:Dropdown({
+    Title = "传送宝箱",
+    Values = chestOptions,
+    Value = "木箱子",
+    Callback = function(v)
+        selectedChest = v
+        visitedChests = {}
+    end
+})
+
+MainTab:Button({
+    Title = "传送宝箱",
+    Callback = function()
+        TeleportToChest(selectedChest)
+    end
+})
+
+local SettingsTab = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+local SettingsPara = SettingsTab:Paragraph({Title = "功能状态", Desc = "加载中..."})
+
+task.spawn(function()
+    while true do
+        local status = ""
+        if Settings.AutoSuckEnabled then
+            status = status .. "自动吸取: 已开启\n"
+            local items = Settings.SuckItems or {}
+            if #items > 0 then
+                status = status .. "物品: " .. table.concat(items, ", ") .. "\n"
+            else
+                status = status .. "物品: 无\n"
+            end
+            status = status .. "范围: " .. Settings.SuckRadius .. "\n"
+        else
+            status = status .. "自动吸取: 未开启\n"
+        end
+        status = status .. "传送: " .. selectedLocation .. "\n"
+        status = status .. "宝箱: " .. selectedChest
+        SettingsPara:SetDesc(status)
+        task.wait(1)
+    end
+end)
+
+local function getAllItemsOfType(itemType)
+    local items = {}
+    local seenObjects = {}
+    local keyword = itemType.Keyword:lower()
+    local excludes = itemType.Exclude or {}
+
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v.Name then
+            local name = v.Name:lower()
+            if name:find(keyword) then
+                local shouldExclude = false
+                for _, excludeWord in pairs(excludes) do
+                    if name:find(excludeWord:lower()) then
+                        shouldExclude = true
+                        break
+                    end
+                end
+                
+                if not shouldExclude then
+                    local rootPart = nil
+                    local objSize = nil
+                    
+                    if v:IsA("BasePart") then
+                        rootPart = v
+                        objSize = math.max(v.Size.X, v.Size.Y, v.Size.Z)
+                    elseif v:IsA("Model") then
+                        rootPart = v:FindFirstChild("HumanoidRootPart") or v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart")
+                        local modelSize = v:GetExtentsSize()
+                        objSize = math.max(modelSize.X, modelSize.Y, modelSize.Z)
+                    end
+                    
+                    if rootPart and objSize and objSize <= 8 and not seenObjects[v] then
+                        seenObjects[v] = true
+                        table.insert(items, {Object = v, RootPart = rootPart})
+                    end
+                end
+            end
+        end
+    end
+
+    return items
+end
+
+task.spawn(function()
+    while true do
+        if Settings.AutoSuckEnabled then
+            local player = game.Players.LocalPlayer
+            if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local playerRoot = player.Character.HumanoidRootPart
+                local selectedItems = Settings.SuckItems or {}
+                local angleStep = 0
+
+                for _, displayName in pairs(selectedItems) do
+                    if not Settings.AutoSuckEnabled then break end
+                    local itemType = nil
+                    for _, it in pairs(ITEM_TYPES) do
+                        if it.DisplayName == displayName then
+                            itemType = it
+                            break
+                        end
+                    end
+                    if itemType then
+                        local items = getAllItemsOfType(itemType)
+                        for _, item in pairs(items) do
+                            if not Settings.AutoSuckEnabled then break end
+                            if item.RootPart and item.RootPart.Parent then
+                                local angle = math.rad(angleStep)
+                                local x = math.cos(angle) * Settings.SuckRadius
+                                local z = math.sin(angle) * Settings.SuckRadius
+                                local targetPos = playerRoot.Position + Vector3.new(x, 0, z)
+                                item.RootPart.CFrame = CFrame.new(targetPos)
+                                angleStep = angleStep + 15
+                            end
+                        end
+                    end
+                    task.wait(0.05)
+                end
+            end
+        end
+        task.wait(Settings.SuckDelay)
+    end
+end)
+
+function TeleportTo(pos)
+    local player = game.Players.LocalPlayer
+    if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        player.Character.HumanoidRootPart.CFrame = CFrame.new(pos)
+    end
+end
+
+local function getChestList(type)
+    local chests = {}
+    local targetNames = {}
+    
+    if type == "木箱子" then
+        targetNames = {"WoodChest", "WoodCrate", "WoodenChest", "WoodBox"}
+    elseif type == "冰箱" then
+        targetNames = {"Fridge", "Refrigerator"}
+    elseif type == "超级武器箱" then
+        targetNames = {"UltraWeaponCrate"}
+    elseif type == "玻璃门冰箱" then
+        targetNames = {"ClassFridge"}
+    elseif type == "中型武器箱" then
+        targetNames = {"MediumWeaponCrate"}
+    end
+    
+    local seenObjects = {}
+    
+    for _, v in pairs(workspace:GetDescendants()) do
+        for _, targetName in pairs(targetNames) do
+            if v.Name == targetName then
+                local rootPart = nil
+                if v:IsA("Model") then
+                    rootPart = v:FindFirstChild("HumanoidRootPart") or v.PrimaryPart or v:FindFirstChildWhichIsA("BasePart")
+                elseif v:IsA("BasePart") then
+                    rootPart = v
+                end
+                
+                if rootPart and not seenObjects[v] then
+                    seenObjects[v] = true
+                    table.insert(chests, {Object = v, RootPart = rootPart, Position = rootPart.Position})
+                end
+                break
+            end
+        end
+    end
+    
+    local player = game.Players.LocalPlayer
+    if player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        table.sort(chests, function(a, b)
+            local distA = (a.Position - player.Character.HumanoidRootPart.Position).Magnitude
+            local distB = (b.Position - player.Character.HumanoidRootPart.Position).Magnitude
+            return distA < distB
+        end)
+    end
+    
+    return chests
+end
+
+function TeleportToChest(type)
+    local player = game.Players.LocalPlayer
+    if not player or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+    
+    local chests = getChestList(type)
+    
+    if #chests == 0 then
+        return
+    end
+    
+    local target = nil
+    for _, chest in pairs(chests) do
+        if not visitedChests[chest.Object] then
+            target = chest
+            break
+        end
+    end
+    
+    if not target then
+        visitedChests = {}
+        target = chests[1]
+    end
+    
+    if target then
+        if type == "木箱子" or type == "超级武器箱" or type == "中型武器箱" then
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(target.Position + Vector3.new(0, 3, 0))
+        else
+            local direction = (target.Position - player.Character.HumanoidRootPart.Position).Unit
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(target.Position + direction * 3)
+        end
+        visitedChests[target.Object] = true
+    end
+end
+
+WindUI:Notify({
+    Title = "考或死",
+    Content = VERSION .. " 加载完成",
+    Duration = 3
+})
