@@ -1,4 +1,4 @@
--- 逃跑者 脚本 v1.8.5
+-- 逃跑者 脚本 v1.9.1
 -- WindUI蓝白版 | 绕过反作弊 | 杀戮光环 | 调整速度 | NPC透视 | 玩家透视 | 油桶透视 | 飞行 | 传送
 
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
@@ -32,7 +32,7 @@ local Settings = {
     JerrycanESPEnabled = false,
 }
 
-local VERSION = "v1.8.5"
+local VERSION = "v1.9.1"
 local lastKillTime = 0
 local mtHook = nil
 local killAuraConnection = nil
@@ -42,9 +42,6 @@ local playerHighlights = {}
 local playerNameTags = {}
 local jerrycanHighlights = {}
 local jerrycanNameTags = {}
-local lastNPCScan = 0
-local lastPlayerScan = 0
-local lastJerrycanScan = 0
 local cachedNPCs = {}
 local cachedPlayers = {}
 local cachedJerrycans = {}
@@ -200,13 +197,59 @@ local function clearJerrycanESP()
     table.clear(cachedJerrycans)
 end
 
+-- 更新ESP标签距离
+local function updateESPDistance()
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
+    local myPos = LocalPlayer.Character.HumanoidRootPart.Position
+    
+    for npc, bg in pairs(npcNameTags) do
+        if bg and bg.Parent and bg.Parent.Parent then
+            local rootPart = npc:FindFirstChild("HumanoidRootPart") or npc.PrimaryPart
+            if rootPart then
+                local dist = (myPos - rootPart.Position).Magnitude
+                local label = bg:FindFirstChildWhichIsA("TextLabel")
+                if label then
+                    label.Text = "NPC\n[" .. math.floor(dist) .. "米]"
+                end
+            end
+        end
+    end
+    
+    for plr, bg in pairs(playerNameTags) do
+        if bg and bg.Parent and bg.Parent.Parent then
+            if plr.Character then
+                local rootPart = plr.Character:FindFirstChild("HumanoidRootPart")
+                if rootPart then
+                    local dist = (myPos - rootPart.Position).Magnitude
+                    local label = bg:FindFirstChildWhichIsA("TextLabel")
+                    if label then
+                        label.Text = plr.Name .. "\n[" .. math.floor(dist) .. "米]"
+                    end
+                end
+            end
+        end
+    end
+    
+    for obj, bg in pairs(jerrycanNameTags) do
+        if bg and bg.Parent and bg.Parent.Parent then
+            local rootPart = obj:IsA("Model") and (obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart) or obj
+            if rootPart then
+                local dist = (myPos - rootPart.Position).Magnitude
+                local label = bg:FindFirstChildWhichIsA("TextLabel")
+                if label then
+                    label.Text = "油桶\n[" .. math.floor(dist) .. "米]"
+                end
+            end
+        end
+    end
+end
+
 -- 单个ESP循环处理所有功能
 local function processESP()
     local currentTime = tick()
     
-    -- NPC ESP
     if Settings.NPCESPEnabled then
-        if currentTime - lastNPCScan > 10 then
+        if currentTime - lastNPCScan > 5 then
             clearNPCESP()
             cachedNPCs = getAllNPCs()
             lastNPCScan = currentTime
@@ -256,9 +299,8 @@ local function processESP()
         clearNPCESP()
     end
     
-    -- 玩家ESP
     if Settings.PlayerESPEnabled then
-        if currentTime - lastPlayerScan > 10 then
+        if currentTime - lastPlayerScan > 5 then
             clearPlayerESP()
             cachedPlayers = getAllPlayers()
             lastPlayerScan = currentTime
@@ -308,9 +350,8 @@ local function processESP()
         clearPlayerESP()
     end
     
-    -- 油桶ESP
     if Settings.JerrycanESPEnabled then
-        if currentTime - lastJerrycanScan > 10 then
+        if currentTime - lastJerrycanScan > 5 then
             clearJerrycanESP()
             cachedJerrycans = getAllJerrycans()
             lastJerrycanScan = currentTime
@@ -354,9 +395,10 @@ local function processESP()
     elseif next(jerrycanHighlights) then
         clearJerrycanESP()
     end
+    
+    updateESPDistance()
 end
 
--- 单个心跳循环
 RunService.Heartbeat:Connect(processESP)
 
 -- 飞行加载
@@ -378,6 +420,7 @@ local function teleportToNearestJerrycan()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         myPosition = LocalPlayer.Character.HumanoidRootPart.Position
     else
+        WindUI:Notify({Title = "错误", Content = "找不到角色位置", Duration = 2})
         return false
     end
     
@@ -403,7 +446,7 @@ local function teleportToPawnCounter()
     for _, obj in pairs(Workspace:GetDescendants()) do
         if obj.Name == "PawnCounter" then
             local rootPart = obj:IsA("Model") and (obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart) or obj
-            if rootPart then
+            if rootPart and rootPart.Position then
                 if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                     LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(rootPart.Position + Vector3.new(0, 5, 0))
                     WindUI:Notify({Title = "传送成功", Content = "已传送到出售区", Duration = 2})
@@ -426,7 +469,7 @@ local function teleportToCar()
         local lowerName = obj.Name:lower()
         if lowerName:find("paint") or lowerName:find("car") or lowerName:find("vehicle") or lowerName:find("汽车") or lowerName:find("车") then
             local rootPart = obj:IsA("Model") and (obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart) or obj
-            if rootPart then
+            if rootPart and rootPart.Position then
                 if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                     LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(rootPart.Position + Vector3.new(0, 5, 0))
                     WindUI:Notify({Title = "传送成功", Content = "已传送到汽车上方", Duration = 2})
@@ -439,6 +482,44 @@ local function teleportToCar()
     
     if not found then
         WindUI:Notify({Title = "未找到", Content = "找不到汽车", Duration = 2})
+    end
+end
+
+-- 传送墨西哥（传送到最近名字带Command的物体）
+local function teleportToMexico()
+    local found = false
+    local myPos = nil
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        myPos = LocalPlayer.Character.HumanoidRootPart.Position
+    else
+        WindUI:Notify({Title = "错误", Content = "找不到角色位置", Duration = 2})
+        return
+    end
+    
+    local nearestCommand = nil
+    local nearestDist = math.huge
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj.Name and (obj.Name:lower():find("command") or obj.Name:lower():find("cmd")) then
+            local rootPart = obj:IsA("Model") and (obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart) or obj
+            if rootPart and rootPart.Position then
+                local dist = (myPos - rootPart.Position).Magnitude
+                if dist < nearestDist then
+                    nearestDist = dist
+                    nearestCommand = rootPart
+                end
+                found = true
+            end
+        end
+    end
+    
+    if nearestCommand then
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(nearestCommand.Position + Vector3.new(0, 3, 0))
+            WindUI:Notify({Title = "传送成功", Content = "已传送到墨西哥(Command)", Duration = 2})
+        end
+    else
+        WindUI:Notify({Title = "未找到", Content = "找不到Command传送点", Duration = 2})
     end
 end
 
@@ -467,7 +548,7 @@ local Window = WindUI:CreateWindow({
 -- 公告
 Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
     Title = "黑脚本--逃跑者 " .. VERSION,
-    Desc = "支持功能：\n\n• 绕过反作弊\n• 杀戮光环（伤害可调13-100）\n• NPC透视\n• 玩家透视\n• 油桶透视\n• 调整速度\n• 飞行\n• 传送油桶/出售区/汽车/玩家\n\n版本说明：\n• v1.8.5 已删除物品透视\n• 保留NPC/玩家/油桶透视",
+    Desc = "支持功能：\n\n• 绕过反作弊\n• 杀戮光环（伤害可调13-10000）\n• NPC透视\n• 玩家透视\n• 油桶透视\n• 调整速度\n• 飞行\n• 传送油桶/出售区/汽车/墨西哥\n\n版本说明：\n• v1.9.1 墨西哥传送改为单次传送Command",
 })
 
 -- 主要
@@ -510,15 +591,15 @@ MainTab:Slider({
 })
 
 MainTab:Slider({
-    Title = "杀戮范围 (10-200)",
-    Value = {Min = 10, Max = 200, Default = 50},
+    Title = "杀戮范围 (10-10000)",
+    Value = {Min = 10, Max = 10000, Default = 50},
     Step = 10,
     Callback = function(range) Settings.KillRange = range end
 })
 
 MainTab:Slider({
-    Title = "杀戮伤害 (13-100)",
-    Value = {Min = 13, Max = 100, Default = 13},
+    Title = "杀戮伤害 (13-10000)",
+    Value = {Min = 13, Max = 10000, Default = 13},
     Step = 1,
     Callback = function(damage) Settings.KillDamage = damage end
 })
@@ -533,6 +614,11 @@ MainTab:Button({
 MainTab:Button({
     Title = "传送到汽车",
     Callback = function() teleportToCar() end
+})
+
+MainTab:Button({
+    Title = "传送到墨西哥",
+    Callback = function() teleportToMexico() end
 })
 
 MainTab:Divider()
