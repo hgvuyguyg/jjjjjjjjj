@@ -1,5 +1,5 @@
--- 在末日中活下来 脚本 v3.2
--- WindUI蓝白版 | 缩放立刻刷新 | 僵尸+爬虫合并 | 智能调速
+-- 在末日中活下来 脚本 v3.7
+-- WindUI蓝白版 | 透视物品/僵尸+爬虫/宝箱/玩家 | 坐标加速 | 智能杀戮光环
 
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 if not WindUI then return end
@@ -21,13 +21,14 @@ local Settings = {
     ESP_Items = false, ESP_Items_Dist = false, ESP_Zombie = false,
     ESP_Default = false, ESP_Players = false,
     NoFog = false, NightVision = false,
-    SpeedBoost = false, WalkSpeed = 16, NoClip = false,
+    SpeedBoost = false, SpeedValue = 5, NoClip = false,
     AutoGo = false, GoTarget = "废料",
+    KillAura = false, KillRange = 30,
+    AutoHome = false,
 }
 
-local VERSION = "v3.2"
+local VERSION = "v3.7"
 local stopAll = false
-local stopTeleport = false
 local homePos = Vector3.new(0.7, 3.2, -8)
 
 local itemNames = {
@@ -53,26 +54,6 @@ local function getPos()
     return nil
 end
 
-local function segmentedTP(targetPos)
-    stopTeleport = false
-    local c = LocalPlayer.Character
-    if not c then return end
-    local root = c:FindFirstChild("HumanoidRootPart")
-    if not root then return end
-    local startPos = root.Position
-    local totalDist = (targetPos - startPos).Magnitude
-    local segments = math.max(11, math.ceil(totalDist / 30))
-    local stepDist = totalDist / segments
-    local direction = (targetPos - startPos).Unit
-    for i = 1, segments do
-        if stopTeleport or stopAll then return end
-        local newPos = startPos + direction * (stepDist * i)
-        if i == segments then newPos = targetPos end
-        root.CFrame = CFrame.new(newPos)
-        task.wait(1)
-    end
-end
-
 local function clearAll()
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj.Name == "ESP_HL" or obj.Name == "ESP_Tag" then
@@ -82,6 +63,7 @@ local function clearAll()
 end
 
 local function addESP(obj, name, color)
+    if not obj or not obj.Parent then return end
     local oldHL = obj:FindFirstChild("ESP_HL")
     if oldHL then pcall(function() oldHL:Destroy() end) end
     local h = Instance.new("Highlight")
@@ -90,7 +72,7 @@ local function addESP(obj, name, color)
     h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop; h.Parent = obj
     
     local part = obj:IsA("Model") and (obj:FindFirstChild("Head") or obj:FindFirstChildWhichIsA("BasePart") or obj.PrimaryPart) or obj
-    if part then
+    if part and part.Parent then
         local oldTag = part:FindFirstChild("ESP_Tag")
         if oldTag then pcall(function() oldTag:Destroy() end) end
         local bg = Instance.new("BillboardGui")
@@ -123,26 +105,45 @@ local function deduplicateByName(objects)
     return result
 end
 
-local function deduplicateModels(models)
-    local result = {}
-    for _, obj in ipairs(models) do
-        local part = obj:IsA("Model") and (obj:FindFirstChildWhichIsA("BasePart") or obj.PrimaryPart) or obj
-        if part then
-            local tooClose = false
-            for _, existing in ipairs(result) do
-                local ep = existing:IsA("Model") and (existing:FindFirstChildWhichIsA("BasePart") or existing.PrimaryPart) or existing
-                if ep and (ep.Position - part.Position).Magnitude < 10 then tooClose = true; break end
+local function getAllEnemies()
+    local enemies = {}
+    local myPos = getPos()
+    if not myPos then return enemies end
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") then
+            local name = obj.Name:lower()
+            if name:find("zombie") or name:find("crawler") then
+                local root = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+                if root then
+                    local dist = (myPos - root.Position).Magnitude
+                    if dist <= Settings.KillRange then
+                        table.insert(enemies, obj)
+                    end
+                end
             end
-            if not tooClose then table.insert(result, obj) end
         end
     end
-    return result
+    return enemies
 end
 
+-- 每0.5秒刷新ESP
+task.spawn(function()
+    while true do
+        if Settings.ESP_Items or Settings.ESP_Zombie or Settings.ESP_Default or Settings.ESP_Players then
+            scanAll()
+        end
+        task.wait(0.5)
+    end
+end)
+
 local function scanAll()
-    clearAll()
+    if not (Settings.ESP_Items or Settings.ESP_Zombie or Settings.ESP_Default or Settings.ESP_Players) then
+        clearAll()
+        return
+    end
+    
     local items = {}
-    local enemies = {}  -- 僵尸+爬虫合并
+    local enemies = {}
     local defaults = {}
     local players = {}
     
@@ -150,7 +151,6 @@ local function scanAll()
         if not obj:IsA("Model") and not obj:IsA("BasePart") then continue end
         local name = obj.Name:lower()
         
-        -- 僵尸和爬虫合并到一个开关
         if Settings.ESP_Zombie and (name:find("zombie") or name:find("crawler")) then
             local label = name:find("crawler") and "爬虫" or "僵尸"
             local color = name:find("crawler") and Color3.fromRGB(200, 50, 200) or Color3.fromRGB(255, 80, 80)
@@ -182,14 +182,12 @@ local function scanAll()
     items = deduplicateByName(items)
     enemies = deduplicateByName(enemies)
     
+    clearAll()
     for _, data in ipairs(items) do addESP(data.obj, data.cn, data.color) end
     for _, data in ipairs(enemies) do addESP(data.obj, data.cn, data.color) end
     for _, data in ipairs(defaults) do addESP(data.obj, data.cn, data.color) end
     for _, data in ipairs(players) do addESP(data.obj, data.cn, data.color) end
 end
-
--- 15秒定时刷新
-task.spawn(function() while true do scanAll(); task.wait(15) end end)
 
 -- 距离更新
 task.spawn(function()
@@ -211,7 +209,7 @@ task.spawn(function()
                 end
             end
         end
-        task.wait(0.5)
+        task.wait(0.3)
     end
 end)
 
@@ -236,14 +234,34 @@ local function findItemPart(targetCN)
     return best
 end
 
+-- 自动前往
 task.spawn(function()
     while true do
         if Settings.AutoGo and not stopAll then
             local part = findItemPart(Settings.GoTarget)
-            if part then segmentedTP(part.Position + Vector3.new(0, 3, 0)) end
+            if part then
+                local c = LocalPlayer.Character
+                if c and c:FindFirstChild("HumanoidRootPart") then
+                    c.HumanoidRootPart.CFrame = CFrame.new(part.Position + Vector3.new(0, 3, 0))
+                end
+            end
             task.wait(2)
         else
-            stopTeleport = true
+            task.wait(1)
+        end
+    end
+end)
+
+-- 传送回家
+task.spawn(function()
+    while true do
+        if Settings.AutoHome and not stopAll then
+            local c = LocalPlayer.Character
+            if c and c:FindFirstChild("HumanoidRootPart") then
+                c.HumanoidRootPart.CFrame = CFrame.new(homePos)
+            end
+            task.wait(0.5)
+        else
             task.wait(1)
         end
     end
@@ -271,20 +289,50 @@ local function setNoClip(v)
     if char then for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = not v end end end
 end
 
-local function setSpeed(s)
-    local c = LocalPlayer.Character
-    if c and c:FindFirstChild("Humanoid") then c.Humanoid.WalkSpeed = s end
-end
+-- 坐标加速
 task.spawn(function()
     while true do
-        if Settings.SpeedBoost and Settings.WalkSpeed ~= 16 then
-            if Settings.WalkSpeed <= 25 then
-                setSpeed(Settings.WalkSpeed); task.wait(0.3)
-            else
-                setSpeed(Settings.WalkSpeed); task.wait(0.3)
-                setSpeed(16); task.wait(0.4)
+        if Settings.SpeedBoost then
+            local c = LocalPlayer.Character
+            if c and c:FindFirstChild("HumanoidRootPart") then
+                local hrp = c.HumanoidRootPart
+                local humanoid = c:FindFirstChild("Humanoid")
+                if humanoid then
+                    local moveDir = humanoid.MoveDirection
+                    if moveDir.Magnitude > 0.1 then
+                        local step = Settings.SpeedValue * 0.3
+                        hrp.Position = hrp.Position + moveDir * step
+                    end
+                end
             end
-        else setSpeed(16); task.wait(0.5) end
+        end
+        task.wait()
+    end
+end)
+
+-- 杀戮光环
+task.spawn(function()
+    while true do
+        if Settings.KillAura then
+            local enemies = getAllEnemies()
+            if #enemies > 0 then
+                local char = LocalPlayer.Character
+                if char then
+                    local bat = char:FindFirstChild("Bat")
+                    if bat then
+                        local swing = bat:FindFirstChild("Swing")
+                        local hitTargets = bat:FindFirstChild("HitTargets")
+                        if swing and hitTargets then
+                            pcall(function() swing:FireServer() end)
+                            pcall(function() hitTargets:FireServer(enemies) end)
+                        end
+                    end
+                end
+            end
+            task.wait(0.1)
+        else
+            task.wait(1)
+        end
     end
 end)
 
@@ -299,16 +347,16 @@ local function getPlayerNames()
 end
 
 local Window = WindUI:CreateWindow({
-    Title = "在末日中活下来", Icon = "rbxassetid://129260712070622", IconThemed = true,
-    Size = UDim2.fromOffset(400, 430), Theme = "冰白", Transparent = true,
+    Title = "黑脚本--在末日中活下来", Icon = "solar:moon-bold",
+    Size = UDim2.fromOffset(400, 350), Theme = "冰白", Transparent = true,
 })
 
-Window:Tab({Title = "公告", Icon = "info"}):Paragraph({
-    Title = "黑脚本--在末日中活下来",
-    Desc = "透视物品/僵尸+爬虫/宝箱/玩家\n自动前往 | 分段传送 | 穿墙",
+Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
+    Title = "在末日中活下来 v3.7",
+    Desc = "功能：透视物品/僵尸+爬虫/宝箱/玩家\n坐标加速 | 传送回家(开关) | 智能杀戮光环"
 })
 
-local Tab1 = Window:Tab({Title = "主要", Icon = "play"})
+local Tab1 = Window:Tab({Title = "主要", Icon = "solar:star-bold"})
 Tab1:Toggle({Title = "透视物品", Value = false, Callback = function(v) Settings.ESP_Items = v; scanAll() end})
 Tab1:Toggle({Title = "显示距离", Value = false, Callback = function(v) Settings.ESP_Items_Dist = v end})
 Tab1:Divider()
@@ -319,30 +367,54 @@ Tab1:Toggle({Title = "去雾", Value = false, Callback = function(v) Settings.No
 Tab1:Toggle({Title = "夜视", Value = false, Callback = function(v) Settings.NightVision = v; updateNightVision() end})
 Tab1:Divider()
 Tab1:Dropdown({Title = "前往物品", Values = itemCNList, Value = "废料", Callback = function(v) Settings.GoTarget = v end})
-Tab1:Toggle({Title = "自动前往", Value = false, Callback = function(v) Settings.AutoGo = v; if not v then stopTeleport = true end end})
+Tab1:Toggle({Title = "自动前往", Value = false, Callback = function(v) Settings.AutoGo = v end})
+Tab1:Divider()
+Tab1:Toggle({Title = "杀戮光环", Value = false, Callback = function(v) Settings.KillAura = v end})
+Tab1:Slider({Title = "攻击范围 (15-50)", Value = {Min = 15, Max = 50, Default = 30}, Step = 1, Callback = function(v) Settings.KillRange = v end})
 
+local Tab2 = Window:Tab({Title = "传送", Icon = "solar:map-bold"})
+Tab2:Toggle({Title = "传送回家（开关）", Value = false, Callback = function(v) Settings.AutoHome = v end})
+Tab2:Divider()
 local playerNames = getPlayerNames()
 local selectedPlayer = playerNames[1] or "无其他玩家"
-local Tab2 = Window:Tab({Title = "传送", Icon = "map-pin"})
-Tab2:Button({Title = "传送回家", Callback = function() segmentedTP(homePos) end})
-Tab2:Button({Title = "终止传送", Callback = function() stopTeleport = true end})
-Tab2:Divider()
 Tab2:Dropdown({Title = "选择玩家", Values = playerNames, Value = selectedPlayer, Callback = function(v) selectedPlayer = v end})
-Tab2:Button({Title = "传送到该玩家", Callback = function() for _, plr in pairs(Players:GetPlayers()) do if plr.Name == selectedPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then segmentedTP(plr.Character.HumanoidRootPart.Position) end end end})
+Tab2:Button({Title = "传送到该玩家", Callback = function() 
+    for _, plr in pairs(Players:GetPlayers()) do 
+        if plr.Name == selectedPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then 
+            local c = LocalPlayer.Character
+            if c and c:FindFirstChild("HumanoidRootPart") then
+                c.HumanoidRootPart.CFrame = CFrame.new(plr.Character.HumanoidRootPart.Position + Vector3.new(0, 3, 0))
+            end
+        end 
+    end 
+end})
 
-local Tab3 = Window:Tab({Title = "玩家", Icon = "users"})
+local Tab3 = Window:Tab({Title = "玩家", Icon = "solar:user-bold"})
 Tab3:Toggle({Title = "透视玩家", Value = false, Callback = function(v) Settings.ESP_Players = v; scanAll() end})
 Tab3:Toggle({Title = "穿墙", Value = false, Callback = function(v) Settings.NoClip = v; setNoClip(v) end})
-Tab3:Toggle({Title = "开启调速", Value = false, Callback = function(v) Settings.SpeedBoost = v; if not v then setSpeed(16) end end})
-Tab3:Input({Title = "移动速度", Value = "16", Callback = function(v) local n = tonumber(v) if n and n >= 0 and n <= 200 then Settings.WalkSpeed = n end end})
+Tab3:Toggle({Title = "坐标加速", Value = false, Callback = function(v) Settings.SpeedBoost = v end})
+Tab3:Slider({Title = "加速值 (1-30)", Value = {Min = 1, Max = 30, Default = 5}, Step = 1, Callback = function(v) Settings.SpeedValue = v end})
 
-Window:Tab({Title = "设置", Icon = "settings"}):Button({Title = "关闭脚本", Callback = function() stopAll = true; stopTeleport = true; clearAll(); updateNightVision(); updateFog(); setSpeed(16); Window:Close() end})
-Window:OnClose(function() stopAll = true; stopTeleport = true; clearAll(); updateNightVision(); updateFog(); setSpeed(16) end)
+local SettingsTab = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+local statusPara = SettingsTab:Paragraph({Title = "功能状态", Desc = "加载中..."})
 
--- 每次开关切换时立刻刷新
-local oldScanAll = scanAll
-scanAll = function()
-    oldScanAll()
-end
+task.spawn(function()
+    while true do
+        local status = ""
+        status = status .. "透视物品: " .. (Settings.ESP_Items and "已开启" or "未开启") .. "\n"
+        status = status .. "透视僵尸+爬虫: " .. (Settings.ESP_Zombie and "已开启" or "未开启") .. "\n"
+        status = status .. "透视宝箱: " .. (Settings.ESP_Default and "已开启" or "未开启") .. "\n"
+        status = status .. "透视玩家: " .. (Settings.ESP_Players and "已开启" or "未开启") .. "\n"
+        status = status .. "坐标加速: " .. (Settings.SpeedBoost and "已开启 (" .. Settings.SpeedValue .. ")" or "未开启") .. "\n"
+        status = status .. "杀戮光环: " .. (Settings.KillAura and "已开启" or "未开启") .. "\n"
+        status = status .. "传送回家: " .. (Settings.AutoHome and "已开启" or "未开启") .. "\n"
+        status = status .. "帧率: " .. math.floor(1 / task.wait()) .. " FPS"
+        statusPara:SetDesc(status)
+        task.wait(1)
+    end
+end)
+
+SettingsTab:Button({Title = "关闭脚本", Callback = function() stopAll = true; clearAll(); updateNightVision(); updateFog(); Window:Close() end})
+Window:OnClose(function() stopAll = true; clearAll(); updateNightVision(); updateFog() end)
 
 WindUI:Notify({Title = "在末日中活下来", Content = VERSION .. " 加载完成", Duration = 3})
