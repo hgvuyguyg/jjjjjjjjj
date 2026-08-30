@@ -1,0 +1,195 @@
+-- 空乘模拟器 脚本 v1.0.8
+-- WindUI蓝白版 | 简约版
+
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+if not WindUI then return end
+
+WindUI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF",
+})
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+
+local VERSION = "v1.0.8"
+
+-- ========== 远程事件 ==========
+local function getRemoteEvent()
+    local character = LocalPlayer.Character
+    if not character then return nil end
+    
+    local client1 = character:FindFirstChild("Client")
+    if not client1 then return nil end
+    
+    local client2 = client1:FindFirstChild("Client")
+    if not client2 then return nil end
+    
+    return client2:FindFirstChild("RemoteEvent")
+end
+
+-- ========== 获取所有NPC ==========
+local function getAllNPCs()
+    local npcs = {}
+    local flights = Workspace:FindFirstChild("flights")
+    if not flights then return npcs end
+
+    for _, flight in pairs(flights:GetChildren()) do
+        local clientFolder = flight:FindFirstChild("clientFolder")
+        if clientFolder then
+            for _, plane in pairs(clientFolder:GetChildren()) do
+                local npcFolder = plane:FindFirstChild("npcs")
+                if npcFolder then
+                    for _, npc in pairs(npcFolder:GetChildren()) do
+                        table.insert(npcs, npc)
+                    end
+                end
+            end
+        end
+    end
+    return npcs
+end
+
+-- ========== 服务所有乘客 ==========
+local function serviceAllPassengers()
+    local event = getRemoteEvent()
+    if not event then
+        WindUI:Notify({Title = "错误", Content = "找不到RemoteEvent", Duration = 2})
+        return 0
+    end
+    
+    local npcs = getAllNPCs()
+    if #npcs == 0 then
+        WindUI:Notify({Title = "提示", Content = "未找到任何乘客", Duration = 2})
+        return 0
+    end
+    
+    local count = 0
+    for _, npc in pairs(npcs) do
+        pcall(function()
+            event:FireServer("Fix", "seat", npc)
+            task.wait(0.02)
+            event:FireServer("Fix", "seatbelt", npc)
+            task.wait(0.02)
+            event:FireServer("Fix", "tray", npc)
+            task.wait(0.02)
+        end)
+        count = count + 1
+    end
+    return count
+end
+
+-- ========== 关闭所有储物柜 ==========
+local function closeAllBins()
+    local event = getRemoteEvent()
+    if not event then
+        WindUI:Notify({Title = "错误", Content = "找不到RemoteEvent", Duration = 2})
+        return 0
+    end
+    
+    local count = 0
+    for i = 1, 1000 do
+        pcall(function()
+            event:FireServer("prompt", "Bins", i)
+        end)
+        count = count + 1
+        if i % 10 == 0 then
+            task.wait(0.01)
+        end
+    end
+    return count
+end
+
+-- ========== 跳跃功能 ==========
+local function jump()
+    local character = LocalPlayer.Character
+    if not character then return end
+    
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+    
+    if humanoid.FloorMaterial ~= Enum.Material.Air then
+        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        WindUI:Notify({Title = "跳跃", Content = "已跳跃", Duration = 0.5})
+    end
+end
+
+-- ========== UI ==========
+local Window = WindUI:CreateWindow({
+    Title = "空乘模拟器",
+    Icon = "solar:moon-bold",
+    Size = UDim2.fromOffset(500, 350),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "冰白",
+    Transparent = true,
+    ScrollBarEnabled = true,
+})
+
+Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
+    Title = "黑脚本--空乘模拟器(定制) " .. VERSION,
+    Desc = "功能：服务乘客 | 关闭储物柜 | 跳跃\n作者没玩那么仔细所以功能少"
+})
+
+local MainTab = Window:Tab({Title = "主要功能", Icon = "solar:star-bold"})
+
+MainTab:Button({
+    Title = "服务所有乘客",
+    Callback = function()
+        local count = serviceAllPassengers()
+        WindUI:Notify({Title = "完成", Content = "已服务 " .. count .. " 名乘客", Duration = 2})
+    end
+})
+
+MainTab:Divider()
+
+MainTab:Button({
+    Title = "关闭所有储物柜",
+    Callback = function()
+        local count = closeAllBins()
+        WindUI:Notify({Title = "完成", Content = "已关闭 " .. count .. " 个储物柜", Duration = 2})
+    end
+})
+
+MainTab:Divider()
+
+MainTab:Button({
+    Title = "跳跃",
+    Callback = function()
+        jump()
+    end
+})
+
+local SettingsTab = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+local statusPara = SettingsTab:Paragraph({Title = "功能状态", Desc = "加载中..."})
+
+task.spawn(function()
+    while true do
+        local status = ""
+        local npcs = getAllNPCs()
+        status = status .. "乘客数量: " .. #npcs .. "\n"
+        
+        local remote = getRemoteEvent()
+        status = status .. "RemoteEvent: " .. (remote and "已找到" or "未找到") .. "\n"
+        
+        status = status .. "帧率: " .. math.floor(1 / task.wait()) .. " FPS"
+        statusPara:SetDesc(status)
+        task.wait(1)
+    end
+end)
+
+SettingsTab:Button({
+    Title = "关闭面板",
+    Callback = function()
+        Window:Close()
+    end
+})
+
+WindUI:Notify({
+    Title = "空乘模拟器",
+    Content = VERSION .. " 加载完成",
+    Duration = 3
+})
