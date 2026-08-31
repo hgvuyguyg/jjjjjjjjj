@@ -1,0 +1,133 @@
+-- 圣地亚哥边境角色扮演 脚本 v1.0.0
+-- WindUI蓝白版 | 传送出生点 | 坐标加速
+
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+if not WindUI then return end
+
+WindUI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF",
+})
+
+local Player = game.Players.LocalPlayer
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+local Humanoid = Character:WaitForChild("Humanoid")
+
+local isMoving = false
+local moveSpeed = 500
+local targetPos = Vector3.new(6892.0, 17.2, 40.7)
+
+local function moveToTarget()
+    if isMoving then return end
+    isMoving = true
+    
+    if not HumanoidRootPart then
+        isMoving = false
+        WindUI:Notify({Title = "失败", Content = "找不到角色", Duration = 2})
+        return
+    end
+    
+    local startPos = HumanoidRootPart.Position
+    local totalDist = (targetPos - startPos).Magnitude
+    
+    if totalDist < 10 then
+        WindUI:Notify({Title = "提示", Content = "已在目标点附近", Duration = 2})
+        isMoving = false
+        return
+    end
+    
+    WindUI:Notify({Title = "移动开始", Content = "正在前往出生点... 速度: " .. moveSpeed, Duration = 2})
+    
+    local direction = (targetPos - startPos).Unit
+    local step = moveSpeed * 0.016 -- 每帧移动距离
+    
+    while isMoving do
+        local currentPos = HumanoidRootPart.Position
+        local remaining = (targetPos - currentPos).Magnitude
+        
+        if remaining < step then
+            HumanoidRootPart.CFrame = CFrame.new(targetPos)
+            break
+        end
+        
+        local newPos = currentPos + direction * step
+        HumanoidRootPart.CFrame = CFrame.new(newPos)
+        
+        task.wait()
+    end
+    
+    isMoving = false
+    WindUI:Notify({Title = "到达目标", Content = "已到达出生点", Duration = 2})
+end
+
+local function stopMoving()
+    isMoving = false
+    WindUI:Notify({Title = "已停止", Content = "停止移动", Duration = 2})
+end
+
+local Window = WindUI:CreateWindow({
+    Title = "圣地亚哥边境角色扮演",
+    Icon = "solar:moon-bold",
+    Size = UDim2.fromOffset(580, 400),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "冰白",
+    Transparent = true,
+    ScrollBarEnabled = true,
+})
+
+Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
+    Title = "圣地亚哥边境角色扮演 v1.0.0",
+    Desc = "功能：传送出生点 | 坐标加速\n\n更新日志：初始发布",
+})
+
+local MainTab = Window:Tab({Title = "主要功能", Icon = "solar:star-bold"})
+
+MainTab:Button({
+    Title = "传送出生点",
+    Desc = "坐标加速移动至出生点",
+    Callback = function()
+        moveToTarget()
+    end
+})
+
+MainTab:Divider()
+
+MainTab:Button({
+    Title = "停止移动",
+    Desc = "中途停止加速移动",
+    Callback = function()
+        stopMoving()
+    end
+})
+
+MainTab:Divider()
+
+MainTab:Slider({
+    Title = "移动速度 (100-2000)",
+    Value = {Min = 100, Max = 2000, Default = 500},
+    Step = 50,
+    Callback = function(v)
+        moveSpeed = v
+        WindUI:Notify({Title = "速度已设置", Content = "当前速度: " .. v, Duration = 1})
+    end
+})
+
+local SettingsTab = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+SettingsTab:Button({Title = "关闭面板", Callback = function() Window:Close() end})
+
+Player.CharacterAdded:Connect(function(newCharacter)
+    Character = newCharacter
+    HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+    Humanoid = Character:WaitForChild("Humanoid")
+    isMoving = false
+end)
+
+WindUI:Notify({
+    Title = "圣地亚哥边境角色扮演",
+    Content = "脚本加载完成",
+    Duration = 3
+})
