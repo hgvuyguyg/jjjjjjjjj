@@ -81,7 +81,7 @@ local Window = WindUI:CreateWindow({
 
 Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
     Title = "黑脚本--加一长臂玩具逃脱 v1.0.3",
-    Desc = "功能：自动赢\n\n坐标: 1156.1, 471.6, 2919.3"
+    Desc = "功能：自动赢"
 })
 
 local MainTab = Window:Tab({Title = "主要功能", Icon = "solar:star-bold"})
