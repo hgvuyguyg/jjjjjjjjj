@@ -1,475 +1,267 @@
--- 🌙 变身升级 | V3.1
+-- 变身升级 脚本 v1.0.5
+-- WindUI蓝白版 | 自动吃食 | 跳跃冲刺 | 移速调整
 
-local WI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
-if not WI then return end
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+if not WindUI then return end
 
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
-
--- 变量
-local autoEat = false
-local autoDodge = false
-local dodgeRange = 30
-local visitedBerries = {}
-local playerESP = false
-local playerESPColor = Color3.fromRGB(255, 50, 50)
-local showDistance = false
-local playerESPObjects = {}
-local sprintCooldown = false
-local sprintGui = nil
-local sprintButton = nil
-local cooldownLabel = nil
-local speedBoost = false
-local speedValue = 20
-local sprintDuration = 0.3
-
--- ==================== 冰白主题 ====================
-WI:AddTheme({
+WindUI:AddTheme({
     Name = "冰白",
     Accent = "#80C0FF",
     Outline = "#6090C0",
     Text = "#FFFFFF",
-    Placeholder = "#D0E0FF"
+    Placeholder = "#D0E0FF",
 })
 
--- ==================== 辅助函数 ====================
-local function getRoot(obj)
-    if obj:IsA("Model") then
-        return obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head") or obj:FindFirstChild("Handle")
-    elseif obj:IsA("BasePart") then
-        return obj
-    end
-    for _, c in ipairs(obj:GetDescendants()) do
-        if c:IsA("BasePart") then return c end
-    end
-    return nil
-end
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
 
--- ==================== 普通速度（16-20）====================
-RunService.RenderStepped:Connect(function()
-    if speedBoost then
-        pcall(function()
-            local c = LocalPlayer.Character
-            if c and c:FindFirstChild("Humanoid") then
-                c.Humanoid.WalkSpeed = speedValue
-            end
-        end)
-    end
-end)
+local VERSION = "v1.0.5"
+local autoEat = false
+local jumpBoost = false
+local speedEnabled = false
+local speedValue = 16
+local isMoving = false
+local lastJumpTime = 0
 
--- ==================== 创建冲刺按钮 ====================
-local function createSprintButton()
-    if sprintGui then
-        sprintGui:Destroy()
-    end
+local function getNearestFood()
+    local char = LocalPlayer.Character
+    if not char then return nil end
     
-    sprintGui = Instance.new("ScreenGui")
-    sprintGui.Name = "SprintButton"
-    sprintGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    sprintGui.ResetOnSpawn = false
-    sprintGui.Parent = game:GetService("CoreGui")
-
-    sprintButton = Instance.new("TextButton")
-    sprintButton.Size = UDim2.new(0, 70, 0, 70)
-    sprintButton.Position = UDim2.new(1, -100, 1, -300)
-    sprintButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
-    sprintButton.BackgroundTransparency = 0.3
-    sprintButton.BorderSizePixel = 0
-    sprintButton.Text = "冲刺"
-    sprintButton.TextColor3 = Color3.new(1, 1, 1)
-    sprintButton.Font = Enum.Font.SourceSansBold
-    sprintButton.TextSize = 16
-    sprintButton.ZIndex = 9999
-    sprintButton.Parent = sprintGui
-
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(1, 0)
-    corner.Parent = sprintButton
-
-    cooldownLabel = Instance.new("TextLabel")
-    cooldownLabel.Size = UDim2.new(0, 100, 0, 25)
-    cooldownLabel.Position = UDim2.new(1, -115, 1, -270)
-    cooldownLabel.BackgroundTransparency = 1
-    cooldownLabel.Text = ""
-    cooldownLabel.TextColor3 = Color3.new(1, 1, 1)
-    cooldownLabel.Font = Enum.Font.SourceSansBold
-    cooldownLabel.TextSize = 14
-    cooldownLabel.TextStrokeTransparency = 0
-    cooldownLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    cooldownLabel.ZIndex = 9999
-    cooldownLabel.Parent = sprintGui
-
-    sprintButton.MouseButton1Click:Connect(function()
-        if sprintCooldown then return end
-        sprintCooldown = true
-        sprintButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-        sprintButton.Text = "冲刺中"
-        
-        spawn(function()
-            pcall(function()
-                local c = LocalPlayer.Character
-                if c and c:FindFirstChild("Humanoid") then
-                    c.Humanoid.WalkSpeed = 200
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return nil end
+    
+    local myPos = hrp.Position
+    local nearest = nil
+    local nearestDist = math.huge
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") or obj:IsA("BasePart") then
+            local name = obj.Name:lower()
+            if name:find("food") then
+                local rootPart = nil
+                if obj:IsA("Model") then
+                    rootPart = obj:FindFirstChild("HumanoidRootPart") or obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+                elseif obj:IsA("BasePart") then
+                    rootPart = obj
                 end
-            end)
-            task.wait(sprintDuration)
-            pcall(function()
-                local c = LocalPlayer.Character
-                if c and c:FindFirstChild("Humanoid") then
-                    c.Humanoid.WalkSpeed = speedBoost and speedValue or 16
-                end
-            end)
-            
-            for i = 3, 1, -1 do
-                cooldownLabel.Text = "冷却 " .. i .. "秒"
-                sprintButton.Text = i .. "s"
-                task.wait(1)
-            end
-            cooldownLabel.Text = ""
-            sprintCooldown = false
-            sprintButton.BackgroundColor3 = Color3.fromRGB(80, 160, 255)
-            sprintButton.Text = "冲刺"
-        end)
-    end)
-end
-
--- ==================== 删除冲刺按钮 ====================
-local function removeSprintButton()
-    if sprintGui then
-        sprintGui:Destroy()
-        sprintGui = nil
-        sprintButton = nil
-        cooldownLabel = nil
-    end
-end
-
--- ==================== 玩家ESP ====================
-local function clearPlayerESP()
-    for _, obj in ipairs(playerESPObjects) do
-        pcall(function() obj:Destroy() end)
-    end
-    playerESPObjects = {}
-end
-
-local function refreshPlayerESP()
-    clearPlayerESP()
-    if not playerESP then return end
-
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer and plr.Character then
-            pcall(function()
-                local c = plr.Character
-                local root = c:FindFirstChild("HumanoidRootPart") or c:FindFirstChild("Head")
-                if not root then return end
-
-                local hl = Instance.new("Highlight")
-                hl.FillColor = playerESPColor
-                hl.FillTransparency = 0.3
-                hl.OutlineColor = playerESPColor
-                hl.OutlineTransparency = 0.2
-                hl.Adornee = c
-                hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-                hl.Parent = c
-                table.insert(playerESPObjects, hl)
-
-                local bb = Instance.new("BillboardGui")
-                bb.Size = UDim2.new(0, 200, 0, 30)
-                bb.StudsOffset = Vector3.new(0, 3, 0)
-                bb.AlwaysOnTop = true
-                bb.Adornee = root
-                bb.Parent = root
-                table.insert(playerESPObjects, bb)
-
-                local lb = Instance.new("TextLabel")
-                lb.Size = UDim2.new(1, 0, 1, 0)
-                lb.BackgroundTransparency = 1
-                lb.Text = plr.Name
-                lb.TextColor3 = playerESPColor
-                lb.TextStrokeTransparency = 0
-                lb.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                lb.Font = Enum.Font.SourceSansBold
-                lb.TextSize = 16
-                lb.Parent = bb
-
-                if showDistance then
-                    local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                    if myRoot then
-                        local d = math.floor((myRoot.Position - root.Position).Magnitude)
-                        local db = Instance.new("BillboardGui")
-                        db.Size = UDim2.new(0, 100, 0, 20)
-                        db.StudsOffset = Vector3.new(0, -1.5, 0)
-                        db.AlwaysOnTop = true
-                        db.Adornee = root
-                        db.Parent = root
-                        table.insert(playerESPObjects, db)
-
-                        local dl = Instance.new("TextLabel")
-                        dl.Size = UDim2.new(1, 0, 1, 0)
-                        dl.BackgroundTransparency = 1
-                        dl.Text = d .. "m"
-                        dl.TextColor3 = Color3.fromRGB(255, 255, 255)
-                        dl.TextStrokeTransparency = 0
-                        dl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                        dl.Font = Enum.Font.SourceSansBold
-                        dl.TextSize = 14
-                        dl.Parent = db
+                if rootPart then
+                    local dist = (myPos - rootPart.Position).Magnitude
+                    if dist < nearestDist then
+                        nearestDist = dist
+                        nearest = rootPart
                     end
                 end
-            end)
+            end
         end
     end
+    
+    return nearest
 end
 
 task.spawn(function()
-    while task.wait(1.5) do
-        pcall(function() refreshPlayerESP() end)
+    while true do
+        if speedEnabled then
+            local char = LocalPlayer.Character
+            if char then
+                local humanoid = char:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    humanoid.WalkSpeed = speedValue
+                end
+            end
+        end
+        task.wait(0.3)
     end
 end)
 
--- ==================== 检查附近是否有玩家 ====================
-local function isPlayerNearby(radius)
+local function moveToFood(targetPos)
+    if isMoving then return end
+    isMoving = true
+    
     local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
-    local hrp = char.HumanoidRootPart
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-            local d = (hrp.Position - plr.Character.HumanoidRootPart.Position).Magnitude
-            if d < radius then return true end
-        end
+    if not char then
+        isMoving = false
+        return
     end
-    return false
+    
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then
+        isMoving = false
+        return
+    end
+    
+    local startPos = hrp.Position
+    local totalDist = (targetPos - startPos).Magnitude
+    
+    if totalDist < 3 then
+        isMoving = false
+        return
+    end
+    
+    local stepSize = 5
+    local steps = math.max(1, math.floor(totalDist / stepSize))
+    local direction = (targetPos - startPos).Unit
+    
+    for i = 1, steps do
+        if not autoEat then break end
+        local newPos = startPos + direction * (stepSize * i)
+        hrp.CFrame = CFrame.new(newPos)
+        task.wait(0.08)
+    end
+    
+    hrp.CFrame = CFrame.new(targetPos)
+    isMoving = false
 end
 
--- ==================== 自动吃食 ====================
-spawn(function()
+task.spawn(function()
     while true do
         if autoEat then
-            if autoDodge and isPlayerNearby(dodgeRange) then
-                task.wait(0.2)
-                return
+            local food = getNearestFood()
+            if food then
+                moveToFood(food.Position + Vector3.new(0, 2, 0))
             end
-
-            pcall(function()
-                local char = LocalPlayer.Character
-                if not char or not char:FindFirstChild("HumanoidRootPart") then
-                    task.wait(0.5)
-                    return
-                end
-                local hrp = char.HumanoidRootPart
-                local humanoid = char:FindFirstChild("Humanoid")
-                if not humanoid then
-                    task.wait(0.5)
-                    return
-                end
-
-                local closest, closestDist = nil, math.huge
-                for _, obj in ipairs(Workspace:GetDescendants()) do
-                    if obj.Name:find("Berry") and not visitedBerries[obj] then
-                        local root = getRoot(obj)
-                        if root then
-                            local d = (hrp.Position - root.Position).Magnitude
-                            if d < closestDist then
-                                closestDist = d
-                                closest = root
-                            end
-                        end
-                    end
-                end
-
-                if not closest then
-                    visitedBerries = {}
-                    task.wait(1)
-                    return
-                end
-
-                local targetObj = nil
-                for _, obj in ipairs(Workspace:GetDescendants()) do
-                    if obj.Name:find("Berry") and not visitedBerries[obj] then
-                        local root = getRoot(obj)
-                        if root == closest then
-                            targetObj = obj
-                            break
-                        end
-                    end
-                end
-
-                local startTime = tick()
-                local stuckTime = 0
-                local lastPos = hrp.Position
-
-                while tick() - startTime < 15 and autoEat do
-                    if autoDodge and isPlayerNearby(dodgeRange) then
-                        humanoid.WalkSpeed = 16
-                        return
-                    end
-
-                    local dist = (hrp.Position - closest.Position).Magnitude
-                    if dist < 5 then break end
-
-                    if not sprintCooldown then
-                        humanoid.WalkSpeed = speedBoost and speedValue or 16
-                    end
-                    humanoid:MoveTo(closest.Position)
-                    task.wait(0.3)
-
-                    local movedDist = (hrp.Position - lastPos).Magnitude
-                    if movedDist < 0.5 then
-                        stuckTime = stuckTime + 0.3
-                        if stuckTime > 2 then
-                            if targetObj then visitedBerries[targetObj] = true end
-                            break
-                        end
-                    else
-                        stuckTime = 0
-                    end
-                    lastPos = hrp.Position
-                end
-
-                if not sprintCooldown then
-                    humanoid.WalkSpeed = speedBoost and speedValue or 16
-                end
-
-                local finalDist = (hrp.Position - closest.Position).Magnitude
-                if finalDist < 8 and targetObj then
-                    visitedBerries[targetObj] = true
-                end
-                task.wait(0.2)
-            end)
+            task.wait(1.5)
+        else
+            task.wait(0.5)
         end
-        task.wait(0.2)
     end
 end)
 
--- ==================== 自动躲玩家 ====================
-spawn(function()
-    while true do
-        if autoDodge then
-            pcall(function()
-                local char = LocalPlayer.Character
-                if not char or not char:FindFirstChild("HumanoidRootPart") then
-                    task.wait(0.1)
-                    return
-                end
-                local hrp = char.HumanoidRootPart
-                local humanoid = char:FindFirstChild("Humanoid")
-                if not humanoid then
-                    task.wait(0.1)
-                    return
-                end
+-- 跳跃冲刺 50速 0.1秒
+local function doJumpDash()
+    if not jumpBoost then return end
+    
+    local char = LocalPlayer.Character
+    if not char then return end
+    
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    local forward = hrp.CFrame.LookVector
+    local targetPos = hrp.Position + forward * 5
+    
+    local tweenService = game:GetService("TweenService")
+    local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+    local tween = tweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetPos)})
+    tween:Play()
+end
 
-                local nearestPlayer = nil
-                local nearestDist = math.huge
-
-                for _, plr in ipairs(Players:GetPlayers()) do
-                    if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                        local targetHRP = plr.Character.HumanoidRootPart
-                        local d = (hrp.Position - targetHRP.Position).Magnitude
-                        if d < nearestDist then
-                            nearestDist = d
-                            nearestPlayer = plr
-                        end
-                    end
-                end
-
-                if nearestPlayer and nearestDist < dodgeRange then
-                    local targetHRP = nearestPlayer.Character.HumanoidRootPart
-
-                    local escapeEnd = tick() + 10
-                    while tick() < escapeEnd and autoDodge do
-                        local currentDist = (hrp.Position - targetHRP.Position).Magnitude
-                        if currentDist >= dodgeRange + 5 then
-                            break
-                        end
-
-                        local newAway = (hrp.Position - targetHRP.Position).Unit
-                        local runPos = hrp.Position + newAway * 30
-                        if not sprintCooldown then
-                            humanoid.WalkSpeed = speedBoost and speedValue or 16
-                        end
-                        humanoid:MoveTo(runPos)
-                        task.wait(0.3)
-                    end
-
-                    if not sprintCooldown then
-                        humanoid.WalkSpeed = speedBoost and speedValue or 16
-                    end
-                end
-            end)
-        end
-        task.wait(0.1)
+UserInputService.JumpRequest:Connect(function()
+    if jumpBoost then
+        task.spawn(function()
+            task.wait(0.05)
+            doJumpDash()
+        end)
     end
 end)
 
--- ==================== UI ====================
-local Window = WI:CreateWindow({
+RunService.Heartbeat:Connect(function()
+    local char = LocalPlayer.Character
+    if not char then return end
+    
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+    
+    if humanoid:GetState() == Enum.HumanoidStateType.Jumping then
+        if jumpBoost and tick() - lastJumpTime > 0.5 then
+            lastJumpTime = tick()
+            task.spawn(function()
+                task.wait(0.05)
+                doJumpDash()
+            end)
+        end
+    end
+end)
+
+local Window = WindUI:CreateWindow({
     Title = "变身升级",
     Icon = "solar:moon-bold",
-    Size = UDim2.fromOffset(500, 440),
+    Size = UDim2.fromOffset(600, 350),
     ToggleKey = Enum.KeyCode.RightShift,
     Theme = "冰白",
     Transparent = true,
-    ScrollBarEnabled = true
+    ScrollBarEnabled = true,
 })
 
 Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
-    Title = "黑脚本--变身升级V3.1",
-    Desc = "冲刺按钮(可调0.1-0.35秒) | 普通调速16-20\n透视玩家 | 智能切换"
+    Title = "黑脚本--变身升级 v1.0.5",
+    Desc = "功能：自动吃食 | 跳跃冲刺(50速/0.1秒) | 移速调整"
 })
 
-local T2 = Window:Tab({Title = "主要功能", Icon = "solar:star-bold"})
-T2:Section({Title = "自动吃食"})
-T2:Toggle({Title = "开启自动吃食", Value = false, Callback = function(v)
-    autoEat = v
-    if v then visitedBerries = {} end
-end})
+local MainTab = Window:Tab({Title = "主要功能", Icon = "solar:star-bold"})
 
-T2:Section({Title = "自动躲玩家"})
-T2:Toggle({Title = "开启自动躲玩家", Value = false, Callback = function(v) autoDodge = v end})
-T2:Slider({Title = "躲避范围", Value = {Min = 10, Max = 100, Default = 30}, Step = 5, Callback = function(v) dodgeRange = v end})
+MainTab:Toggle({
+    Title = "自动吃食",
+    Value = false,
+    Callback = function(v)
+        autoEat = v
+        if not v then isMoving = false end
+    end
+})
 
-T2:Section({Title = "冲刺设置"})
-T2:Slider({Title = "冲刺时间(秒)", Value = {Min = 0.1, Max = 0.35, Default = 0.3}, Step = 0.05, Callback = function(v) sprintDuration = v end})
-T2:Button({Title = "创建冲刺按钮", Justify = "Center", Callback = function()
-    createSprintButton()
-    WI:Notify({Title = "冲刺", Content = "按钮已创建", Duration = 2})
-end})
-T2:Button({Title = "删除冲刺按钮", Justify = "Center", Callback = function()
-    removeSprintButton()
-    WI:Notify({Title = "冲刺", Content = "按钮已删除", Duration = 2})
-end})
+MainTab:Divider()
 
-local T3 = Window:Tab({Title = "玩家", Icon = "solar:user-bold"})
-T3:Section({Title = "透视"})
-T3:Toggle({Title = "透视所有玩家", Value = false, Callback = function(v) playerESP = v end})
-T3:Colorpicker({Title = "颜色", Default = Color3.fromRGB(255, 50, 50), Callback = function(c) playerESPColor = c end})
-T3:Toggle({Title = "显示距离", Value = false, Callback = function(v) showDistance = v end})
-T3:Section({Title = "速度"})
-T3:Toggle({Title = "速度加成", Value = false, Callback = function(v) speedBoost = v; if not v then pcall(function() LocalPlayer.Character.Humanoid.WalkSpeed = 16 end) end end})
-T3:Slider({Title = "速度值", Value = {Min = 16, Max = 20, Default = 20}, Step = 1, Callback = function(v) speedValue = v end})
+MainTab:Toggle({
+    Title = "跳跃冲刺",
+    Value = false,
+    Callback = function(v)
+        jumpBoost = v
+    end
+})
 
-local T4 = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
-local statusParagraph = T4:Paragraph({Title = "功能状态", Desc = "加载中..."})
+MainTab:Divider()
 
-spawn(function()
+MainTab:Toggle({
+    Title = "调整移速",
+    Value = false,
+    Callback = function(v)
+        speedEnabled = v
+    end
+})
+
+MainTab:Slider({
+    Title = "移速值 (16-30)",
+    Value = {Min = 16, Max = 30, Default = 16},
+    Step = 1,
+    Callback = function(v)
+        speedValue = v
+    end
+})
+
+local SettingsTab = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+local statusPara = SettingsTab:Paragraph({Title = "功能状态", Desc = "加载中..."})
+
+task.spawn(function()
     while true do
-        pcall(function()
-            local fps = math.floor(1 / (RunService.RenderStepped:Wait() or 0.016))
-            local status = "FPS: " .. fps .. "\n\n" ..
-                "吃食中: " .. (autoEat and "✅" or "❌") .. "\n" ..
-                "躲玩家: " .. (autoDodge and "✅" or "❌") .. "\n" ..
-                "透视玩家: " .. (playerESP and "✅" or "❌") .. "\n" ..
-                "速度: " .. (speedBoost and "✅ " .. speedValue or "❌") .. "\n" ..
-                "冲刺时间: " .. sprintDuration .. "秒\n" ..
-                "冲刺按钮: " .. (sprintGui and "✅" or "❌")
-            statusParagraph:SetDesc(status)
-        end)
-        task.wait(0.5)
+        local status = ""
+        status = status .. "自动吃食: " .. (autoEat and "已开启" or "未开启") .. "\n"
+        status = status .. "跳跃冲刺: " .. (jumpBoost and "已开启" or "未开启") .. "\n"
+        status = status .. "调整移速: " .. (speedEnabled and "已开启 (" .. speedValue .. ")" or "未开启") .. "\n"
+        local food = getNearestFood()
+        status = status .. "最近食物: " .. (food and "已找到" or "未找到") .. "\n"
+        status = status .. "帧率: " .. math.floor(1 / task.wait()) .. " FPS"
+        statusPara:SetDesc(status)
+        task.wait(1)
     end
 end)
 
-T4:Button({Title = "关闭面板", Justify = "Center", Callback = function() Window:Close() end})
+SettingsTab:Button({
+    Title = "关闭面板",
+    Callback = function()
+        Window:Close()
+    end
+})
 
-WI:Notify({Title = "🌙 变身升级", Content = "加载完成", Duration = 3})
-print("🌙 变身升级 加载完成")
+Window:OnClose(function()
+    autoEat = false
+    jumpBoost = false
+    isMoving = false
+end)
+
+WindUI:Notify({
+    Title = "变身升级",
+    Content = "v1.0.5 加载完成",
+    Duration = 3
+})
