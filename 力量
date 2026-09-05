@@ -1,0 +1,270 @@
+-- 力量传奇 脚本 v1.0.0
+-- WindUI蓝白版 | 自动攻击 | 自动大球 | 传送打人
+
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+if not WindUI then return end
+
+WindUI:AddTheme({
+    Name = "冰白",
+    Accent = "#80C0FF",
+    Outline = "#6090C0",
+    Text = "#FFFFFF",
+    Placeholder = "#D0E0FF",
+})
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+
+local VERSION = "v1.0.0"
+local selectedTarget = nil
+local targetNameInput = ""
+
+local Window = WindUI:CreateWindow({
+    Title = "力量传奇",
+    Icon = "solar:moon-bold",
+    Size = UDim2.fromOffset(600, 400),
+    ToggleKey = Enum.KeyCode.RightShift,
+    Theme = "冰白",
+    Transparent = true,
+    ScrollBarEnabled = true,
+    Background = "https://i.ibb.co/5xB47QLN/IMG-5677.jpg",
+    BackgroundImageTransparency = 0.42,
+})
+
+Window:Tab({Title = "公告", Icon = "solar:info-circle-bold"}):Paragraph({
+    Title = "黑脚本--力量传奇 " .. VERSION,
+    Desc = "功能：自动攻击 | 自动点击 | 自动大球 | 传送打人"
+})
+
+local MainTab = Window:Tab({Title = "主要功能", Icon = "solar:star-bold"})
+
+local autoPunch = false
+MainTab:Toggle({
+    Title = "自动攻击",
+    Value = false,
+    Callback = function(v)
+        autoPunch = v
+        task.spawn(function()
+            local handIndex = 1
+            local hands = {"rightHand", "leftHand"}
+            while autoPunch do
+                pcall(function()
+                    local Event = LocalPlayer:FindFirstChild("muscleEvent")
+                    if Event then Event:FireServer("punch", hands[handIndex]) end
+                    handIndex = (handIndex % 2) + 1
+                end)
+                task.wait(0.15)
+            end
+        end)
+    end
+})
+
+MainTab:Divider()
+
+local autoRep = false
+MainTab:Toggle({
+    Title = "自动点击",
+    Value = false,
+    Callback = function(v)
+        autoRep = v
+        task.spawn(function()
+            while autoRep do
+                pcall(function()
+                    local Event = LocalPlayer:FindFirstChild("muscleEvent")
+                    if Event then Event:FireServer("rep") end
+                end)
+                task.wait(0.1)
+            end
+        end)
+    end
+})
+
+MainTab:Divider()
+
+local autoBigBall = false
+MainTab:Toggle({
+    Title = "自动大球",
+    Value = false,
+    Callback = function(v)
+        autoBigBall = v
+        task.spawn(function()
+            while autoBigBall do
+                pcall(function()
+                    local machines = Workspace:FindFirstChild("machinesFolder")
+                    if machines then
+                        local ball = machines:FindFirstChild("King Boulder")
+                        if ball then
+                            local seat = ball:FindFirstChild("interactSeat")
+                            if seat then
+                                local Event = LocalPlayer:FindFirstChild("muscleEvent")
+                                if Event then Event:FireServer("rep", seat) end
+                            end
+                        end
+                    end
+                end)
+                task.wait(0.1)
+            end
+        end)
+    end
+})
+
+local CombatTab = Window:Tab({Title = "传送和打人", Icon = "solar:target-bold"})
+
+CombatTab:Button({
+    Title = "攻击目标",
+    Callback = function()
+        if not selectedTarget or not selectedTarget.Parent then
+            WindUI:Notify({Title = "提示", Content = "请先选择目标", Duration = 2})
+            return
+        end
+        local Event = LocalPlayer:FindFirstChild("muscleEvent")
+        if Event then Event:FireServer("punch", "rightHand") end
+    end
+})
+
+CombatTab:Divider()
+
+CombatTab:Button({
+    Title = "传送到目标",
+    Callback = function()
+        if not selectedTarget or not selectedTarget.Parent then
+            WindUI:Notify({Title = "提示", Content = "请先选择目标", Duration = 2})
+            return
+        end
+        local char = LocalPlayer.Character
+        local targetChar = selectedTarget.Character
+        if char and targetChar then
+            local root = char:FindFirstChild("HumanoidRootPart")
+            local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
+            if root and targetRoot then
+                root.CFrame = CFrame.new(targetRoot.Position + Vector3.new(3, 0, 3))
+            end
+        end
+    end
+})
+
+CombatTab:Divider()
+
+local autoAttack = false
+CombatTab:Toggle({
+    Title = "自动攻击目标",
+    Value = false,
+    Callback = function(v)
+        autoAttack = v
+        task.spawn(function()
+            while autoAttack do
+                if selectedTarget and selectedTarget.Parent then
+                    local char = LocalPlayer.Character
+                    local targetChar = selectedTarget.Character
+                    if char and targetChar then
+                        local root = char:FindFirstChild("HumanoidRootPart")
+                        local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
+                        if root and targetRoot then
+                            local dist = (root.Position - targetRoot.Position).Magnitude
+                            if dist > 10 then
+                                root.CFrame = CFrame.new(targetRoot.Position + Vector3.new(3, 0, 3))
+                                task.wait(0.1)
+                            else
+                                local Event = LocalPlayer:FindFirstChild("muscleEvent")
+                                if Event then
+                                    local hand = (math.random(1, 2) == 1) and "leftHand" or "rightHand"
+                                    Event:FireServer("punch", hand)
+                                end
+                                task.wait(0.2)
+                            end
+                        end
+                    end
+                end
+                task.wait(0.5)
+            end
+        end)
+    end
+})
+
+CombatTab:Divider()
+
+CombatTab:Button({
+    Title = "传送到大石",
+    Callback = function()
+        local machines = Workspace:FindFirstChild("machinesFolder")
+        if machines then
+            local mountain = machines:FindFirstChild("Muscle King Mountain")
+            if mountain then
+                local rock = mountain:FindFirstChild("Rock")
+                if rock then
+                    local char = LocalPlayer.Character
+                    if char then
+                        local root = char:FindFirstChild("HumanoidRootPart")
+                        if root then
+                            root.CFrame = CFrame.new(rock.Position + Vector3.new(0, 5, 0))
+                        end
+                    end
+                end
+            end
+        end
+    end
+})
+
+CombatTab:Divider()
+
+CombatTab:Input({
+    Title = "输入目标名称",
+    Placeholder = "输入玩家名字...",
+    Callback = function(v)
+        targetNameInput = v
+    end
+})
+
+CombatTab:Button({
+    Title = "选择目标",
+    Callback = function()
+        if targetNameInput ~= "" then
+            local target = Players:FindFirstChild(targetNameInput)
+            if target then
+                selectedTarget = target
+                WindUI:Notify({Title = "已选择", Content = target.Name, Duration = 2})
+            else
+                selectedTarget = nil
+                WindUI:Notify({Title = "未找到", Content = targetNameInput, Duration = 2})
+            end
+        end
+    end
+})
+
+local SettingsTab = Window:Tab({Title = "设置", Icon = "solar:settings-bold"})
+local statusPara = SettingsTab:Paragraph({Title = "功能状态", Desc = "加载中..."})
+
+task.spawn(function()
+    while true do
+        local status = ""
+        status = status .. "自动攻击: " .. (autoPunch and "✅" or "❌") .. "\n"
+        status = status .. "自动点击: " .. (autoRep and "✅" or "❌") .. "\n"
+        status = status .. "自动大球: " .. (autoBigBall and "✅" or "❌") .. "\n"
+        status = status .. "自动攻击目标: " .. (autoAttack and "✅" or "❌") .. "\n"
+        status = status .. "目标: " .. (selectedTarget and selectedTarget.Name or "无") .. "\n"
+        status = status .. "帧率: " .. math.floor(1 / task.wait()) .. " FPS"
+        statusPara:SetDesc(status)
+        task.wait(1)
+    end
+end)
+
+SettingsTab:Button({
+    Title = "关闭面板",
+    Callback = function()
+        Window:Close()
+    end
+})
+
+Window:OnClose(function()
+    autoPunch = false
+    autoRep = false
+    autoBigBall = false
+    autoAttack = false
+end)
+
+WindUI:Notify({
+    Title = "力量传奇",
+    Content = "v1.0.0 加载完成",
+    Duration = 3
+})
